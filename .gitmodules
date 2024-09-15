@@ -1,0 +1,3 @@
+[submodule "extern/warthog-core"]
+	path = extern/warthog-core
+	url = https://github.com/ShortestPathLab/warthog-core.git
