@@ -27,8 +27,7 @@ warthog::jps2_expansion_policy::expand(
 	// to compute it all the time
 	uint32_t p_id = current->get_parent();
 	uint32_t c_id = current->get_id();
-	warthog::jps::direction dir_c
-	    = warthog::jps::from_direction(p_id, c_id, map_->width());
+	direction dir_c = warthog::jps::from_direction(p_id, c_id, map_->width());
 
 	// get the tiles around the current node c
 	uint32_t c_tiles;
@@ -42,7 +41,7 @@ warthog::jps2_expansion_policy::expand(
 
 	for(uint32_t i = 0; i < 8; i++)
 	{
-		warthog::jps::direction d = (warthog::jps::direction)(1 << i);
+		direction d = (direction)(1 << i);
 		if(succ_dirs & d)
 		{
 			jpl_->jump(d, current_id, goal_id, jp_ids_, jp_costs_);
@@ -68,8 +67,8 @@ warthog::jps2_expansion_policy::expand(
 //{
 //     uint32_t jp_id = jp_ids_.at(this->get_current_successor_index());
 //     assert(n->get_id() == (jp_id & warthog::jps::JPS_ID_MASK));
-//     warthog::jps::direction pdir =
-//         (warthog::jps::direction)*(((uint8_t*)(&jp_id))+3);
+//     direction pdir =
+//         (direction)*(((uint8_t*)(&jp_id))+3);
 //     n->set_pdir(pdir);
 // }
 

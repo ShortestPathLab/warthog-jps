@@ -38,9 +38,9 @@ warthog::offline_jump_point_locator::preproc()
 			//			std::cout << mapid << " ";
 			for(uint32_t i = 0; i < 8; i++)
 			{
-				warthog::jps::direction dir
-				    = (warthog::jps::direction)(1 << i);
-				//				std::cout << dir << ": ";
+				direction dir = (direction)(1 << i);
+				//				std::cout << dir << ":
+				//";
 				uint32_t jumpnode_id;
 				double jumpcost;
 				jpl.jump(dir, mapid, warthog::INF32, jumpnode_id, jumpcost);
@@ -49,7 +49,7 @@ warthog::offline_jump_point_locator::preproc()
 				if(dir > 8) { jumpcost = jumpcost / warthog::DBL_ROOT_TWO; }
 				uint32_t num_steps = (uint16_t)floor((jumpcost + 0.5));
 				//				std::cout << (jumpnode_id == warthog::INF ? 0 :
-				//num_steps) << " ";
+				// num_steps) << " ";
 
 				// set the leading bit if the jump leads to a dead-end
 				if(jumpnode_id == warthog::INF32)
@@ -130,34 +130,34 @@ warthog::offline_jump_point_locator::save(const char* filename)
 
 void
 warthog::offline_jump_point_locator::jump(
-    warthog::jps::direction d, uint32_t node_id, uint32_t goal_id,
-    uint32_t& jumpnode_id, double& jumpcost)
+    direction d, uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+    double& jumpcost)
 {
 	current_ = max_ = 0;
 	switch(d)
 	{
-	case warthog::jps::NORTH:
+	case NORTH:
 		jump_north(node_id, goal_id, jumpnode_id, jumpcost);
 		break;
-	case warthog::jps::SOUTH:
+	case SOUTH:
 		jump_south(node_id, goal_id, jumpnode_id, jumpcost);
 		break;
-	case warthog::jps::EAST:
+	case EAST:
 		jump_east(node_id, goal_id, jumpnode_id, jumpcost);
 		break;
-	case warthog::jps::WEST:
+	case WEST:
 		jump_west(node_id, goal_id, jumpnode_id, jumpcost);
 		break;
-	case warthog::jps::NORTHEAST:
+	case NORTHEAST:
 		jump_northeast(node_id, goal_id, jumpnode_id, jumpcost);
 		break;
-	case warthog::jps::NORTHWEST:
+	case NORTHWEST:
 		jump_northwest(node_id, goal_id, jumpnode_id, jumpcost);
 		break;
-	case warthog::jps::SOUTHEAST:
+	case SOUTHEAST:
 		jump_southeast(node_id, goal_id, jumpnode_id, jumpcost);
 		break;
-	case warthog::jps::SOUTHWEST:
+	case SOUTHWEST:
 		jump_southwest(node_id, goal_id, jumpnode_id, jumpcost);
 		break;
 	default:

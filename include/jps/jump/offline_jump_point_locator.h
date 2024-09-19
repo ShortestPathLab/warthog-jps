@@ -24,8 +24,8 @@ public:
 
 	void
 	jump(
-	    warthog::jps::direction d, uint32_t node_id, uint32_t goalid,
-	    uint32_t& jumpnode_id, double& jumpcost);
+	    direction d, uint32_t node_id, uint32_t goalid, uint32_t& jumpnode_id,
+	    double& jumpcost);
 
 	uint32_t
 	mem()

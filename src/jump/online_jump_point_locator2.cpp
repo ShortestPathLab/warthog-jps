@@ -53,7 +53,7 @@ warthog::jps::online_jump_point_locator2::create_rmap()
 // @return: the id of a jump point successor or warthog::INF if no jp exists.
 void
 warthog::jps::online_jump_point_locator2::jump(
-    warthog::jps::direction d, uint32_t node_id, uint32_t goal_id,
+    direction d, uint32_t node_id, uint32_t goal_id,
     std::vector<uint32_t>& jpoints, std::vector<warthog::cost_t>& costs)
 {
 	__jump_east_fp = &warthog::jps::online_jump_point_locator2::__jump_east;
@@ -74,28 +74,28 @@ warthog::jps::online_jump_point_locator2::jump(
 
 	switch(d)
 	{
-	case warthog::jps::NORTH:
+	case NORTH:
 		jump_north(jpoints, costs);
 		break;
-	case warthog::jps::SOUTH:
+	case SOUTH:
 		jump_south(jpoints, costs);
 		break;
-	case warthog::jps::EAST:
+	case EAST:
 		jump_east(jpoints, costs);
 		break;
-	case warthog::jps::WEST:
+	case WEST:
 		jump_west(jpoints, costs);
 		break;
-	case warthog::jps::NORTHEAST:
+	case NORTHEAST:
 		jump_northeast(jpoints, costs);
 		break;
-	case warthog::jps::NORTHWEST:
+	case NORTHWEST:
 		jump_northwest(jpoints, costs);
 		break;
-	case warthog::jps::SOUTHEAST:
+	case SOUTHEAST:
 		jump_southeast(jpoints, costs);
 		break;
-	case warthog::jps::SOUTHWEST:
+	case SOUTHWEST:
 		jump_southwest(jpoints, costs);
 		break;
 	default:

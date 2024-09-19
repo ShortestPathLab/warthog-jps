@@ -19,7 +19,6 @@
 // @created: 06/01/2010
 
 #include "jps.h"
-#include <cstdint>
 #include <jps/jump/online_jump_point_locator.h>
 #include <warthog/domain/gridmap.h>
 #include <warthog/search/expansion_policy.h>
@@ -60,7 +59,7 @@ public:
 
 private:
 	warthog::domain::gridmap* map_;
-	warthog::online_jump_point_locator* jpl_;
+	jump::online_jump_point_locator* jpl_;
 };
 
 }

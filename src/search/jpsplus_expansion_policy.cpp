@@ -20,7 +20,7 @@ warthog::jpsplus_expansion_policy::expand(
 	reset();
 
 	// compute the direction of travel used to reach the current node.
-	warthog::jps::direction dir_c = warthog::jps::from_direction(
+	direction dir_c = warthog::jps::from_direction(
 	    (uint32_t)current->get_parent(), (uint32_t)current->get_id(),
 	    map_->width());
 
@@ -35,7 +35,7 @@ warthog::jpsplus_expansion_policy::expand(
 	uint32_t goal_id = (uint32_t)problem->target_;
 	for(uint32_t i = 0; i < 8; i++)
 	{
-		warthog::jps::direction d = (warthog::jps::direction)(1 << i);
+		direction d = (direction)(1 << i);
 		if(succ_dirs & d)
 		{
 			double jumpcost;

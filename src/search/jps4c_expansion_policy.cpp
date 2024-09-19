@@ -25,12 +25,11 @@ warthog::jps4c_expansion_policy::expand(
 	uint32_t goal_id = (uint32_t)problem->target_;
 
 	// compute the direction of travel used to reach the current node.
-	warthog::jps::direction dir_c = warthog::jps::from_direction_4c(
+	direction dir_c = warthog::jps::from_direction_4c(
 	    parent_id, current_id, map_->width());
 	assert(
-	    dir_c == warthog::jps::NONE || dir_c == warthog::jps::NORTH
-	    || dir_c == warthog::jps::SOUTH || dir_c == warthog::jps::EAST
-	    || dir_c == warthog::jps::WEST);
+	    dir_c == NONE || dir_c == NORTH || dir_c == SOUTH || dir_c == EAST
+	    || dir_c == WEST);
 
 	// get the tiles around the current node c and determine
 	// which of the available moves are forced and which are natural
@@ -40,7 +39,7 @@ warthog::jps4c_expansion_policy::expand(
 
 	for(uint32_t i = 0; i < 8; i++)
 	{
-		warthog::jps::direction d = (warthog::jps::direction)(1 << i);
+		direction d = (direction)(1 << i);
 		if(succ_dirs & d)
 		{
 			double jumpcost;

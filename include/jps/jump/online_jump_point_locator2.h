@@ -32,7 +32,7 @@ public:
 
 	void
 	jump(
-	    warthog::jps::direction d, uint32_t node_id, uint32_t goalid,
+	    direction d, uint32_t node_id, uint32_t goalid,
 	    std::vector<uint32_t>& jpoints, std::vector<warthog::cost_t>& costs);
 
 	size_t

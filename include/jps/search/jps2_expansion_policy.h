@@ -19,8 +19,6 @@
 #include <warthog/search/search_node.h>
 #include <warthog/util/helpers.h>
 
-#include <cstdint>
-
 namespace jps::search
 {
 
