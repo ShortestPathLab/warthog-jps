@@ -10,8 +10,7 @@
 // @created: 05/05/2013
 //
 
-#include <jps/search/jps.h>
-#include <warthog/domain/gridmap.h>
+#include <jps/forward.h>
 
 namespace jps::jump
 {
@@ -24,8 +23,8 @@ public:
 
 	void
 	jump(
-	    direction d, uint32_t node_id, uint32_t goalid, uint32_t& jumpnode_id,
-	    double& jumpcost);
+	    search::direction d, uint32_t node_id, uint32_t goalid,
+	    uint32_t& jumpnode_id, double& jumpcost);
 
 	uint32_t
 	mem()

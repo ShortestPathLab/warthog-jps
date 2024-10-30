@@ -14,7 +14,7 @@
 // @created: 03/09/2012
 //
 
-#include <jps/search/jps.h>
+#include <jps/forward.h>
 #include <warthog/domain/gridmap.h>
 
 namespace jps::jump
@@ -28,8 +28,8 @@ public:
 
 	void
 	jump(
-	    direction d, uint32_t node_id, uint32_t goalid, uint32_t& jumpnode_id,
-	    warthog::cost_t& jumpcost);
+	    search::direction d, uint32_t node_id, uint32_t goalid,
+	    uint32_t& jumpnode_id, warthog::cost_t& jumpcost);
 
 	size_t
 	mem()
@@ -91,10 +91,10 @@ private:
 	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 
-	inline uint32_t
-	map_id_to_rmap_id(uint32_t mapid)
+	inline jps_id
+	map_id_to_rmap_id(jps_id mapid)
 	{
-		if(mapid == warthog::INF32) { return mapid; }
+		if(mapid.is_none()) { return jps_id::none(); }
 
 		uint32_t x, y;
 		uint32_t rx, ry;
@@ -104,10 +104,10 @@ private:
 		return rmap_->to_padded_id(rx, ry);
 	}
 
-	inline uint32_t
-	rmap_id_to_map_id(uint32_t rmapid)
+	inline jps_id
+	rmap_id_to_map_id(jps_id rmapid)
 	{
-		if(rmapid == warthog::INF32) { return rmapid; }
+		if(rmapid.is_none()) { return jps_id::none(); }
 
 		uint32_t x, y;
 		uint32_t rx, ry;

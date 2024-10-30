@@ -10,7 +10,7 @@
 //
 
 #include "jps.h"
-#include "jps/four_connected_jps_locator.h"
+#include <jps/jump/four_connected_jps_locator.h>
 #include <jps/jump/online_jump_point_locator.h>
 #include <warthog/domain/gridmap.h>
 #include <warthog/search/expansion_policy.h>

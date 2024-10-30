@@ -54,7 +54,7 @@ private:
 	warthog::domain::gridmap* map_;
 	offline_jump_point_locator2* jpl_;
 	std::vector<double> costs_;
-	std::vector<uint32_t> jp_ids_;
+	vec_jps_id jp_ids_;
 };
 
 }

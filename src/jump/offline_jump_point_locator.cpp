@@ -1,4 +1,3 @@
-#define __STDC_FORMAT_MACROS
 #include <jps/jump/offline_jump_point_locator.h>
 #include <jps/jump/online_jump_point_locator.h>
 #include <warthog/domain/gridmap.h>

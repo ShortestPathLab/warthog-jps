@@ -1,5 +1,5 @@
-#ifndef WARTHOG_FOUR_CONNECTED_JPS_LOCATOR_H
-#define WARTHOG_FOUR_CONNECTED_JPS_LOCATOR_H
+#ifndef JPS_JUMP_FOUR_CONNECTED_JPS_LOCATOR_H
+#define JPS_JUMP_FOUR_CONNECTED_JPS_LOCATOR_H
 
 // jps/four_connected_jps_locator.h
 //
@@ -12,10 +12,9 @@
 // @created: 2019-11-13
 //
 
-#include "gridmap.h"
-#include "jps.h"
+#include <jps/forward.h>
 
-namespace warthog
+namespace jps::jump
 {
 
 class four_connected_jps_locator
@@ -26,8 +25,8 @@ public:
 
 	void
 	jump(
-	    warthog::jps::direction d, uint32_t node_id, uint32_t goalid,
-	    uint32_t& jumpnode_id, double& jumpcost);
+	    direction d, uint32_t node_id, uint32_t goalid, uint32_t& jumpnode_id,
+	    double& jumpcost);
 
 	size_t
 	mem()
@@ -57,19 +56,19 @@ public:
 	// use when jumping. they allow switching between
 	// map_ and rmap_ (a rotated counterpart).
 	void
-	__jump_east(
+	jump_east_(
 	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
 	    double& jumpcost, warthog::gridmap* mymap);
 	void
-	__jump_west(
+	jump_west_(
 	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
 	    double& jumpcost, warthog::gridmap* mymap);
 	void
-	__jump_north(
+	jump_north_(
 	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
 	    double& jumpcost, warthog::gridmap* mymap);
 	void
-	__jump_south(
+	jump_south_(
 	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
 	    double& jumpcost, warthog::gridmap* mymap);
 
@@ -77,6 +76,6 @@ public:
 	// uint32_t jumplimit_;
 };
 
-} // namespace warthog
+} // namespace jps::jump
 
-#endif
+#endif // JPS_JUMP_FOUR_CONNECTED_JPS_LOCATOR_H

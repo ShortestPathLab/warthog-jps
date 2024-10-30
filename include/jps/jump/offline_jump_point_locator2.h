@@ -13,8 +13,8 @@
 // @created: 05/05/2013
 //
 
-#include <jps/search/jps.h>
-#include <warthog/domain/gridmap.h>
+#include <jps/forward.h>
+#include <vector>
 
 namespace jps::jump
 {
@@ -27,8 +27,8 @@ public:
 
 	void
 	jump(
-	    direction d, uint32_t node_id, uint32_t goalid,
-	    std::vector<uint32_t>& neighbours, std::vector<double>& costs);
+	    search::direction d, uint32_t node_id, uint32_t goalid,
+	    search::vec_jps_id& neighbours, std::vector<double>& costs);
 
 	uint32_t
 	mem()
@@ -48,36 +48,36 @@ private:
 
 	void
 	jump_northwest(
-	    uint32_t node_id, uint32_t goal_id, std::vector<uint32_t>& neighbours,
+	    uint32_t node_id, uint32_t goal_id, search::vec_jps_id& neighbours,
 	    std::vector<double>& costs);
 	void
 	jump_northeast(
-	    uint32_t node_id, uint32_t goal_id, std::vector<uint32_t>& neighbours,
+	    uint32_t node_id, uint32_t goal_id, search::vec_jps_id& neighbours,
 	    std::vector<double>& costs);
 	void
 	jump_southwest(
-	    uint32_t node_id, uint32_t goal_id, std::vector<uint32_t>& neighbours,
+	    uint32_t node_id, uint32_t goal_id, search::vec_jps_id& neighbours,
 	    std::vector<double>& costs);
 	void
 	jump_southeast(
-	    uint32_t node_id, uint32_t goal_id, std::vector<uint32_t>& neighbours,
+	    uint32_t node_id, uint32_t goal_id, search::vec_jps_id& neighbours,
 	    std::vector<double>& costs);
 	void
 	jump_north(
 	    uint32_t node_id, uint32_t goal_id, double cost_to_node_id,
-	    std::vector<uint32_t>& neighbours, std::vector<double>& costs);
+	    search::vec_jps_id& neighbours, std::vector<double>& costs);
 	void
 	jump_south(
 	    uint32_t node_id, uint32_t goal_id, double cost_to_node_id,
-	    std::vector<uint32_t>& neighbours, std::vector<double>& costs);
+	    search::vec_jps_id& neighbours, std::vector<double>& costs);
 	void
 	jump_east(
 	    uint32_t node_id, uint32_t goal_id, double cost_to_node_id,
-	    std::vector<uint32_t>& neighbours, std::vector<double>& costs);
+	    search::vec_jps_id& neighbours, std::vector<double>& costs);
 	void
 	jump_west(
 	    uint32_t node_id, uint32_t goal_id, double cost_to_node_id,
-	    std::vector<uint32_t>& neighbours, std::vector<double>& costs);
+	    search::vec_jps_id& neighbours, std::vector<double>& costs);
 
 	warthog::domain::gridmap* map_;
 	uint32_t dbsize_;

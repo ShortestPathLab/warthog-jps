@@ -28,8 +28,8 @@ namespace jps::search
 // path from node @param n1_id to node @param n2_id.
 //
 // @return one of direction::{N, S, E, W}
-direction inline from_direction(
-    pad32_id n1_id_p, pad32_id n2_id_p, uint32_t map_width_p)
+inline direction
+from_direction(jps_id n1_id_p, jps_id n2_id_p, uint32_t map_width_p)
 {
 	if(uint32_t{n1_id_p} == warthog::domain::GRID_ID_MAX) { return NONE; }
 
@@ -81,9 +81,9 @@ direction inline from_direction(
 //}
 
 inline direction
-from_direction_4c(pad32_id n1_xy_id, pad32_id n2_xy_id, uint32_t mapwidth)
+from_direction_4c(jps_id n1_xy_id, jps_id n2_xy_id, uint32_t mapwidth)
 {
-	if(uint32_t{n1_xy_id} == warthog::domain::GRID_ID_MAX) { return NONE; }
+	if(n1_xy_id.is_none()) { return NONE; }
 
 	int32_t x1, y1, x2, y2;
 	warthog::util::index_to_xy(uint32_t{n1_xy_id}, mapwidth, x1, y1);
@@ -214,6 +214,6 @@ create_jump_point_graph(warthog::domain::gridmap* gm);
 warthog::domain::gridmap*
 create_corner_map(warthog::domain::gridmap* gm);
 
-}
+} // namespace jps::search
 
 #endif // JPS_SEARCH_JPS_H

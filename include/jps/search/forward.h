@@ -2,6 +2,7 @@
 #define JPS_SEARCH_FORWARD_H
 
 #include "../forward.h"
+#include <vector>
 
 namespace jps::search
 {
@@ -22,7 +23,9 @@ typedef enum
 
 // we sometimes store the id of a node in the lower 3 bytes of a word and
 // use the upper byte to store something else (e.g. the parent direction)
-constexpr uint32_t JPS_ID_MASK = (1 << 24) - 1;
+// constexpr uint32_t JPS_ID_MASK = (1 << 24) - 1;
+
+using vec_jps_id = std::vector<jps_id>;
 
 } // namespace jps::search
 
