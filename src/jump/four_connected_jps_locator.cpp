@@ -4,36 +4,38 @@
 #include <cassert>
 #include <climits>
 
-warthog::four_connected_jps_locator::four_connected_jps_locator(
-    warthog::gridmap* map)
+namespace jps::jump {
+
+four_connected_jps_locator::four_connected_jps_locator(
+    warthog::domain::gridmap* map)
     : map_(map) //, jumplimit_(UINT32_MAX)
 { }
 
-warthog::four_connected_jps_locator::~four_connected_jps_locator() { }
+four_connected_jps_locator::~four_connected_jps_locator() { }
 
 // Finds a jump point successor of node (x, y) in Direction d.
 // Also given is the location of the goal node (goalx, goaly) for a particular
 // search instance. If encountered, the goal node is always returned as a
 // jump point successor.
 //
-// @return: the id of a jump point successor or warthog::INF32 if no jp exists.
+// @return: the id of a jump point successor or INF32 if no jp exists.
 void
-warthog::four_connected_jps_locator::jump(
-    warthog::jps::direction d, uint32_t node_id, uint32_t goal_id,
-    uint32_t& jumpnode_id, double& jumpcost)
+four_connected_jps_locator::jump(
+    jps::direction d, jps_id node_id, jps_id goal_id,
+    jps_id& jumpnode_id, double& jumpcost)
 {
 	switch(d)
 	{
-	case warthog::jps::NORTH:
+	case jps::NORTH:
 		jump_north(node_id, goal_id, jumpnode_id, jumpcost);
 		break;
-	case warthog::jps::SOUTH:
+	case jps::SOUTH:
 		jump_south(node_id, goal_id, jumpnode_id, jumpcost);
 		break;
-	case warthog::jps::EAST:
+	case jps::EAST:
 		jump_east(node_id, goal_id, jumpnode_id, jumpcost);
 		break;
-	case warthog::jps::WEST:
+	case jps::WEST:
 		jump_west(node_id, goal_id, jumpnode_id, jumpcost);
 		break;
 	default:
@@ -42,8 +44,8 @@ warthog::four_connected_jps_locator::jump(
 }
 
 void
-warthog::four_connected_jps_locator::jump_north(
-    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+four_connected_jps_locator::jump_north(
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
     double& jumpcost)
 {
 	uint32_t num_steps = 0;
@@ -54,7 +56,7 @@ warthog::four_connected_jps_locator::jump_north(
 	double jp_w_cost;
 	double jp_e_cost;
 
-	uint32_t next_id = node_id;
+	jps_id next_id = node_id;
 	while(true)
 	{
 		next_id -= mapw;
@@ -63,14 +65,14 @@ warthog::four_connected_jps_locator::jump_north(
 		// verify the next location is traversable
 		if(!map_->get_label(next_id))
 		{
-			next_id = warthog::INF32;
+			next_id = INF32;
 			break;
 		}
 
 		jump_east(next_id, goal_id, jp_e_id, jp_e_cost);
-		if(jp_e_id != warthog::INF32) { break; }
+		if(!jp_e_id.is_none()) { break; }
 		jump_west(next_id, goal_id, jp_w_id, jp_w_cost);
-		if(jp_w_id != warthog::INF32) { break; }
+		if(!jp_w_id.is_none()) { break; }
 	}
 
 	jumpnode_id = next_id;
@@ -78,12 +80,12 @@ warthog::four_connected_jps_locator::jump_north(
 
 	// adjust num_steps if we stopped due to a deadend
 	// (we return the distance to the last traversable tile)
-	num_steps -= (1 * (next_id == warthog::INF32));
+	num_steps -= (1 * (next_id == INF32));
 }
 
 void
-warthog::four_connected_jps_locator::jump_south(
-    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+four_connected_jps_locator::jump_south(
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
     double& jumpcost)
 {
 	uint32_t num_steps = 0;
@@ -94,7 +96,7 @@ warthog::four_connected_jps_locator::jump_south(
 	double jp_w_cost;
 	double jp_e_cost;
 
-	uint32_t next_id = node_id;
+	jps_id next_id = node_id;
 	while(true)
 	{
 		next_id += mapw;
@@ -103,26 +105,26 @@ warthog::four_connected_jps_locator::jump_south(
 		// verify the next location is traversable
 		if(!map_->get_label(next_id))
 		{
-			next_id = warthog::INF32;
+			next_id = INF32;
 			break;
 		}
 
 		jump_east(next_id, goal_id, jp_e_id, jp_e_cost);
-		if(jp_e_id != warthog::INF32) { break; }
+		if(!jp_e_id.is_none()) { break; }
 		jump_west(next_id, goal_id, jp_w_id, jp_w_cost);
-		if(jp_w_id != warthog::INF32) { break; }
+		if(!jp_w_id.is_none()) { break; }
 	}
 	jumpnode_id = next_id;
 	jumpcost = num_steps;
 
 	// adjust num_steps if we stopped due to a deadend
 	// (we return the distance to the last traversable tile)
-	num_steps -= (1 * (next_id == warthog::INF32));
+	num_steps -= (1 * (next_id == INF32));
 }
 
 void
-warthog::four_connected_jps_locator::jump_east(
-    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+four_connected_jps_locator::jump_east(
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
     double& jumpcost)
 {
 	jumpnode_id = node_id;
@@ -178,14 +180,14 @@ warthog::four_connected_jps_locator::jump_east(
 		// correct here since we just inverted neis[1] and then
 		// looked for the first set bit. need -1 to fix it.
 		num_steps -= (1 && num_steps);
-		jumpnode_id = warthog::INF32;
+		jumpnode_id = INF32;
 	}
 	jumpcost = num_steps;
 }
 
 void
-warthog::four_connected_jps_locator::jump_west(
-    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+four_connected_jps_locator::jump_west(
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
     double& jumpcost)
 {
 	bool deadend = false;
@@ -232,7 +234,9 @@ warthog::four_connected_jps_locator::jump_west(
 		// correct here since we just inverted neis[1] and then
 		// counted leading zeroes. need -1 to fix it.
 		num_steps -= (1 && num_steps);
-		jumpnode_id = warthog::INF32;
+		jumpnode_id = INF32;
 	}
 	jumpcost = num_steps;
 }
+
+} // namespace jps::jump

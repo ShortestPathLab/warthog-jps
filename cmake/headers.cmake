@@ -9,7 +9,6 @@ include/jps/jump/offline_jump_point_locator2.h
 include/jps/jump/online_jump_point_locator.h
 include/jps/jump/online_jump_point_locator2.h
 
-include/jps/search/forward.h
 include/jps/search/jps2_expansion_policy.h
 include/jps/search/jps.h
 include/jps/search/jps2plus_expansion_policy.h

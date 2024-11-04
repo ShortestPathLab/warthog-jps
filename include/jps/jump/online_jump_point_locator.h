@@ -28,8 +28,8 @@ public:
 
 	void
 	jump(
-	    search::direction d, uint32_t node_id, uint32_t goalid,
-	    uint32_t& jumpnode_id, warthog::cost_t& jumpcost);
+	    direction d, jps_id node_id, jps_id goal_id,
+	    jps_id& jumpnode_id, warthog::cost_t& jumpcost);
 
 	size_t
 	mem()
@@ -40,35 +40,35 @@ public:
 private:
 	void
 	jump_northwest(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost);
 	void
 	jump_northeast(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost);
 	void
 	jump_southwest(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost);
 	void
 	jump_southeast(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost);
 	void
 	jump_north(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost);
 	void
 	jump_south(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost);
 	void
 	jump_east(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost);
 	void
 	jump_west(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost);
 
 	// these versions can be passed a map parameter to
@@ -76,19 +76,19 @@ private:
 	// map_ and rmap_ (a rotated counterpart).
 	void
 	jump_east_(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 	void
 	jump_west_(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 	void
 	jump_north_(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 	void
 	jump_south_(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 
 	inline jps_id

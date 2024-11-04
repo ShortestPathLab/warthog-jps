@@ -15,7 +15,7 @@
 // @created: 04/09/2012
 //
 
-#include "forward.h"
+#include <jps/forward.h>
 #include <warthog/domain/gridmap.h>
 #include <warthog/util/helpers.h>
 

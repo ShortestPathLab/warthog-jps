@@ -29,8 +29,8 @@ public:
 
 	void
 	jump(
-	    search::direction d, jps_id node_id, jps_id goalid,
-	    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs);
+	    direction d, jps_id node_id, jps_id goal_id,
+	    vec_jps_id& jpoints, vec_jps_cost& costs);
 
 	size_t
 	mem()
@@ -41,28 +41,28 @@ public:
 private:
 	void
 	jump_north(
-	    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs);
+	    vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
 	jump_south(
-	    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs);
+	    vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
 	jump_east(
-	    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs);
+	    vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
 	jump_west(
-	    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs);
+	    vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
 	jump_northeast(
-	    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs);
+	    vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
 	jump_northwest(
-	    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs);
+	    vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
 	jump_southeast(
-	    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs);
+	    vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
 	jump_southwest(
-	    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs);
+	    vec_jps_id& jpoints, vec_jps_cost& costs);
 
 	// these versions can be passed a map parameter to
 	// use when jumping. they allow switching between
@@ -155,11 +155,11 @@ private:
 	// these function pointers allow us to switch between forward jumping
 	// and backward jumping (i.e. with the parent direction reversed)
 	void (online_jump_point_locator2::*jump_east_fp)(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 
 	void (online_jump_point_locator2::*jump_west_fp)(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 };
 

@@ -53,11 +53,11 @@ online_jump_point_locator2::create_rmap()
 // search instance. If encountered, the goal node is always returned as a
 // jump point successor.
 //
-// @return: the id of a jump point successor or warthog::INF if no jp exists.
+// @return: the id of a jump point successor or INF if no jp exists.
 void
 online_jump_point_locator2::jump(
-    search::direction d, jps_id node_id, jps_id goal_id,
-    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs)
+    direction d, jps_id node_id, jps_id goal_id,
+    vec_jps_id& jpoints, vec_jps_cost& costs)
 {
 	jump_east_fp = &online_jump_point_locator2::jump_east_;
 	jump_west_fp = &online_jump_point_locator2::jump_west_;
@@ -108,7 +108,7 @@ online_jump_point_locator2::jump(
 
 void
 online_jump_point_locator2::jump_north(
-    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs)
+    vec_jps_id& jpoints, vec_jps_cost& costs)
 {
 	jps_id rnode_id = current_rnode_id_;
 	jps_id rgoal_id = current_rgoal_id_;
@@ -127,27 +127,27 @@ online_jump_point_locator2::jump_north(
 }
 
 void
-online_jump_point_locator2::__jump_north(
-    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+online_jump_point_locator2::jump_north_(
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
     warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap)
 {
 	// jumping north in the original map is the same as jumping
 	// east when we use a version of the map rotated 90 degrees.
-	(this->*(__jump_east_fp))(node_id, goal_id, jumpnode_id, jumpcost, mymap);
+	(this->*(jump_east_fp))(node_id, goal_id, jumpnode_id, jumpcost, mymap);
 }
 
 void
 online_jump_point_locator2::jump_south(
-    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs)
+    vec_jps_id& jpoints, vec_jps_cost& costs)
 {
-	uint32_t rnode_id = current_rnode_id_;
-	uint32_t rgoal_id = current_rgoal_id_;
-	uint32_t jumpnode_id;
+	jps_id rnode_id = current_rnode_id_;
+	jps_id rgoal_id = current_rgoal_id_;
+	jps_id jumpnode_id;
 	warthog::cost_t jumpcost;
 
-	__jump_south(rnode_id, rgoal_id, jumpnode_id, jumpcost, rmap_);
+	jump_south_(rnode_id, rgoal_id, jumpnode_id, jumpcost, rmap_);
 
-	if(jumpnode_id != warthog::INF32)
+	if(!jumpnode_id.is_none())
 	{
 		jumpnode_id = current_node_id_ + (uint32_t)(jumpcost)*map_->width();
 		jpoints.push_back(jumpnode_id);
@@ -156,27 +156,27 @@ online_jump_point_locator2::jump_south(
 }
 
 void
-online_jump_point_locator2::__jump_south(
-    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+online_jump_point_locator2::jump_south_(
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
     warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap)
 {
 	// jumping north in the original map is the same as jumping
 	// west when we use a version of the map rotated 90 degrees.
-	(this->*(__jump_west_fp))(node_id, goal_id, jumpnode_id, jumpcost, mymap);
+	(this->*(jump_west_fp))(node_id, goal_id, jumpnode_id, jumpcost, mymap);
 }
 
 void
 online_jump_point_locator2::jump_east(
-    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs)
+    vec_jps_id& jpoints, vec_jps_cost& costs)
 {
-	uint32_t node_id = current_node_id_;
-	uint32_t goal_id = current_goal_id_;
-	uint32_t jumpnode_id;
+	jps_id node_id = current_node_id_;
+	jps_id goal_id = current_goal_id_;
+	jps_id jumpnode_id;
 	warthog::cost_t jumpcost;
 
-	(this->*(__jump_east_fp))(node_id, goal_id, jumpnode_id, jumpcost, map_);
+	(this->*(jump_east_fp))(node_id, goal_id, jumpnode_id, jumpcost, map_);
 
-	if(jumpnode_id != warthog::INF32)
+	if(!jumpnode_id.is_none())
 	{
 		jpoints.push_back(jumpnode_id);
 		costs.push_back(jumpcost);
@@ -184,8 +184,8 @@ online_jump_point_locator2::jump_east(
 }
 
 void
-online_jump_point_locator2::__jump_east(
-    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+online_jump_point_locator2::jump_east_(
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
     warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap)
 {
 	uint64_t neis[3] = {0, 0, 0};
@@ -240,7 +240,7 @@ online_jump_point_locator2::__jump_east(
 		if(deadend)
 		{
 			jumpcost = num_steps - (1 && num_steps);
-			jumpnode_id = warthog::INF32;
+			jumpnode_id = INF32;
 			return;
 		}
 
@@ -300,7 +300,7 @@ online_jump_point_locator2::__jump_east(
 		// the last traversable tile (not to the obstacle)
 		// need -1 to fix it.
 		num_steps -= (1 && num_steps);
-		jumpnode_id = warthog::INF32;
+		jumpnode_id = INF32;
 	}
 
 	// return the number of steps to reach the jump point or deadend
@@ -310,16 +310,16 @@ online_jump_point_locator2::__jump_east(
 // analogous to ::jump_east
 void
 online_jump_point_locator2::jump_west(
-    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs)
+    vec_jps_id& jpoints, vec_jps_cost& costs)
 {
-	uint32_t node_id = current_node_id_;
-	uint32_t goal_id = current_goal_id_;
-	uint32_t jumpnode_id;
+	jps_id node_id = current_node_id_;
+	jps_id goal_id = current_goal_id_;
+	jps_id jumpnode_id;
 	warthog::cost_t jumpcost;
 
-	(this->*(__jump_west_fp))(node_id, goal_id, jumpnode_id, jumpcost, map_);
+	(this->*(jump_west_fp))(node_id, goal_id, jumpnode_id, jumpcost, map_);
 
-	if(jumpnode_id != warthog::INF32)
+	if(!jumpnode_id.is_none())
 	{
 		jpoints.push_back(jumpnode_id);
 		costs.push_back(jumpcost);
@@ -327,8 +327,8 @@ online_jump_point_locator2::jump_west(
 }
 
 void
-online_jump_point_locator2::__jump_west(
-    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+online_jump_point_locator2::jump_west_(
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
     warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap)
 {
 	bool deadend = false;
@@ -386,7 +386,7 @@ online_jump_point_locator2::__jump_west(
 			// correct here since we just inverted neis[1] and then
 			// counted leading zeroes. need -1 to fix it.
 			jumpcost = num_steps - (1 && num_steps);
-			jumpnode_id = warthog::INF32;
+			jumpnode_id = INF32;
 			return;
 		}
 
@@ -446,7 +446,7 @@ online_jump_point_locator2::__jump_west(
 		// the last traversable tile (not to the obstacle)
 		// need -1 to fix it.
 		num_steps -= (1 && num_steps);
-		jumpnode_id = warthog::INF32;
+		jumpnode_id = INF32;
 	}
 
 	// return the number of steps to reach the jump point or deadend
@@ -455,17 +455,17 @@ online_jump_point_locator2::__jump_west(
 
 void
 online_jump_point_locator2::jump_northeast(
-    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs)
+    vec_jps_id& jpoints, vec_jps_cost& costs)
 {
-	uint32_t jumpnode_id, jp1_id, jp2_id;
-	warthog::cost_t jumpcost, jp1_cost, jp2_cost, cost_to_nodeid;
+	jps_id jumpnode_id, jp1_id, jp2_id;
+	warthog::cost_t jumpcost, jp1_cost, jp2_cost, warthog::cost_to_nodeid;
 	jumpnode_id = jp1_id = jp2_id = 0;
-	jumpcost = jp1_cost = jp2_cost = cost_to_nodeid = 0;
+	jumpcost = jp1_cost = jp2_cost = warthog::cost_to_nodeid = 0;
 
-	uint32_t node_id = current_node_id_;
-	uint32_t goal_id = current_goal_id_;
-	uint32_t rnode_id = current_rnode_id_;
-	uint32_t rgoal_id = current_rgoal_id_;
+	jps_id node_id = current_node_id_;
+	jps_id goal_id = current_goal_id_;
+	jps_id rnode_id = current_rnode_id_;
+	jps_id rgoal_id = current_rgoal_id_;
 
 	// first 3 bits of first 3 bytes represent a 3x3 cell of tiles
 	// from the grid. node_id at centre. Assume little endian format.
@@ -476,36 +476,36 @@ online_jump_point_locator2::jump_northeast(
 	// (validity of subsequent steps is checked by straight jump functions)
 	if((neis & 1542) != 1542) { return; }
 
-	while(node_id != warthog::INF32)
+	while(!node_id.is_none())
 	{
-		__jump_northeast(
+		jump_northeast_(
 		    node_id, rnode_id, goal_id, rgoal_id, jumpnode_id, jumpcost,
 		    jp1_id, jp1_cost, jp2_id, jp2_cost);
 
-		if(jp1_id != warthog::INF32)
+		if(!jp1_id.is_none())
 		{
 			jp1_id = node_id - (uint32_t)(jp1_cost)*map_->width();
 			jpoints.push_back(jp1_id);
-			costs.push_back(cost_to_nodeid + jumpcost + jp1_cost);
+			costs.push_back(warthog::cost_to_nodeid + jumpcost + jp1_cost);
 			if(jp2_cost == 0) { break; } // no corner cutting
 		}
 
-		if(jp2_id != warthog::INF32)
+		if(!jp2_id.is_none())
 		{
 			jpoints.push_back(jp2_id);
-			costs.push_back(cost_to_nodeid + jumpcost + jp2_cost);
+			costs.push_back(warthog::cost_to_nodeid + jumpcost + jp2_cost);
 			if(jp1_cost == 0) { break; } // no corner cutting
 		}
 		node_id = jumpnode_id;
-		cost_to_nodeid += jumpcost;
+		warthog::cost_to_nodeid += jumpcost;
 	}
 }
 
 void
-online_jump_point_locator2::__jump_northeast(
-    uint32_t& node_id, uint32_t& rnode_id, uint32_t goal_id, uint32_t rgoal_id,
-    uint32_t& jumpnode_id, warthog::cost_t& jumpcost, uint32_t& jp_id1,
-    warthog::cost_t& cost1, uint32_t& jp_id2, warthog::cost_t& cost2)
+online_jump_point_locator2::jump_northeast_(
+    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
+    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp_id1,
+    warthog::cost_t& cost1, jps_id& jp_id2, warthog::cost_t& cost2)
 {
 	uint32_t num_steps = 0;
 
@@ -520,34 +520,34 @@ online_jump_point_locator2::__jump_northeast(
 
 		// recurse straight before stepping again diagonally;
 		// (ensures we do not miss any optimal turning points)
-		__jump_north(rnode_id, rgoal_id, jp_id1, cost1, rmap_);
-		(this->*(__jump_east_fp))(node_id, goal_id, jp_id2, cost2, map_);
-		if((jp_id1 & jp_id2) != warthog::INF32) { break; }
+		jump_north_(rnode_id, rgoal_id, jp_id1, cost1, rmap_);
+		(this->*(jump_east_fp))(node_id, goal_id, jp_id2, cost2, map_);
+		if((jp_id1 & jp_id2) != INF32) { break; }
 
 		// couldn't move in a straight dir; next step is an obstacle
 		if(!((uint64_t)cost1 && (uint64_t)cost2))
 		{
-			node_id = jp_id1 = jp_id2 = warthog::INF32;
+			node_id = jp_id1 = jp_id2 = INF32;
 			break;
 		}
 	}
 	jumpnode_id = node_id;
-	jumpcost = num_steps * warthog::DBL_ROOT_TWO;
+	jumpcost = num_steps * DBL_ROOT_TWO;
 }
 
 void
 online_jump_point_locator2::jump_northwest(
-    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs)
+    vec_jps_id& jpoints, vec_jps_cost& costs)
 {
-	uint32_t jumpnode_id, jp1_id, jp2_id;
-	warthog::cost_t jumpcost, jp1_cost, jp2_cost, cost_to_nodeid;
+	jps_id jumpnode_id, jp1_id, jp2_id;
+	warthog::cost_t jumpcost, jp1_cost, jp2_cost, warthog::cost_to_nodeid;
 	jumpnode_id = jp1_id = jp2_id = 0;
-	jumpcost = jp1_cost = jp2_cost = cost_to_nodeid = 0;
+	jumpcost = jp1_cost = jp2_cost = warthog::cost_to_nodeid = 0;
 
-	uint32_t node_id = current_node_id_;
-	uint32_t goal_id = current_goal_id_;
-	uint32_t rnode_id = current_rnode_id_;
-	uint32_t rgoal_id = current_rgoal_id_;
+	jps_id node_id = current_node_id_;
+	jps_id goal_id = current_goal_id_;
+	jps_id rnode_id = current_rnode_id_;
+	jps_id rgoal_id = current_rgoal_id_;
 
 	// first 3 bits of first 3 bytes represent a 3x3 cell of tiles
 	// from the grid. node_id at centre. Assume little endian format.
@@ -558,36 +558,36 @@ online_jump_point_locator2::jump_northwest(
 	// (validity of subsequent steps is checked by straight jump functions)
 	if((neis & 771) != 771) { return; }
 
-	while(node_id != warthog::INF32)
+	while(!node_id.is_none())
 	{
-		__jump_northwest(
+		jump_northwest_(
 		    node_id, rnode_id, goal_id, rgoal_id, jumpnode_id, jumpcost,
 		    jp1_id, jp1_cost, jp2_id, jp2_cost);
 
-		if(jp1_id != warthog::INF32)
+		if(!jp1_id.is_none())
 		{
 			jp1_id = node_id - (uint32_t)(jp1_cost)*map_->width();
 			jpoints.push_back(jp1_id);
-			costs.push_back(cost_to_nodeid + jumpcost + jp1_cost);
+			costs.push_back(warthog::cost_to_nodeid + jumpcost + jp1_cost);
 			if(jp2_cost == 0) { break; } // no corner cutting
 		}
 
-		if(jp2_id != warthog::INF32)
+		if(!jp2_id.is_none())
 		{
 			jpoints.push_back(jp2_id);
-			costs.push_back(cost_to_nodeid + jumpcost + jp2_cost);
+			costs.push_back(warthog::cost_to_nodeid + jumpcost + jp2_cost);
 			if(jp1_cost == 0) { break; } // no corner cutting
 		}
 		node_id = jumpnode_id;
-		cost_to_nodeid += jumpcost;
+		warthog::cost_to_nodeid += jumpcost;
 	}
 }
 
 void
-online_jump_point_locator2::__jump_northwest(
-    uint32_t& node_id, uint32_t& rnode_id, uint32_t goal_id, uint32_t rgoal_id,
-    uint32_t& jumpnode_id, warthog::cost_t& jumpcost, uint32_t& jp_id1,
-    warthog::cost_t& cost1, uint32_t& jp_id2, warthog::cost_t& cost2)
+online_jump_point_locator2::jump_northwest_(
+    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
+    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp_id1,
+    warthog::cost_t& cost1, jps_id& jp_id2, warthog::cost_t& cost2)
 
 {
 	uint32_t num_steps = 0;
@@ -603,34 +603,34 @@ online_jump_point_locator2::__jump_northwest(
 
 		// recurse straight before stepping again diagonally;
 		// (ensures we do not miss any optimal turning points)
-		__jump_north(rnode_id, rgoal_id, jp_id1, cost1, rmap_);
-		(this->*(__jump_west_fp))(node_id, goal_id, jp_id2, cost2, map_);
-		if((jp_id1 & jp_id2) != warthog::INF32) { break; }
+		jump_north_(rnode_id, rgoal_id, jp_id1, cost1, rmap_);
+		(this->*(jump_west_fp))(node_id, goal_id, jp_id2, cost2, map_);
+		if((jp_id1 & jp_id2) != INF32) { break; }
 
 		// couldn't move in a straight dir; next step is an obstacle
 		if(!((uint64_t)cost1 && (uint64_t)cost2))
 		{
-			node_id = jp_id1 = jp_id2 = warthog::INF32;
+			node_id = jp_id1 = jp_id2 = INF32;
 			break;
 		}
 	}
 	jumpnode_id = node_id;
-	jumpcost = num_steps * warthog::DBL_ROOT_TWO;
+	jumpcost = num_steps * DBL_ROOT_TWO;
 }
 
 void
 online_jump_point_locator2::jump_southeast(
-    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs)
+    vec_jps_id& jpoints, vec_jps_cost& costs)
 {
-	uint32_t jumpnode_id, jp1_id, jp2_id;
-	warthog::cost_t jumpcost, jp1_cost, jp2_cost, cost_to_nodeid;
+	jps_id jumpnode_id, jp1_id, jp2_id;
+	warthog::cost_t jumpcost, jp1_cost, jp2_cost, warthog::cost_to_nodeid;
 	jumpnode_id = jp1_id = jp2_id = 0;
-	jumpcost = jp1_cost = jp2_cost = cost_to_nodeid = 0;
+	jumpcost = jp1_cost = jp2_cost = warthog::cost_to_nodeid = 0;
 
-	uint32_t node_id = current_node_id_;
-	uint32_t goal_id = current_goal_id_;
-	uint32_t rnode_id = current_rnode_id_;
-	uint32_t rgoal_id = current_rgoal_id_;
+	jps_id node_id = current_node_id_;
+	jps_id goal_id = current_goal_id_;
+	jps_id rnode_id = current_rnode_id_;
+	jps_id rgoal_id = current_rgoal_id_;
 
 	// first 3 bits of first 3 bytes represent a 3x3 cell of tiles
 	// from the grid. next_id at centre. Assume little endian format.
@@ -641,36 +641,36 @@ online_jump_point_locator2::jump_southeast(
 	// (validity of subsequent steps is checked by straight jump functions)
 	if((neis & 394752) != 394752) { return; }
 
-	while(node_id != warthog::INF32)
+	while(!node_id.is_none())
 	{
-		__jump_southeast(
+		jump_southeast_(
 		    node_id, rnode_id, goal_id, rgoal_id, jumpnode_id, jumpcost,
 		    jp1_id, jp1_cost, jp2_id, jp2_cost);
 
-		if(jp1_id != warthog::INF32)
+		if(!jp1_id.is_none())
 		{
 			jp1_id = node_id + (uint32_t)(jp1_cost)*map_->width();
 			jpoints.push_back(jp1_id);
-			costs.push_back(cost_to_nodeid + jumpcost + jp1_cost);
+			costs.push_back(warthog::cost_to_nodeid + jumpcost + jp1_cost);
 			if(jp2_cost == 0) { break; } // no corner cutting
 		}
 
-		if(jp2_id != warthog::INF32)
+		if(!jp2_id.is_none())
 		{
 			jpoints.push_back(jp2_id);
-			costs.push_back(cost_to_nodeid + jumpcost + jp2_cost);
+			costs.push_back(warthog::cost_to_nodeid + jumpcost + jp2_cost);
 			if(jp1_cost == 0) { break; } // no corner cutting
 		}
 		node_id = jumpnode_id;
-		cost_to_nodeid += jumpcost;
+		warthog::cost_to_nodeid += jumpcost;
 	}
 }
 
 void
-online_jump_point_locator2::__jump_southeast(
-    uint32_t& node_id, uint32_t& rnode_id, uint32_t goal_id, uint32_t rgoal_id,
-    uint32_t& jumpnode_id, warthog::cost_t& jumpcost, uint32_t& jp_id1,
-    warthog::cost_t& cost1, uint32_t& jp_id2, warthog::cost_t& cost2)
+online_jump_point_locator2::jump_southeast_(
+    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
+    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp_id1,
+    warthog::cost_t& cost1, jps_id& jp_id2, warthog::cost_t& cost2)
 
 {
 	uint32_t num_steps = 0;
@@ -686,34 +686,34 @@ online_jump_point_locator2::__jump_southeast(
 
 		// recurse straight before stepping again diagonally;
 		// (ensures we do not miss any optimal turning points)
-		__jump_south(rnode_id, rgoal_id, jp_id1, cost1, rmap_);
-		(this->*(__jump_east_fp))(node_id, goal_id, jp_id2, cost2, map_);
-		if((jp_id1 & jp_id2) != warthog::INF32) { break; }
+		jump_south_(rnode_id, rgoal_id, jp_id1, cost1, rmap_);
+		(this->*(jump_east_fp))(node_id, goal_id, jp_id2, cost2, map_);
+		if((jp_id1 & jp_id2) != INF32) { break; }
 
 		// couldn't move in a straight dir; next step is an obstacle
 		if(!((uint64_t)cost1 && (uint64_t)cost2))
 		{
-			node_id = jp_id1 = jp_id2 = warthog::INF32;
+			node_id = jp_id1 = jp_id2 = INF32;
 			break;
 		}
 	}
 	jumpnode_id = node_id;
-	jumpcost = num_steps * warthog::DBL_ROOT_TWO;
+	jumpcost = num_steps * DBL_ROOT_TWO;
 }
 
 void
 online_jump_point_locator2::jump_southwest(
-    search::vec_jps_id& jpoints, std::vector<warthog::cost_t>& costs)
+    vec_jps_id& jpoints, vec_jps_cost& costs)
 {
-	uint32_t jumpnode_id, jp1_id, jp2_id;
-	warthog::cost_t jumpcost, jp1_cost, jp2_cost, cost_to_nodeid;
+	jps_id jumpnode_id, jp1_id, jp2_id;
+	warthog::cost_t jumpcost, jp1_cost, jp2_cost, warthog::cost_to_nodeid;
 	jumpnode_id = jp1_id = jp2_id = 0;
-	jumpcost = jp1_cost = jp2_cost = cost_to_nodeid = 0;
+	jumpcost = jp1_cost = jp2_cost = warthog::cost_to_nodeid = 0;
 
-	uint32_t node_id = current_node_id_;
-	uint32_t goal_id = current_goal_id_;
-	uint32_t rnode_id = current_rnode_id_;
-	uint32_t rgoal_id = current_rgoal_id_;
+	jps_id node_id = current_node_id_;
+	jps_id goal_id = current_goal_id_;
+	jps_id rnode_id = current_rnode_id_;
+	jps_id rgoal_id = current_rgoal_id_;
 
 	// first 3 bits of first 3 bytes represent a 3x3 cell of tiles
 	// from the grid. next_id at centre. Assume little endian format.
@@ -723,36 +723,36 @@ online_jump_point_locator2::jump_southwest(
 	// early termination (first step is invalid)
 	if((neis & 197376) != 197376) { return; }
 
-	while(node_id != warthog::INF32)
+	while(!node_id.is_none())
 	{
-		__jump_southwest(
+		jump_southwest_(
 		    node_id, rnode_id, goal_id, rgoal_id, jumpnode_id, jumpcost,
 		    jp1_id, jp1_cost, jp2_id, jp2_cost);
 
-		if(jp1_id != warthog::INF32)
+		if(!jp1_id.is_none())
 		{
 			jp1_id = node_id + (uint32_t)(jp1_cost)*map_->width();
 			jpoints.push_back(jp1_id);
-			costs.push_back(cost_to_nodeid + jumpcost + jp1_cost);
+			costs.push_back(warthog::cost_to_nodeid + jumpcost + jp1_cost);
 			if(jp2_cost == 0) { break; }
 		}
 
-		if(jp2_id != warthog::INF32)
+		if(!jp2_id.is_none())
 		{
 			jpoints.push_back(jp2_id);
-			costs.push_back(cost_to_nodeid + jumpcost + jp2_cost);
+			costs.push_back(warthog::cost_to_nodeid + jumpcost + jp2_cost);
 			if(jp1_cost == 0) { break; }
 		}
 		node_id = jumpnode_id;
-		cost_to_nodeid += jumpcost;
+		warthog::cost_to_nodeid += jumpcost;
 	}
 }
 
 void
-online_jump_point_locator2::__jump_southwest(
-    uint32_t& node_id, uint32_t& rnode_id, uint32_t goal_id, uint32_t rgoal_id,
-    uint32_t& jumpnode_id, warthog::cost_t& jumpcost, uint32_t& jp_id1,
-    warthog::cost_t& cost1, uint32_t& jp_id2, warthog::cost_t& cost2)
+online_jump_point_locator2::jump_southwest_(
+    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
+    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp_id1,
+    warthog::cost_t& cost1, jps_id& jp_id2, warthog::cost_t& cost2)
 {
 	// jump a single step (no corner cutting)
 	uint32_t num_steps = 0;
@@ -766,19 +766,19 @@ online_jump_point_locator2::__jump_southwest(
 
 		// recurse straight before stepping again diagonally;
 		// (ensures we do not miss any optimal turning points)
-		__jump_south(rnode_id, rgoal_id, jp_id1, cost1, rmap_);
-		(this->*(__jump_west_fp))(node_id, goal_id, jp_id2, cost2, map_);
-		if((jp_id1 & jp_id2) != warthog::INF32) { break; }
+		jump_south_(rnode_id, rgoal_id, jp_id1, cost1, rmap_);
+		(this->*(jump_west_fp))(node_id, goal_id, jp_id2, cost2, map_);
+		if((jp_id1 & jp_id2) != INF32) { break; }
 
 		// couldn't move in a straight dir; next step is an obstacle
 		if(!((uint64_t)cost1 && (uint64_t)cost2))
 		{
-			node_id = jp_id1 = jp_id2 = warthog::INF32;
+			node_id = jp_id1 = jp_id2 = INF32;
 			break;
 		}
 	}
 	jumpnode_id = node_id;
-	jumpcost = num_steps * warthog::DBL_ROOT_TWO;
+	jumpcost = num_steps * DBL_ROOT_TWO;
 }
 
 } // namespace jps::jump
