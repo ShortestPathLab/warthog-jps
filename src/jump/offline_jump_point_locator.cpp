@@ -3,8 +3,8 @@
 #include <warthog/domain/gridmap.h>
 
 #include <cstring>
-#include <inttypes.h>
-#include <stdio.h>
+#include <cinttypes>
+#include <cstdio>
 
 namespace jps::jump {
 
@@ -35,7 +35,7 @@ offline_jump_point_locator::preproc()
 	{
 		for(uint32_t x = 0; x < map_->header_width(); x++)
 		{
-			jps_id mapid = map_->to_padded_id(x, y);
+			jps_id mapid = jps_id{map_->to_padded_id(x, y)};
 			//			std::cout << mapid << " ";
 			for(uint32_t i = 0; i < 8; i++)
 			{
@@ -177,7 +177,7 @@ offline_jump_point_locator::jump_northwest(
 
 	// goal test (so many div ops! and branches! how ugly!)
 	uint32_t id_delta = (mapw + 1) * num_steps;
-	if((node_id.id - goal_id.id)
+	if(node_id.id - goal_id.id
 	   < map_->padded_mapsize()) // heading toward the goal?
 	{
 		uint32_t gx, gy, nx, ny;

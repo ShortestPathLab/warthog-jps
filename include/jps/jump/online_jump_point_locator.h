@@ -101,7 +101,7 @@ private:
 		map_->to_unpadded_xy(mapid, x, y);
 		ry = x;
 		rx = map_->header_height() - y - 1;
-		return rmap_->to_padded_id(rx, ry);
+		return jps_id(rmap_->to_padded_id(rx, ry));
 	}
 
 	inline jps_id

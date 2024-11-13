@@ -51,21 +51,21 @@ four_connected_jps_locator::jump_north(
 	uint32_t num_steps = 0;
 	uint32_t mapw = map_->width();
 
-	uint32_t jp_w_id;
-	uint32_t jp_e_id;
+	jps_id jp_w_id;
+	jps_id jp_e_id;
 	double jp_w_cost;
 	double jp_e_cost;
 
 	jps_id next_id = node_id;
 	while(true)
 	{
-		next_id -= mapw;
+		next_id.id -= mapw;
 		num_steps++;
 
 		// verify the next location is traversable
 		if(!map_->get_label(next_id))
 		{
-			next_id = INF32;
+			next_id = jps_id::none();
 			break;
 		}
 
@@ -80,7 +80,7 @@ four_connected_jps_locator::jump_north(
 
 	// adjust num_steps if we stopped due to a deadend
 	// (we return the distance to the last traversable tile)
-	num_steps -= (1 * (next_id == INF32));
+	num_steps = !next_id.is_none() ? num_steps : num_steps-1;
 }
 
 void
@@ -91,21 +91,21 @@ four_connected_jps_locator::jump_south(
 	uint32_t num_steps = 0;
 	uint32_t mapw = map_->width();
 
-	uint32_t jp_w_id;
-	uint32_t jp_e_id;
+	jps_id jp_w_id;
+	jps_id jp_e_id;
 	double jp_w_cost;
 	double jp_e_cost;
 
 	jps_id next_id = node_id;
 	while(true)
 	{
-		next_id += mapw;
+		next_id.id += mapw;
 		num_steps++;
 
 		// verify the next location is traversable
 		if(!map_->get_label(next_id))
 		{
-			next_id = INF32;
+			next_id = jps_id::none();
 			break;
 		}
 
@@ -119,7 +119,7 @@ four_connected_jps_locator::jump_south(
 
 	// adjust num_steps if we stopped due to a deadend
 	// (we return the distance to the last traversable tile)
-	num_steps -= (1 * (next_id == INF32));
+	num_steps = !next_id.is_none() ? num_steps : num_steps-1;
 }
 
 void
@@ -153,7 +153,7 @@ four_connected_jps_locator::jump_east(
 		if(stop_bits)
 		{
 			int32_t stop_pos = __builtin_ffs(stop_bits) - 1; // returns idx+1
-			jumpnode_id += (uint32_t)stop_pos;
+			jumpnode_id.id += uint32_t{stop_pos};
 			deadend = deadend_bits & (1 << stop_pos);
 			break;
 		}
@@ -162,11 +162,11 @@ four_connected_jps_locator::jump_east(
 		// in case the last tile from the row above or below is an obstacle.
 		// Such a tile, followed by a non-obstacle tile, would yield a forced
 		// neighbour that we don't want to miss.
-		jumpnode_id += 31;
+		jumpnode_id.id += 31;
 	}
 
-	uint32_t num_steps = jumpnode_id - node_id;
-	uint32_t goal_dist = goal_id - node_id;
+	uint32_t num_steps = uint32_t{jumpnode_id} - uint32_t{node_id};
+	uint32_t goal_dist = uint32_t{goal_id} - uint32_t{node_id};
 	if(num_steps > goal_dist)
 	{
 		jumpnode_id = goal_id;
@@ -180,7 +180,7 @@ four_connected_jps_locator::jump_east(
 		// correct here since we just inverted neis[1] and then
 		// looked for the first set bit. need -1 to fix it.
 		num_steps -= (1 && num_steps);
-		jumpnode_id = INF32;
+		jumpnode_id = jps_id::none();
 	}
 	jumpcost = num_steps;
 }
@@ -210,17 +210,17 @@ four_connected_jps_locator::jump_west(
 		if(stop_bits)
 		{
 			uint32_t stop_pos = (uint32_t)__builtin_clz(stop_bits);
-			jumpnode_id -= stop_pos;
+			jumpnode_id.id -= stop_pos;
 			deadend = deadend_bits & (0x80000000 >> stop_pos);
 			break;
 		}
 		// jump to the end of cache. jumping +32 involves checking
 		// for forced neis between adjacent sets of contiguous tiles
-		jumpnode_id -= 31;
+		jumpnode_id.id -= 31;
 	}
 
-	uint32_t num_steps = node_id - jumpnode_id;
-	uint32_t goal_dist = node_id - goal_id;
+	uint32_t num_steps = uint32_t{node_id} - uint32_t{jumpnode_id};
+	uint32_t goal_dist = uint32_t{node_id} - uint32_t{goal_id};
 	if(num_steps > goal_dist)
 	{
 		jumpnode_id = goal_id;
@@ -234,7 +234,7 @@ four_connected_jps_locator::jump_west(
 		// correct here since we just inverted neis[1] and then
 		// counted leading zeroes. need -1 to fix it.
 		num_steps -= (1 && num_steps);
-		jumpnode_id = INF32;
+		jumpnode_id = jps_id::none();
 	}
 	jumpcost = num_steps;
 }
