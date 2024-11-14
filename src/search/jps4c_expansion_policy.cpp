@@ -4,9 +4,8 @@ namespace jps::search {
 
 jps4c_expansion_policy::jps4c_expansion_policy(
     warthog::domain::gridmap* map)
-    : expansion_policy(map->height() * map->width())
+    : gridmap_expansion_policy_base(map)
 {
-	map_ = map;
 	jpl_ = new jump::four_connected_jps_locator(map);
 	reset();
 }
@@ -57,22 +56,6 @@ jps4c_expansion_policy::expand(
 			}
 		}
 	}
-}
-
-// uint32_t
-// jps4c_expansion_policy::get_state(warthog::sn_id_t node_id)
-// {
-// 	return map_->to_unpadded_id(node_id);
-// }
-
-void
-jps4c_expansion_policy::print_node(
-    warthog::search::search_node* n, std::ostream& out)
-{
-	uint32_t x, y;
-	map_->to_unpadded_xy(n->get_id(), x, y);
-	out << "(" << x << ", " << y << ")...";
-	n->print(out);
 }
 
 warthog::search::search_node*

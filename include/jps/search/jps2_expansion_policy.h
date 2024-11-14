@@ -14,7 +14,7 @@
 #include "jps.h"
 #include <jps/jump/online_jump_point_locator2.h>
 #include <warthog/domain/gridmap.h>
-#include <warthog/search/expansion_policy.h>
+#include <warthog/search/gridmap_expansion_policy.h>
 #include <warthog/search/problem_instance.h>
 #include <warthog/search/search_node.h>
 #include <warthog/util/helpers.h>
@@ -22,7 +22,7 @@
 namespace jps::search
 {
 
-class jps2_expansion_policy : public warthog::search::expansion_policy
+class jps2_expansion_policy : public warthog::search::gridmap_expansion_policy_base
 {
 public:
 	jps2_expansion_policy(warthog::domain::gridmap* map);
@@ -39,14 +39,6 @@ public:
 		    + jpl_->mem();
 	}
 
-	pack_id
-	get_state(pad_id node_id) override;
-	pad_id
-	unget_state(pack_id node_id) override;
-
-	void
-	print_node(warthog::search::search_node* n, std::ostream& out);
-
 	warthog::search::search_node*
 	generate_start_node(warthog::search::search_problem_instance* pi) override;
 
@@ -61,7 +53,6 @@ public:
 	// update_parent_direction(warthog::search::search_node* n);
 
 private:
-	warthog::domain::gridmap* map_;
 	jump::online_jump_point_locator2* jpl_;
 	vec_jps_id jp_ids_;
 	vec_jps_cost jp_costs_;
