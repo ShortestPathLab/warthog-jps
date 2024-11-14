@@ -9,17 +9,19 @@
 
 #include <warthog/constants.h>
 #include <warthog/domain/gridmap.h>
-#include <warthog/domain/labelled_gridmap.h>
+#include <warthog/search/search.h>
 #include <warthog/heuristic/manhattan_heuristic.h>
 #include <warthog/heuristic/octile_heuristic.h>
 #include <warthog/heuristic/zero_heuristic.h>
-#include <warthog/search/gridmap_expansion_policy.h>
-#include <warthog/search/search.h>
-#include <warthog/search/unidirectional_search.h>
-#include <warthog/search/vl_gridmap_expansion_policy.h>
 #include <warthog/util/pqueue.h>
 #include <warthog/util/scenario_manager.h>
 #include <warthog/util/timer.h>
+#include <jps/search/jps.h>
+#include <jps/search/jps_expansion_policy.h>
+#include <jps/search/jpsplus_expansion_policy.h>
+#include <jps/search/jps2_expansion_policy.h>
+#include <jps/search/jps2plus_expansion_policy.h>
+#include <jps/search/jps4c_expansion_policy.h>
 
 
 #include "cfg.h"
@@ -49,16 +51,16 @@ int verbose = 0;
 int print_help = 0;
 
 void
-help()
+help(std::ostream& out)
 {
-	std::cerr << "warthog version " << WARTHOG_VERSION << "\n";
-	std::cerr << "==> manual <==\n"
+	out << "warthog version " << WARTHOG_VERSION << "\n";
+	out << "==> manual <==\n"
 	          << "This program solves/generates grid-based pathfinding "
 	             "problems using the\n"
 	          << "map/scenario format from the 2014 Grid-based Path Planning "
 	             "Competition\n\n";
 
-	std::cerr << "The following are valid parameters for SOLVING instances:\n"
+	out << "The following are valid parameters for SOLVING instances:\n"
 	          << "\t--alg [alg] (required)\n"
 	          << "\t--scen [scen file] (required) \n"
 	          << "\t--map [map file] (optional; specify this to override map "
@@ -130,7 +132,7 @@ run_experiments(
 		    exp->starty() * exp->mapwidth() + exp->startx()};
 		warthog::pack_id goalid{exp->goaly() * exp->mapwidth() + exp->goalx()};
 		warthog::search::problem_instance pi(startid, goalid, verbose);
-        warthog::search::search_parameters par;
+		warthog::search::search_parameters par;
 		warthog::search::solution sol;
 
 		algo.get_path(&pi, &par, &sol);
@@ -139,21 +141,22 @@ run_experiments(
 		    << "\t" << sol.met_.nodes_generated_ << "\t"
 		    << sol.met_.nodes_reopen_ << "\t" << sol.met_.nodes_surplus_
 		    << "\t" << sol.met_.heap_ops_ << "\t"
-		    << sol.met_.time_elapsed_nano_ << "\t" << (sol.path_.size() - 1)
-		    << "\t" << sol.sum_of_edge_costs_ << "\t" << exp->distance()
-		    << "\t" << scenmgr.last_file_loaded() << std::endl;
+		    << sol.met_.time_elapsed_nano_.count() << "\t"
+		    << (sol.path_.size() - 1) << "\t" << sol.sum_of_edge_costs_ << "\t"
+		    << exp->distance() << "\t" << scenmgr.last_file_loaded()
+		    << std::endl;
 
 		if(checkopt) { check_optimality(sol, exp); }
 	}
 }
 
 void
-run_astar(
+run_jps(
     warthog::util::scenario_manager& scenmgr, std::string mapname,
     std::string alg_name)
 {
 	warthog::domain::gridmap map(mapname.c_str());
-	warthog::search::gridmap_expansion_policy expander(&map);
+	jps::search::jps_expansion_policy expander(&map);
 	warthog::heuristic::octile_heuristic heuristic(map.width(), map.height());
 	warthog::util::pqueue_min open;
 
@@ -244,7 +247,7 @@ main(int argc, char** argv)
 
 	if(argc == 1 || print_help)
 	{
-		help();
+		help(std::cout);
 		exit(0);
 	}
 
@@ -266,7 +269,7 @@ main(int argc, char** argv)
 	// running experiments
 	if(alg == "" || sfile == "")
 	{
-		help();
+		help(std::cout);
 		exit(0);
 	}
 
@@ -297,7 +300,7 @@ main(int argc, char** argv)
 				if(!std::filesystem::exists(std::filesystem::path(mapfile)))
 				{
 					std::cerr << "could not locate a corresponding map file\n";
-					help();
+					help(std::cout);
 					exit(0);
 				}
 			}
