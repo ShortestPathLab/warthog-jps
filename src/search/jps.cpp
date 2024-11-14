@@ -255,17 +255,17 @@ create_corner_map(warthog::domain::gridmap* gm)
 	{
 		for(uint32_t x = 0; x < mapwidth; x++)
 		{
-			uint32_t from_id = uint32_t{gm->to_padded_id(x, y)};
+			jps_id from_id = jps_id(gm->to_padded_id(x, y));
 			if(!gm->get_label(from_id)) { continue; }
 
-			uint32_t w_id = from_id - 1;
-			uint32_t e_id = from_id + 1;
-			uint32_t s_id = from_id + gmwidth;
-			uint32_t n_id = from_id - gmwidth;
-			uint32_t nw_id = (from_id - gmwidth) - 1;
-			uint32_t ne_id = (from_id - gmwidth) + 1;
-			uint32_t sw_id = (from_id + gmwidth) - 1;
-			uint32_t se_id = (from_id + gmwidth) + 1;
+			jps_id w_id = jps_id(from_id.id - 1);
+			jps_id e_id = jps_id(from_id.id + 1);
+			jps_id s_id = jps_id(from_id.id + gmwidth);
+			jps_id n_id = jps_id(from_id.id - gmwidth);
+			jps_id nw_id = jps_id((from_id.id - gmwidth) - 1);
+			jps_id ne_id = jps_id((from_id.id - gmwidth) + 1);
+			jps_id sw_id = jps_id((from_id.id + gmwidth) - 1);
+			jps_id se_id = jps_id((from_id.id + gmwidth) + 1);
 
 			// detect all corner turning points (== jump points)
 			// and add them to the jump point graph

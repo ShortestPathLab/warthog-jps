@@ -29,7 +29,7 @@ public:
 	virtual ~jps2_expansion_policy();
 
 	void
-	expand(warthog::search::search_node*, warthog::search::problem_instance*)
+	expand(warthog::search::search_node*, warthog::search::search_problem_instance*)
 	    override;
 
 	size_t
@@ -39,17 +39,19 @@ public:
 		    + jpl_->mem();
 	}
 
-	uint32_t
-	get_state(warthog::sn_id_t node_id);
+	pack_id
+	get_state(pad_id node_id) override;
+	pad_id
+	unget_state(pack_id node_id) override;
 
 	void
 	print_node(warthog::search::search_node* n, std::ostream& out);
 
 	warthog::search::search_node*
-	generate_start_node(warthog::search::problem_instance* pi) override;
+	generate_start_node(warthog::search::search_problem_instance* pi) override;
 
 	warthog::search::search_node*
-	generate_target_node(warthog::search::problem_instance* pi) override;
+	generate_target_node(warthog::search::search_problem_instance* pi) override;
 
 	// this function gets called whenever a successor node is relaxed. at that
 	// point we set the node currently being expanded (==current) as the
@@ -60,9 +62,9 @@ public:
 
 private:
 	warthog::domain::gridmap* map_;
-	warthog::jps::online_jump_point_locator2* jpl_;
+	jump::online_jump_point_locator2* jpl_;
 	vec_jps_id jp_ids_;
-	std::vector<warthog::cost_t> jp_costs_;
+	vec_jps_cost jp_costs_;
 };
 
 }

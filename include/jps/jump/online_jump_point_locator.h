@@ -114,7 +114,7 @@ private:
 		rmap_->to_unpadded_xy(rmapid, rx, ry);
 		x = ry;
 		y = rmap_->header_width() - rx - 1;
-		return map_->to_padded_id(x, y);
+		return jps_id(map_->to_padded_id(x, y));
 	}
 
 	warthog::domain::gridmap*

@@ -28,32 +28,34 @@ public:
 	jps2plus_expansion_policy(warthog::domain::gridmap* map);
 	virtual ~jps2plus_expansion_policy();
 
-	virtual void
-	expand(warthog::search::search_node*, warthog::search::problem_instance*);
+	void
+	expand(warthog::search::search_node*, warthog::search::search_problem_instance*) override;
 
-	virtual size_t
-	mem()
+	size_t
+	mem() override
 	{
 		return expansion_policy::mem() + sizeof(*this) + map_->mem()
 		    + jpl_->mem();
 	}
 
-	uint32_t
-	get_state(warthog::sn_id_t node_id);
+	pack_id
+	get_state(pad_id node_id) override;
+	pad_id
+	unget_state(pack_id node_id) override;
 
 	void
 	print_node(warthog::search::search_node* n, std::ostream& out);
 
-	virtual warthog::search::search_node*
-	generate_start_node(warthog::search::problem_instance* pi);
+	warthog::search::search_node*
+	generate_start_node(warthog::search::search_problem_instance* pi) override;
 
-	virtual warthog::search::search_node*
-	generate_target_node(warthog::search::problem_instance* pi);
+	warthog::search::search_node*
+	generate_target_node(warthog::search::search_problem_instance* pi) override;
 
 private:
 	warthog::domain::gridmap* map_;
-	offline_jump_point_locator2* jpl_;
-	std::vector<double> costs_;
+	jump::offline_jump_point_locator2* jpl_;
+	vec_jps_cost costs_;
 	vec_jps_id jp_ids_;
 };
 

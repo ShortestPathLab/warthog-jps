@@ -91,25 +91,25 @@ private:
 	jump_northeast_(
 	    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
 	    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp1_id,
-	    warthog::cost_t& jp1_cost, uint32_t& jp2_id,
+	    warthog::cost_t& jp1_cost, jps_id& jp2_id,
 	    warthog::cost_t& jp2_cost);
 	void
 	jump_northwest_(
 	    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
 	    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp1_id,
-	    warthog::cost_t& jp1_cost, uint32_t& jp2_id,
+	    warthog::cost_t& jp1_cost, jps_id& jp2_id,
 	    warthog::cost_t& jp2_cost);
 	void
 	jump_southeast_(
 	    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
 	    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp1_id,
-	    warthog::cost_t& jp1_cost, uint32_t& jp2_id,
+	    warthog::cost_t& jp1_cost, jps_id& jp2_id,
 	    warthog::cost_t& jp2_cost);
 	void
 	jump_southwest_(
 	    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
 	    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp1_id,
-	    warthog::cost_t& jp1_cost, uint32_t& jp2_id,
+	    warthog::cost_t& jp1_cost, jps_id& jp2_id,
 	    warthog::cost_t& jp2_cost);
 
 	// functions to convert map indexes to rmap indexes
@@ -123,7 +123,7 @@ private:
 		map_->to_unpadded_xy(mapid, x, y);
 		ry = x;
 		rx = map_->header_height() - y - 1;
-		return rmap_->to_padded_id(rx, ry);
+		return jps_id(rmap_->to_padded_id(rx, ry));
 	}
 
 	// convert rmap indexes to map indexes
@@ -137,7 +137,7 @@ private:
 		rmap_->to_unpadded_xy(rmapid, rx, ry);
 		x = ry;
 		y = rmap_->header_width() - rx - 1;
-		return map_->to_padded_id(x, y);
+		return jps_id(map_->to_padded_id(x, y));
 	}
 
 	warthog::domain::gridmap*

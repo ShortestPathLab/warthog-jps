@@ -152,8 +152,9 @@ four_connected_jps_locator::jump_east(
 		int32_t stop_bits = (int32_t)(forced_bits | deadend_bits);
 		if(stop_bits)
 		{
-			int32_t stop_pos = __builtin_ffs(stop_bits) - 1; // returns idx+1
-			jumpnode_id.id += uint32_t{stop_pos};
+			// TODO: remove builtin
+			uint32_t stop_pos = __builtin_ffs(stop_bits) - 1; // returns idx+1
+			jumpnode_id.id += stop_pos;
 			deadend = deadend_bits & (1 << stop_pos);
 			break;
 		}
