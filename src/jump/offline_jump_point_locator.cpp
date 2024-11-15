@@ -2,11 +2,12 @@
 #include <jps/jump/online_jump_point_locator.h>
 #include <warthog/domain/gridmap.h>
 
-#include <cstring>
 #include <cinttypes>
 #include <cstdio>
+#include <cstring>
 
-namespace jps::jump {
+namespace jps::jump
+{
 
 offline_jump_point_locator::offline_jump_point_locator(
     warthog::domain::gridmap* map)
@@ -47,16 +48,16 @@ offline_jump_point_locator::preproc()
 				jpl.jump(dir, mapid, jps_id::none(), jumpnode_id, jumpcost);
 
 				// convert from cost to number of steps
-				if(dir > 8) { jumpcost = jumpcost * warthog::DBL_ONE_OVER_ROOT_TWO; }
+				if(dir > 8)
+				{
+					jumpcost = jumpcost * warthog::DBL_ONE_OVER_ROOT_TWO;
+				}
 				uint32_t num_steps = (uint16_t)floor((jumpcost + 0.5));
 				//				std::cout << (jumpnode_id == INF ? 0 :
 				// num_steps) << " ";
 
 				// set the leading bit if the jump leads to a dead-end
-				if(jumpnode_id.is_none())
-				{
-					db_[mapid.id * 8 + i] |= 32768;
-				}
+				if(jumpnode_id.is_none()) { db_[mapid.id * 8 + i] |= 32768; }
 
 				// truncate jump cost so we can fit the label into a single
 				// byte
@@ -168,8 +169,7 @@ offline_jump_point_locator::jump(
 
 void
 offline_jump_point_locator::jump_northwest(
-    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-    double& jumpcost)
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	uint32_t mapw = map_->width();
 	uint16_t label = db_[8 * node_id.id + 5];
@@ -225,8 +225,7 @@ offline_jump_point_locator::jump_northwest(
 
 void
 offline_jump_point_locator::jump_northeast(
-    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-    double& jumpcost)
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	uint16_t label = db_[8 * node_id.id + 4];
 	uint16_t num_steps = label & 32767;
@@ -281,8 +280,7 @@ offline_jump_point_locator::jump_northeast(
 
 void
 offline_jump_point_locator::jump_southwest(
-    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-    double& jumpcost)
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	uint16_t label = db_[8 * node_id.id + 7];
 	uint16_t num_steps = label & 32767;
@@ -336,8 +334,7 @@ offline_jump_point_locator::jump_southwest(
 
 void
 offline_jump_point_locator::jump_southeast(
-    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-    double& jumpcost)
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	uint16_t label = db_[8 * node_id.id + 6];
 	uint16_t num_steps = label & 32767;
@@ -390,8 +387,7 @@ offline_jump_point_locator::jump_southeast(
 
 void
 offline_jump_point_locator::jump_north(
-    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-    double& jumpcost)
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	uint16_t label = db_[8 * node_id.id];
 	uint16_t num_steps = label & 32767;
@@ -419,8 +415,7 @@ offline_jump_point_locator::jump_north(
 
 void
 offline_jump_point_locator::jump_south(
-    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-    double& jumpcost)
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	uint16_t label = db_[8 * node_id.id + 1];
 	uint16_t num_steps = label & 32767;
@@ -448,8 +443,7 @@ offline_jump_point_locator::jump_south(
 
 void
 offline_jump_point_locator::jump_east(
-    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-    double& jumpcost)
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	uint16_t label = db_[8 * node_id.id + 2];
 
@@ -471,8 +465,7 @@ offline_jump_point_locator::jump_east(
 
 void
 offline_jump_point_locator::jump_west(
-    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-    double& jumpcost)
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	uint16_t label = db_[8 * node_id.id + 3];
 

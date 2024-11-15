@@ -7,7 +7,8 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-namespace jps::jump {
+namespace jps::jump
+{
 
 offline_jump_point_locator2::offline_jump_point_locator2(
     warthog::domain::gridmap* map)
@@ -58,16 +59,16 @@ offline_jump_point_locator2::preproc()
 				jpl.jump(dir, mapid, jps_id::none(), jumpnode_id, jumpcost);
 
 				// convert from cost to number of steps
-				if(dir > 8) { jumpcost = jumpcost * warthog::DBL_ONE_OVER_ROOT_TWO; }
+				if(dir > 8)
+				{
+					jumpcost = jumpcost * warthog::DBL_ONE_OVER_ROOT_TWO;
+				}
 				uint32_t num_steps = (uint16_t)floor((jumpcost + 0.5));
 				//				std::cout << (jumpnode_id == INF ? 0 :
 				// num_steps) << " ";
 
 				// set the leading bit if the jump leads to a dead-end
-				if(jumpnode_id.is_none())
-				{
-					db_[mapid.id * 8 + i] |= 32768;
-				}
+				if(jumpnode_id.is_none()) { db_[mapid.id * 8 + i] |= 32768; }
 
 				// truncate jump cost so we can fit the label into a single
 				// byte
@@ -142,8 +143,8 @@ offline_jump_point_locator2::save(const char* filename)
 
 void
 offline_jump_point_locator2::jump(
-    direction d, jps_id node_id, jps_id goal_id,
-    vec_jps_id& neighbours, vec_jps_cost& costs)
+    direction d, jps_id node_id, jps_id goal_id, vec_jps_id& neighbours,
+    vec_jps_cost& costs)
 {
 	switch(d)
 	{
@@ -209,7 +210,8 @@ offline_jump_point_locator2::jump_northwest(
 			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
 		// west of jump_from
-		uint16_t label_straight2 = db_[8 * jump_from.id + 3]; // west of next jp
+		uint16_t label_straight2
+		    = db_[8 * jump_from.id + 3]; // west of next jp
 		if(!(label_straight2 & 32768))
 		{
 			uint32_t jp_cost = (label_straight2 & 32767);

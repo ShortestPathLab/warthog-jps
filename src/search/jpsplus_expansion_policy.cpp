@@ -1,6 +1,7 @@
 #include <jps/search/jpsplus_expansion_policy.h>
 
-namespace jps::search {
+namespace jps::search
+{
 
 jpsplus_expansion_policy::jpsplus_expansion_policy(
     warthog::domain::gridmap* map)
@@ -16,7 +17,8 @@ jpsplus_expansion_policy::~jpsplus_expansion_policy()
 
 void
 jpsplus_expansion_policy::expand(
-    warthog::search::search_node* current, warthog::search::search_problem_instance* problem)
+    warthog::search::search_node* current,
+    warthog::search::search_problem_instance* problem)
 {
 	reset();
 

@@ -5,7 +5,8 @@
 #include <cassert>
 #include <climits>
 
-namespace jps::jump {
+namespace jps::jump
+{
 
 online_jump_point_locator::online_jump_point_locator(
     warthog::domain::gridmap* map)

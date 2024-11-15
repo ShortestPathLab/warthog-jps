@@ -4,7 +4,8 @@
 #include <cassert>
 #include <climits>
 
-namespace jps::jump {
+namespace jps::jump
+{
 
 four_connected_jps_locator::four_connected_jps_locator(
     warthog::domain::gridmap* map)
@@ -21,8 +22,8 @@ four_connected_jps_locator::~four_connected_jps_locator() { }
 // @return: the id of a jump point successor or INF32 if no jp exists.
 void
 four_connected_jps_locator::jump(
-    jps::direction d, jps_id node_id, jps_id goal_id,
-    jps_id& jumpnode_id, double& jumpcost)
+    jps::direction d, jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
+    double& jumpcost)
 {
 	switch(d)
 	{
@@ -45,8 +46,7 @@ four_connected_jps_locator::jump(
 
 void
 four_connected_jps_locator::jump_north(
-    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-    double& jumpcost)
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	uint32_t num_steps = 0;
 	uint32_t mapw = map_->width();
@@ -80,13 +80,12 @@ four_connected_jps_locator::jump_north(
 
 	// adjust num_steps if we stopped due to a deadend
 	// (we return the distance to the last traversable tile)
-	num_steps = !next_id.is_none() ? num_steps : num_steps-1;
+	num_steps = !next_id.is_none() ? num_steps : num_steps - 1;
 }
 
 void
 four_connected_jps_locator::jump_south(
-    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-    double& jumpcost)
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	uint32_t num_steps = 0;
 	uint32_t mapw = map_->width();
@@ -119,13 +118,12 @@ four_connected_jps_locator::jump_south(
 
 	// adjust num_steps if we stopped due to a deadend
 	// (we return the distance to the last traversable tile)
-	num_steps = !next_id.is_none() ? num_steps : num_steps-1;
+	num_steps = !next_id.is_none() ? num_steps : num_steps - 1;
 }
 
 void
 four_connected_jps_locator::jump_east(
-    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-    double& jumpcost)
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	jumpnode_id = node_id;
 
@@ -188,8 +186,7 @@ four_connected_jps_locator::jump_east(
 
 void
 four_connected_jps_locator::jump_west(
-    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-    double& jumpcost)
+    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	bool deadend = false;
 	uint32_t neis[3] = {0, 0, 0};

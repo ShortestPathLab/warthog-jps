@@ -3,8 +3,7 @@
 namespace jps::search
 {
 
-jps_expansion_policy::jps_expansion_policy(
-    warthog::domain::gridmap* map)
+jps_expansion_policy::jps_expansion_policy(warthog::domain::gridmap* map)
     : gridmap_expansion_policy_base(map)
 {
 	jpl_ = new jump::online_jump_point_locator(map);
@@ -18,15 +17,15 @@ jps_expansion_policy::~jps_expansion_policy()
 
 void
 jps_expansion_policy::expand(
-    warthog::search::search_node* current, warthog::search::search_problem_instance* problem)
+    warthog::search::search_node* current,
+    warthog::search::search_problem_instance* problem)
 {
 	reset();
 
 	// compute the direction of travel used to reach the current node.
 	jps_id current_id = jps_id(current->get_id());
 	direction dir_c = from_direction(
-	    jps_id(current->get_parent()), current_id,
-	    map_->width());
+	    jps_id(current->get_parent()), current_id, map_->width());
 
 	// get the tiles around the current node c
 	uint32_t c_tiles;
@@ -48,7 +47,8 @@ jps_expansion_policy::expand(
 
 			if(!succ_id.is_none())
 			{
-				warthog::search::search_node* jp_succ = this->generate(succ_id);
+				warthog::search::search_node* jp_succ
+				    = this->generate(succ_id);
 				// if(jp_succ->get_searchid() != search_id) {
 				// jp_succ->reset(search_id); }
 				add_neighbour(jp_succ, jumpcost);

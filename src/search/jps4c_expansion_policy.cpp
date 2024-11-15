@@ -1,9 +1,9 @@
 #include <jps/search/jps4c_expansion_policy.h>
 
-namespace jps::search {
+namespace jps::search
+{
 
-jps4c_expansion_policy::jps4c_expansion_policy(
-    warthog::domain::gridmap* map)
+jps4c_expansion_policy::jps4c_expansion_policy(warthog::domain::gridmap* map)
     : gridmap_expansion_policy_base(map)
 {
 	jpl_ = new jump::four_connected_jps_locator(map);
@@ -17,7 +17,8 @@ jps4c_expansion_policy::~jps4c_expansion_policy()
 
 void
 jps4c_expansion_policy::expand(
-    warthog::search::search_node* current, warthog::search::search_problem_instance* problem)
+    warthog::search::search_node* current,
+    warthog::search::search_problem_instance* problem)
 {
 	reset();
 
@@ -26,8 +27,7 @@ jps4c_expansion_policy::expand(
 	jps_id goal_id = jps_id(problem->target_);
 
 	// compute the direction of travel used to reach the current node.
-	direction dir_c = from_direction_4c(
-	    parent_id, current_id, map_->width());
+	direction dir_c = from_direction_4c(parent_id, current_id, map_->width());
 	assert(
 	    dir_c == NONE || dir_c == NORTH || dir_c == SOUTH || dir_c == EAST
 	    || dir_c == WEST);
@@ -49,7 +49,8 @@ jps4c_expansion_policy::expand(
 
 			if(!succ_id.is_none())
 			{
-				warthog::search::search_node* jp_succ = this->generate(succ_id);
+				warthog::search::search_node* jp_succ
+				    = this->generate(succ_id);
 				// if(jp_succ->get_searchid() != search_id) {
 				// jp_succ->reset(search_id); }
 				add_neighbour(jp_succ, jumpcost);

@@ -55,8 +55,8 @@ online_jump_point_locator2::create_rmap()
 // @return: the id of a jump point successor or INF if no jp exists.
 void
 online_jump_point_locator2::jump(
-    direction d, jps_id node_id, jps_id goal_id,
-    vec_jps_id& jpoints, vec_jps_cost& costs)
+    direction d, jps_id node_id, jps_id goal_id, vec_jps_id& jpoints,
+    vec_jps_cost& costs)
 {
 	jump_east_fp = &online_jump_point_locator2::jump_east_;
 	jump_west_fp = &online_jump_point_locator2::jump_west_;
@@ -118,8 +118,8 @@ online_jump_point_locator2::jump_north(
 
 	if(!jumpnode_id.is_none())
 	{
-		jumpnode_id.id
-		    = current_node_id_.id - static_cast<uint32_t>(jumpcost) * map_->width();
+		jumpnode_id.id = current_node_id_.id
+		    - static_cast<uint32_t>(jumpcost) * map_->width();
 		jpoints.push_back(jumpnode_id);
 		costs.push_back(jumpcost);
 	}
@@ -148,7 +148,9 @@ online_jump_point_locator2::jump_south(
 
 	if(!jumpnode_id.is_none())
 	{
-		jumpnode_id = jps_id(current_node_id_.id + static_cast<uint32_t>(jumpcost) * map_->width());
+		jumpnode_id = jps_id(
+		    current_node_id_.id
+		    + static_cast<uint32_t>(jumpcost) * map_->width());
 		jpoints.push_back(jumpnode_id);
 		costs.push_back(jumpcost);
 	}
@@ -165,8 +167,7 @@ online_jump_point_locator2::jump_south_(
 }
 
 void
-online_jump_point_locator2::jump_east(
-    vec_jps_id& jpoints, vec_jps_cost& costs)
+online_jump_point_locator2::jump_east(vec_jps_id& jpoints, vec_jps_cost& costs)
 {
 	jps_id node_id = current_node_id_;
 	jps_id goal_id = current_goal_id_;
@@ -308,8 +309,7 @@ online_jump_point_locator2::jump_east_(
 
 // analogous to ::jump_east
 void
-online_jump_point_locator2::jump_west(
-    vec_jps_id& jpoints, vec_jps_cost& costs)
+online_jump_point_locator2::jump_west(vec_jps_id& jpoints, vec_jps_cost& costs)
 {
 	jps_id node_id = current_node_id_;
 	jps_id goal_id = current_goal_id_;
@@ -483,7 +483,8 @@ online_jump_point_locator2::jump_northeast(
 
 		if(!jp1_id.is_none())
 		{
-			jp1_id = jps_id(node_id.id - static_cast<uint32_t>(jp1_cost)*map_->width());
+			jp1_id = jps_id(
+			    node_id.id - static_cast<uint32_t>(jp1_cost) * map_->width());
 			jpoints.push_back(jp1_id);
 			costs.push_back(cost_to_nodeid + jumpcost + jp1_cost);
 			if(jp2_cost == 0) { break; } // no corner cutting
@@ -565,7 +566,8 @@ online_jump_point_locator2::jump_northwest(
 
 		if(!jp1_id.is_none())
 		{
-			jp1_id = jps_id(node_id.id - static_cast<uint32_t>(jp1_cost)*map_->width());
+			jp1_id = jps_id(
+			    node_id.id - static_cast<uint32_t>(jp1_cost) * map_->width());
 			jpoints.push_back(jp1_id);
 			costs.push_back(cost_to_nodeid + jumpcost + jp1_cost);
 			if(jp2_cost == 0) { break; } // no corner cutting
@@ -648,7 +650,8 @@ online_jump_point_locator2::jump_southeast(
 
 		if(!jp1_id.is_none())
 		{
-			jp1_id = jps_id(node_id.id + static_cast<uint32_t>(jp1_cost)*map_->width());
+			jp1_id = jps_id(
+			    node_id.id + static_cast<uint32_t>(jp1_cost) * map_->width());
 			jpoints.push_back(jp1_id);
 			costs.push_back(cost_to_nodeid + jumpcost + jp1_cost);
 			if(jp2_cost == 0) { break; } // no corner cutting
@@ -730,7 +733,8 @@ online_jump_point_locator2::jump_southwest(
 
 		if(!jp1_id.is_none())
 		{
-			jp1_id = jps_id(node_id.id + static_cast<uint32_t>(jp1_cost)*map_->width());
+			jp1_id = jps_id(
+			    node_id.id + static_cast<uint32_t>(jp1_cost) * map_->width());
 			jpoints.push_back(jp1_id);
 			costs.push_back(cost_to_nodeid + jumpcost + jp1_cost);
 			if(jp2_cost == 0) { break; }

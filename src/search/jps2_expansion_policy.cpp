@@ -1,9 +1,9 @@
 #include <jps/search/jps2_expansion_policy.h>
 
-namespace jps::search {
+namespace jps::search
+{
 
-jps2_expansion_policy::jps2_expansion_policy(
-    warthog::domain::gridmap* map)
+jps2_expansion_policy::jps2_expansion_policy(warthog::domain::gridmap* map)
     : gridmap_expansion_policy_base(map)
 {
 	jpl_ = new jump::online_jump_point_locator2(map);
@@ -17,7 +17,8 @@ jps2_expansion_policy::~jps2_expansion_policy()
 
 void
 jps2_expansion_policy::expand(
-    warthog::search::search_node* current, warthog::search::search_problem_instance* problem)
+    warthog::search::search_node* current,
+    warthog::search::search_problem_instance* problem)
 {
 	reset();
 	jp_ids_.clear();

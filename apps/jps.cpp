@@ -7,25 +7,23 @@
 // @created: 2016-11-23
 //
 
-#include <warthog/constants.h>
-#include <warthog/domain/gridmap.h>
-#include <warthog/search/unidirectional_search.h>
-#include <warthog/heuristic/octile_heuristic.h>
-#include <warthog/util/pqueue.h>
-#include <warthog/util/scenario_manager.h>
-#include <warthog/util/timer.h>
 #include <jps/search/jps.h>
-#include <jps/search/jps_expansion_policy.h>
-#include <jps/search/jpsplus_expansion_policy.h>
 #include <jps/search/jps2_expansion_policy.h>
 #include <jps/search/jps2plus_expansion_policy.h>
 #include <jps/search/jps4c_expansion_policy.h>
-
+#include <jps/search/jps_expansion_policy.h>
+#include <jps/search/jpsplus_expansion_policy.h>
+#include <warthog/constants.h>
+#include <warthog/domain/gridmap.h>
+#include <warthog/heuristic/octile_heuristic.h>
+#include <warthog/search/unidirectional_search.h>
+#include <warthog/util/pqueue.h>
+#include <warthog/util/scenario_manager.h>
+#include <warthog/util/timer.h>
 
 #include "cfg.h"
 #include "config.h"
 #include <getopt.h>
-
 
 #include <cmath>
 #include <filesystem>
@@ -35,7 +33,6 @@
 #include <memory>
 #include <sstream>
 #include <unordered_map>
-
 
 // #include "time_constraints.h"
 
@@ -53,26 +50,26 @@ help(std::ostream& out)
 {
 	out << "warthog version " << WARTHOG_VERSION << "\n";
 	out << "==> manual <==\n"
-	          << "This program solves/generates grid-based pathfinding "
-	             "problems using the\n"
-	          << "map/scenario format from the 2014 Grid-based Path Planning "
-	             "Competition\n\n";
+	    << "This program solves/generates grid-based pathfinding "
+	       "problems using the\n"
+	    << "map/scenario format from the 2014 Grid-based Path Planning "
+	       "Competition\n\n";
 
 	out << "The following are valid parameters for SOLVING instances:\n"
-	          << "\t--alg [alg] (required)\n"
-	          << "\t--scen [scen file] (required) \n"
-	          << "\t--map [map file] (optional; specify this to override map "
-	             "values in scen file) \n"
-	          << "\t--costs [costs file] (required if using a weighted "
-	             "terrain algorithm)\n"
-	          << "\t--checkopt (optional; compare solution costs against "
-	             "values in the scen file)\n"
-	          << "\t--verbose (optional; prints debugging info when compiled "
-	             "with debug symbols)\n"
-	          << "Invoking the program this way solves all instances in [scen "
-	             "file] with algorithm [alg]\n"
-	          << "Currently recognised values for [alg]:\n"
-	          << "\tjps, jps+, jps2, jps2+\n";
+	    << "\t--alg [alg] (required)\n"
+	    << "\t--scen [scen file] (required) \n"
+	    << "\t--map [map file] (optional; specify this to override map "
+	       "values in scen file) \n"
+	    << "\t--costs [costs file] (required if using a weighted "
+	       "terrain algorithm)\n"
+	    << "\t--checkopt (optional; compare solution costs against "
+	       "values in the scen file)\n"
+	    << "\t--verbose (optional; prints debugging info when compiled "
+	       "with debug symbols)\n"
+	    << "Invoking the program this way solves all instances in [scen "
+	       "file] with algorithm [alg]\n"
+	    << "Currently recognised values for [alg]:\n"
+	    << "\tjps, jps+, jps2, jps2+\n";
 	// << ""
 	// << "The following are valid parameters for GENERATING instances:\n"
 	// << "\t --gen [map file (required)]\n"
@@ -148,8 +145,10 @@ run_experiments(
 	}
 }
 
-template <typename ExpansionPolicy>
-void run_jps(warthog::util::scenario_manager& scenmgr, std::string mapname,
+template<typename ExpansionPolicy>
+void
+run_jps(
+    warthog::util::scenario_manager& scenmgr, std::string mapname,
     std::string alg_name)
 {
 	warthog::domain::gridmap map(mapname.c_str());
@@ -247,12 +246,24 @@ main(int argc, char** argv)
 	std::cerr << "mapfile=" << mapfile << std::endl;
 
 	using namespace jps::search;
-	if (alg == "jps") { run_jps<jps_expansion_policy>(scenmgr, mapfile, alg); }
-	else if (alg == "jps+") { run_jps<jpsplus_expansion_policy>(scenmgr, mapfile, alg); }
-	else if (alg == "jps2") { run_jps<jps2_expansion_policy>(scenmgr, mapfile, alg); }
-	else if (alg == "jps2+") { run_jps<jps2plus_expansion_policy>(scenmgr, mapfile, alg); }
-	else { std::cerr << "err; invalid search algorithm: " << alg << "\n";
-		return 1; }
-	
+	if(alg == "jps") { run_jps<jps_expansion_policy>(scenmgr, mapfile, alg); }
+	else if(alg == "jps+")
+	{
+		run_jps<jpsplus_expansion_policy>(scenmgr, mapfile, alg);
+	}
+	else if(alg == "jps2")
+	{
+		run_jps<jps2_expansion_policy>(scenmgr, mapfile, alg);
+	}
+	else if(alg == "jps2+")
+	{
+		run_jps<jps2plus_expansion_policy>(scenmgr, mapfile, alg);
+	}
+	else
+	{
+		std::cerr << "err; invalid search algorithm: " << alg << "\n";
+		return 1;
+	}
+
 	return 0;
 }
