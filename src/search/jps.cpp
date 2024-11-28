@@ -1,8 +1,10 @@
-#include "constants.h"
-#include "xy_graph.h"
 #include <jps/jump/online_jump_point_locator2.h>
 #include <jps/search/jps.h>
+#include <warthog/constants.h>
 #include <warthog/domain/gridmap.h>
+
+namespace jps::search
+{
 
 // computes the forced neighbours of a node.
 // for a neighbour to be forced we must check that
@@ -30,7 +32,7 @@
 // [Harabor and Grastien, The JPS Pathfinding System, SoCS, 2012]
 // These rules do not allow diagonal transitions that cut corners.
 uint32_t
-warthog::jps::compute_forced(warthog::jps::direction d, uint32_t tiles)
+compute_forced(direction d, uint32_t tiles)
 {
 	// NB: to avoid branching statements, bit operations are
 	// used below to determine which neighbours are traversable
@@ -38,7 +40,7 @@ warthog::jps::compute_forced(warthog::jps::direction d, uint32_t tiles)
 	uint32_t ret = 0;
 	switch(d)
 	{
-	case warthog::jps::NORTH:
+	case NORTH:
 	{
 		uint32_t branch_nw = ((tiles & 65792) == 256);
 		ret |= (branch_nw << 3); // force west
@@ -49,7 +51,7 @@ warthog::jps::compute_forced(warthog::jps::direction d, uint32_t tiles)
 		ret |= (branch_ne << 4); // force northeast
 		break;
 	}
-	case warthog::jps::SOUTH:
+	case SOUTH:
 	{
 		uint32_t branch_sw = ((tiles & 257) == 256);
 		ret |= (branch_sw << 3); // force west
@@ -60,7 +62,7 @@ warthog::jps::compute_forced(warthog::jps::direction d, uint32_t tiles)
 		ret |= (branch_se << 6); // force southeast
 		break;
 	}
-	case warthog::jps::EAST:
+	case EAST:
 	{
 		uint32_t branch_ne = ((tiles & 3) == 2);
 		ret |= branch_ne;        // force north
@@ -71,7 +73,7 @@ warthog::jps::compute_forced(warthog::jps::direction d, uint32_t tiles)
 		ret |= (branch_se << 6); // force southeast
 		break;
 	}
-	case warthog::jps::WEST:
+	case WEST:
 	{
 		uint32_t force_nw = ((tiles & 6) == 2);
 		ret |= force_nw;        // force north
@@ -102,41 +104,41 @@ warthog::jps::compute_forced(warthog::jps::direction d, uint32_t tiles)
 // There are optimisations below that use bitmasks in order
 // to speed up forced neighbour computation.
 uint32_t
-warthog::jps::compute_natural(warthog::jps::direction d, uint32_t tiles)
+compute_natural(direction d, uint32_t tiles)
 {
 	// In the shift operations below the constant values
-	// correspond to bit offsets for warthog::jps::direction
+	// correspond to bit offsets for direction
 	uint32_t ret = 0;
 	switch(d)
 	{
-	case warthog::jps::NORTH:
+	case NORTH:
 		ret |= (uint32_t)((tiles & 2) == 2) << 0;
 		break;
-	case warthog::jps::SOUTH:
+	case SOUTH:
 		ret |= (uint32_t)((tiles & 131072) == 131072) << 1;
 		break;
-	case warthog::jps::EAST:
+	case EAST:
 		ret |= (uint32_t)((tiles & 1024) == 1024) << 2;
 		break;
-	case warthog::jps::WEST:
+	case WEST:
 		ret |= (uint32_t)((tiles & 256) == 256) << 3;
 		break;
-	case warthog::jps::NORTHWEST:
+	case NORTHWEST:
 		ret |= (uint32_t)((tiles & 2) == 2) << 0;
 		ret |= (uint32_t)((tiles & 256) == 256) << 3;
 		ret |= (uint32_t)((tiles & 259) == 259) << 5;
 		break;
-	case warthog::jps::NORTHEAST:
+	case NORTHEAST:
 		ret |= (uint32_t)((tiles & 2) == 2) << 0;
 		ret |= (uint32_t)((tiles & 1024) == 1024) << 2;
 		ret |= (uint32_t)((tiles & 1030) == 1030) << 4;
 		break;
-	case warthog::jps::SOUTHWEST:
+	case SOUTHWEST:
 		ret |= (uint32_t)((tiles & 131072) == 131072) << 1;
 		ret |= (uint32_t)((tiles & 256) == 256) << 3;
 		ret |= (uint32_t)((tiles & 196864) == 196864) << 7;
 		break;
-	case warthog::jps::SOUTHEAST:
+	case SOUTHEAST:
 		ret |= (uint32_t)((tiles & 131072) == 131072) << 1;
 		ret |= (uint32_t)((tiles & 1024) == 1024) << 2;
 		ret |= (uint32_t)((tiles & 394240) == 394240) << 6;
@@ -155,8 +157,9 @@ warthog::jps::compute_natural(warthog::jps::direction d, uint32_t tiles)
 	return ret;
 }
 
+#if 0
 warthog::graph::xy_graph*
-warthog::jps::create_jump_point_graph(warthog::domain::gridmap* gm)
+create_jump_point_graph(warthog::domain::gridmap* gm)
 {
 	warthog::graph::xy_graph* graph = new warthog::graph::xy_graph();
 	warthog::jps::online_jump_point_locator2 jpl(gm);
@@ -212,15 +215,15 @@ warthog::jps::create_jump_point_graph(warthog::domain::gridmap* gm)
 
 		for(uint32_t i = 0; i < 8; i++)
 		{
-			warthog::jps::direction d = (warthog::jps::direction)(1 << i);
+			direction d = (direction)(1 << i);
 			std::vector<uint32_t> jpoints;
 			std::vector<double> jcosts;
 			jpl.jump(d, gm_id, warthog::INF32, jpoints, jcosts);
 			for(uint32_t idx = 0; idx < jpoints.size(); idx++)
 			{
 				uint32_t jp_id = jpoints[idx] & ((1 << 24) - 1);
-				// warthog::jps::direction d =
-				// (warthog::jps::direction)(jpoints[idx] >> 24);
+				// direction d =
+				// (direction)(jpoints[idx] >> 24);
 				std::unordered_map<uint32_t, uint32_t>::iterator it_to_id;
 				it_to_id = id_map.find(jp_id);
 				assert(it_to_id != id_map.end());
@@ -235,31 +238,34 @@ warthog::jps::create_jump_point_graph(warthog::domain::gridmap* gm)
 	}
 	return graph;
 }
+#endif
 
 warthog::domain::gridmap*
-warthog::jps::create_corner_map(warthog::domain::gridmap* gm)
+create_corner_map(warthog::domain::gridmap* gm)
 {
 	uint32_t mapwidth = gm->header_width();
 	uint32_t mapheight = gm->header_height();
 	warthog::domain::gridmap* corner_map
 	    = new warthog::domain::gridmap(mapheight, mapwidth);
 
+	uint32_t gmwidth = gm->width();
+
 	// add nodes to graph
 	for(uint32_t y = 0; y < mapheight; y++)
 	{
 		for(uint32_t x = 0; x < mapwidth; x++)
 		{
-			uint32_t from_id = gm->to_padded_id(y * mapwidth + x);
+			jps_id from_id = jps_id(gm->to_padded_id(x, y));
 			if(!gm->get_label(from_id)) { continue; }
 
-			uint32_t w_id = from_id - 1;
-			uint32_t e_id = from_id + 1;
-			uint32_t s_id = from_id + gm->width();
-			uint32_t n_id = from_id - gm->width();
-			uint32_t nw_id = (from_id - gm->width()) - 1;
-			uint32_t ne_id = (from_id - gm->width()) + 1;
-			uint32_t sw_id = (from_id + gm->width()) - 1;
-			uint32_t se_id = (from_id + gm->width()) + 1;
+			jps_id w_id = jps_id(from_id.id - 1);
+			jps_id e_id = jps_id(from_id.id + 1);
+			jps_id s_id = jps_id(from_id.id + gmwidth);
+			jps_id n_id = jps_id(from_id.id - gmwidth);
+			jps_id nw_id = jps_id((from_id.id - gmwidth) - 1);
+			jps_id ne_id = jps_id((from_id.id - gmwidth) + 1);
+			jps_id sw_id = jps_id((from_id.id + gmwidth) - 1);
+			jps_id se_id = jps_id((from_id.id + gmwidth) + 1);
 
 			// detect all corner turning points (== jump points)
 			// and add them to the jump point graph
@@ -280,3 +286,5 @@ warthog::jps::create_corner_map(warthog::domain::gridmap* gm)
 	}
 	return corner_map;
 }
+
+} // namespace jps::search
