@@ -49,8 +49,7 @@ jps4c_expansion_policy::expand(
 
 			if(!succ_id.is_none())
 			{
-				warthog::search::search_node* jp_succ
-				    = this->generate(succ_id);
+				warthog::search::search_node* jp_succ = this->generate(succ_id);
 				// if(jp_succ->get_searchid() != search_id) {
 				// jp_succ->reset(search_id); }
 				add_neighbour(jp_succ, jumpcost);

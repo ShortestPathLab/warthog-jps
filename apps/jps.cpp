@@ -79,8 +79,7 @@ help(std::ostream& out)
 }
 
 bool
-check_optimality(
-    warthog::search::solution& sol, warthog::util::experiment* exp)
+check_optimality(warthog::search::solution& sol, warthog::util::experiment* exp)
 {
 	uint32_t precision = 2;
 	double epsilon = (1.0 / (int)pow(10, precision)) / 2;
@@ -132,11 +131,10 @@ run_experiments(
 
 		algo.get_path(&pi, &par, &sol);
 
-		out << i << "\t" << alg_name << "\t" << sol.met_.nodes_expanded_
-		    << "\t" << sol.met_.nodes_generated_ << "\t"
-		    << sol.met_.nodes_reopen_ << "\t" << sol.met_.nodes_surplus_
-		    << "\t" << sol.met_.heap_ops_ << "\t"
-		    << sol.met_.time_elapsed_nano_.count() << "\t"
+		out << i << "\t" << alg_name << "\t" << sol.met_.nodes_expanded_ << "\t"
+		    << sol.met_.nodes_generated_ << "\t" << sol.met_.nodes_reopen_
+		    << "\t" << sol.met_.nodes_surplus_ << "\t" << sol.met_.heap_ops_
+		    << "\t" << sol.met_.time_elapsed_nano_.count() << "\t"
 		    << (sol.path_.size() - 1) << "\t" << sol.sum_of_edge_costs_ << "\t"
 		    << exp->distance() << "\t" << scenmgr.last_file_loaded()
 		    << std::endl;
