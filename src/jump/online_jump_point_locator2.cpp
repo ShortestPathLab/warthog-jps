@@ -31,7 +31,8 @@ online_jump_point_locator2::create_rmap()
 	uint32_t mapw = map_->header_width();
 	uint32_t rmaph = mapw;
 	uint32_t rmapw = maph;
-	warthog::domain::gridmap* rmap = new warthog::domain::gridmap(rmaph, rmapw);
+	warthog::domain::gridmap* rmap
+	    = new warthog::domain::gridmap(rmaph, rmapw);
 
 	for(uint32_t x = 0; x < mapw; x++)
 	{
@@ -105,7 +106,8 @@ online_jump_point_locator2::jump(
 }
 
 void
-online_jump_point_locator2::jump_north(vec_jps_id& jpoints, vec_jps_cost& costs)
+online_jump_point_locator2::jump_north(
+    vec_jps_id& jpoints, vec_jps_cost& costs)
 {
 	jps_id rnode_id = current_rnode_id_;
 	jps_id rgoal_id = current_rgoal_id_;
@@ -134,7 +136,8 @@ online_jump_point_locator2::jump_north_(
 }
 
 void
-online_jump_point_locator2::jump_south(vec_jps_id& jpoints, vec_jps_cost& costs)
+online_jump_point_locator2::jump_south(
+    vec_jps_id& jpoints, vec_jps_cost& costs)
 {
 	jps_id rnode_id = current_rnode_id_;
 	jps_id rgoal_id = current_rgoal_id_;
@@ -475,8 +478,8 @@ online_jump_point_locator2::jump_northeast(
 	while(!node_id.is_none())
 	{
 		jump_northeast_(
-		    node_id, rnode_id, goal_id, rgoal_id, jumpnode_id, jumpcost, jp1_id,
-		    jp1_cost, jp2_id, jp2_cost);
+		    node_id, rnode_id, goal_id, rgoal_id, jumpnode_id, jumpcost,
+		    jp1_id, jp1_cost, jp2_id, jp2_cost);
 
 		if(!jp1_id.is_none())
 		{
@@ -558,8 +561,8 @@ online_jump_point_locator2::jump_northwest(
 	while(!node_id.is_none())
 	{
 		jump_northwest_(
-		    node_id, rnode_id, goal_id, rgoal_id, jumpnode_id, jumpcost, jp1_id,
-		    jp1_cost, jp2_id, jp2_cost);
+		    node_id, rnode_id, goal_id, rgoal_id, jumpnode_id, jumpcost,
+		    jp1_id, jp1_cost, jp2_id, jp2_cost);
 
 		if(!jp1_id.is_none())
 		{
@@ -642,8 +645,8 @@ online_jump_point_locator2::jump_southeast(
 	while(!node_id.is_none())
 	{
 		jump_southeast_(
-		    node_id, rnode_id, goal_id, rgoal_id, jumpnode_id, jumpcost, jp1_id,
-		    jp1_cost, jp2_id, jp2_cost);
+		    node_id, rnode_id, goal_id, rgoal_id, jumpnode_id, jumpcost,
+		    jp1_id, jp1_cost, jp2_id, jp2_cost);
 
 		if(!jp1_id.is_none())
 		{
@@ -725,8 +728,8 @@ online_jump_point_locator2::jump_southwest(
 	while(!node_id.is_none())
 	{
 		jump_southwest_(
-		    node_id, rnode_id, goal_id, rgoal_id, jumpnode_id, jumpcost, jp1_id,
-		    jp1_cost, jp2_id, jp2_cost);
+		    node_id, rnode_id, goal_id, rgoal_id, jumpnode_id, jumpcost,
+		    jp1_id, jp1_cost, jp2_id, jp2_cost);
 
 		if(!jp1_id.is_none())
 		{

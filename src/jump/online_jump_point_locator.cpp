@@ -29,7 +29,8 @@ online_jump_point_locator::create_rmap()
 	uint32_t mapw = map_->header_width();
 	uint32_t rmaph = mapw;
 	uint32_t rmapw = maph;
-	warthog::domain::gridmap* rmap = new warthog::domain::gridmap(rmaph, rmapw);
+	warthog::domain::gridmap* rmap
+	    = new warthog::domain::gridmap(rmaph, rmapw);
 
 	for(uint32_t x = 0; x < mapw; x++)
 	{

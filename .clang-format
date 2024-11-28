@@ -7,7 +7,6 @@ PointerAlignment: Left
 UseTab: ForIndentation
 IndentWidth: 4
 TabWidth: 4
-ColumnLimit: 80
 Cpp11BracedListStyle: true
 AlwaysBreakTemplateDeclarations: Yes
 AlwaysBreakAfterReturnType: All
