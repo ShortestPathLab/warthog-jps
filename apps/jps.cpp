@@ -7,25 +7,23 @@
 // @created: 2016-11-23
 //
 
+#include <jps/search/jps.h>
+#include <jps/search/jps2_expansion_policy.h>
+#include <jps/search/jps2plus_expansion_policy.h>
+#include <jps/search/jps4c_expansion_policy.h>
+#include <jps/search/jps_expansion_policy.h>
+#include <jps/search/jpsplus_expansion_policy.h>
 #include <warthog/constants.h>
 #include <warthog/domain/gridmap.h>
-#include <warthog/domain/labelled_gridmap.h>
-#include <warthog/heuristic/manhattan_heuristic.h>
 #include <warthog/heuristic/octile_heuristic.h>
-#include <warthog/heuristic/zero_heuristic.h>
-#include <warthog/search/gridmap_expansion_policy.h>
-#include <warthog/search/search.h>
 #include <warthog/search/unidirectional_search.h>
-#include <warthog/search/vl_gridmap_expansion_policy.h>
 #include <warthog/util/pqueue.h>
 #include <warthog/util/scenario_manager.h>
 #include <warthog/util/timer.h>
 
-
 #include "cfg.h"
 #include "config.h"
 #include <getopt.h>
-
 
 #include <cmath>
 #include <filesystem>
@@ -35,7 +33,6 @@
 #include <memory>
 #include <sstream>
 #include <unordered_map>
-
 
 // #include "time_constraints.h"
 
@@ -49,30 +46,30 @@ int verbose = 0;
 int print_help = 0;
 
 void
-help()
+help(std::ostream& out)
 {
-	std::cerr << "warthog version " << WARTHOG_VERSION << "\n";
-	std::cerr << "==> manual <==\n"
-	          << "This program solves/generates grid-based pathfinding "
-	             "problems using the\n"
-	          << "map/scenario format from the 2014 Grid-based Path Planning "
-	             "Competition\n\n";
+	out << "warthog version " << WARTHOG_VERSION << "\n";
+	out << "==> manual <==\n"
+	    << "This program solves/generates grid-based pathfinding "
+	       "problems using the\n"
+	    << "map/scenario format from the 2014 Grid-based Path Planning "
+	       "Competition\n\n";
 
-	std::cerr << "The following are valid parameters for SOLVING instances:\n"
-	          << "\t--alg [alg] (required)\n"
-	          << "\t--scen [scen file] (required) \n"
-	          << "\t--map [map file] (optional; specify this to override map "
-	             "values in scen file) \n"
-	          << "\t--costs [costs file] (required if using a weighted "
-	             "terrain algorithm)\n"
-	          << "\t--checkopt (optional; compare solution costs against "
-	             "values in the scen file)\n"
-	          << "\t--verbose (optional; prints debugging info when compiled "
-	             "with debug symbols)\n"
-	          << "Invoking the program this way solves all instances in [scen "
-	             "file] with algorithm [alg]\n"
-	          << "Currently recognised values for [alg]:\n"
-	          << "\tastar, astar_wgm, astar4c, dijkstra\n";
+	out << "The following are valid parameters for SOLVING instances:\n"
+	    << "\t--alg [alg] (required)\n"
+	    << "\t--scen [scen file] (required) \n"
+	    << "\t--map [map file] (optional; specify this to override map "
+	       "values in scen file) \n"
+	    << "\t--costs [costs file] (required if using a weighted "
+	       "terrain algorithm)\n"
+	    << "\t--checkopt (optional; compare solution costs against "
+	       "values in the scen file)\n"
+	    << "\t--verbose (optional; prints debugging info when compiled "
+	       "with debug symbols)\n"
+	    << "Invoking the program this way solves all instances in [scen "
+	       "file] with algorithm [alg]\n"
+	    << "Currently recognised values for [alg]:\n"
+	    << "\tjps, jps+, jps2, jps2+\n";
 	// << ""
 	// << "The following are valid parameters for GENERATING instances:\n"
 	// << "\t --gen [map file (required)]\n"
@@ -130,7 +127,7 @@ run_experiments(
 		    exp->starty() * exp->mapwidth() + exp->startx()};
 		warthog::pack_id goalid{exp->goaly() * exp->mapwidth() + exp->goalx()};
 		warthog::search::problem_instance pi(startid, goalid, verbose);
-        warthog::search::search_parameters par;
+		warthog::search::search_parameters par;
 		warthog::search::solution sol;
 
 		algo.get_path(&pi, &par, &sol);
@@ -139,87 +136,30 @@ run_experiments(
 		    << "\t" << sol.met_.nodes_generated_ << "\t"
 		    << sol.met_.nodes_reopen_ << "\t" << sol.met_.nodes_surplus_
 		    << "\t" << sol.met_.heap_ops_ << "\t"
-		    << sol.met_.time_elapsed_nano_ << "\t" << (sol.path_.size() - 1)
-		    << "\t" << sol.sum_of_edge_costs_ << "\t" << exp->distance()
-		    << "\t" << scenmgr.last_file_loaded() << std::endl;
+		    << sol.met_.time_elapsed_nano_.count() << "\t"
+		    << (sol.path_.size() - 1) << "\t" << sol.sum_of_edge_costs_ << "\t"
+		    << exp->distance() << "\t" << scenmgr.last_file_loaded()
+		    << std::endl;
 
 		if(checkopt) { check_optimality(sol, exp); }
 	}
 }
 
+template<typename ExpansionPolicy>
 void
-run_astar(
+run_jps(
     warthog::util::scenario_manager& scenmgr, std::string mapname,
     std::string alg_name)
 {
 	warthog::domain::gridmap map(mapname.c_str());
-	warthog::search::gridmap_expansion_policy expander(&map);
+	ExpansionPolicy expander(&map);
 	warthog::heuristic::octile_heuristic heuristic(map.width(), map.height());
 	warthog::util::pqueue_min open;
 
-	warthog::search::unidirectional_search astar(&heuristic, &expander, &open);
+	warthog::search::unidirectional_search jps(&heuristic, &expander, &open);
 
-	run_experiments(astar, alg_name, scenmgr, verbose, checkopt, std::cout);
-	std::cerr << "done. total memory: " << astar.mem() + scenmgr.mem() << "\n";
-}
-
-void
-run_astar4c(
-    warthog::util::scenario_manager& scenmgr, std::string mapname,
-    std::string alg_name)
-{
-	warthog::domain::gridmap map(mapname.c_str());
-	warthog::search::gridmap_expansion_policy expander(&map, true);
-	warthog::heuristic::manhattan_heuristic heuristic(
-	    map.width(), map.height());
-	warthog::util::pqueue_min open;
-
-	warthog::search::unidirectional_search astar(&heuristic, &expander, &open);
-
-	run_experiments(astar, alg_name, scenmgr, verbose, checkopt, std::cout);
-	std::cerr << "done. total memory: " << astar.mem() + scenmgr.mem() << "\n";
-}
-
-void
-run_dijkstra(
-    warthog::util::scenario_manager& scenmgr, std::string mapname,
-    std::string alg_name)
-{
-	warthog::domain::gridmap map(mapname.c_str());
-	warthog::search::gridmap_expansion_policy expander(&map);
-	warthog::heuristic::zero_heuristic heuristic;
-	warthog::util::pqueue_min open;
-
-	warthog::search::unidirectional_search astar(&heuristic, &expander, &open);
-
-	run_experiments(astar, alg_name, scenmgr, verbose, checkopt, std::cout);
-	std::cerr << "done. total memory: " << astar.mem() + scenmgr.mem() << "\n";
-}
-
-void
-run_wgm_astar(
-    warthog::util::scenario_manager& scenmgr, std::string mapname,
-    std::string alg_name, std::string costfile)
-{
-	warthog::util::cost_table costs(costfile.c_str());
-	warthog::domain::vl_gridmap map(mapname.c_str());
-	warthog::search::vl_gridmap_expansion_policy expander(&map, costs);
-	warthog::heuristic::octile_heuristic heuristic(map.width(), map.height());
-	warthog::util::pqueue_min open;
-
-	double lowest_cost = costs.lowest_cost(map);
-	if(std::isnan(lowest_cost))
-	{
-		std::cerr << "err; costs file does not specify cost of some terrains"
-		          << std::endl;
-		exit(1);
-	}
-	heuristic.set_hscale(lowest_cost);
-
-	warthog::search::unidirectional_search astar(&heuristic, &expander, &open);
-
-	run_experiments(astar, alg_name, scenmgr, verbose, checkopt, std::cout);
-	std::cerr << "done. total memory: " << astar.mem() + scenmgr.mem() << "\n";
+	run_experiments(jps, alg_name, scenmgr, verbose, checkopt, std::cout);
+	std::cerr << "done. total memory: " << jps.mem() + scenmgr.mem() << "\n";
 }
 
 } // namespace
@@ -244,7 +184,7 @@ main(int argc, char** argv)
 
 	if(argc == 1 || print_help)
 	{
-		help();
+		help(std::cout);
 		exit(0);
 	}
 
@@ -266,7 +206,7 @@ main(int argc, char** argv)
 	// running experiments
 	if(alg == "" || sfile == "")
 	{
-		help();
+		help(std::cout);
 		exit(0);
 	}
 
@@ -297,7 +237,7 @@ main(int argc, char** argv)
 				if(!std::filesystem::exists(std::filesystem::path(mapfile)))
 				{
 					std::cerr << "could not locate a corresponding map file\n";
-					help();
+					help(std::cout);
 					exit(0);
 				}
 			}
@@ -305,14 +245,25 @@ main(int argc, char** argv)
 	}
 	std::cerr << "mapfile=" << mapfile << std::endl;
 
-	if(alg == "dijkstra") { run_dijkstra(scenmgr, mapfile, alg); }
-
-	else if(alg == "astar") { run_astar(scenmgr, mapfile, alg); }
-	else if(alg == "astar4c") { run_astar4c(scenmgr, mapfile, alg); }
-
-	else if(alg == "astar_wgm")
+	using namespace jps::search;
+	if(alg == "jps") { run_jps<jps_expansion_policy>(scenmgr, mapfile, alg); }
+	else if(alg == "jps+")
 	{
-		run_wgm_astar(scenmgr, mapfile, alg, costfile);
+		run_jps<jpsplus_expansion_policy>(scenmgr, mapfile, alg);
 	}
-	else { std::cerr << "err; invalid search algorithm: " << alg << "\n"; }
+	else if(alg == "jps2")
+	{
+		run_jps<jps2_expansion_policy>(scenmgr, mapfile, alg);
+	}
+	else if(alg == "jps2+")
+	{
+		run_jps<jps2plus_expansion_policy>(scenmgr, mapfile, alg);
+	}
+	else
+	{
+		std::cerr << "err; invalid search algorithm: " << alg << "\n";
+		return 1;
+	}
+
+	return 0;
 }

@@ -10,10 +10,10 @@
 //
 
 #include "jps.h"
-#include "jps/four_connected_jps_locator.h"
+#include <jps/jump/four_connected_jps_locator.h>
 #include <jps/jump/online_jump_point_locator.h>
 #include <warthog/domain/gridmap.h>
-#include <warthog/search/expansion_policy.h>
+#include <warthog/search/gridmap_expansion_policy.h>
 #include <warthog/search/problem_instance.h>
 #include <warthog/search/search_node.h>
 #include <warthog/util/helpers.h>
@@ -23,37 +23,34 @@
 namespace jps::search
 {
 
-class jps4c_expansion_policy : public warthog::search::expansion_policy
+class jps4c_expansion_policy
+    : public warthog::search::gridmap_expansion_policy_base
 {
 public:
 	jps4c_expansion_policy(warthog::domain::gridmap* map);
 	virtual ~jps4c_expansion_policy();
 
-	virtual void
-	expand(warthog::search::search_node*, warthog::search::problem_instance*);
-
-	uint32_t
-	get_state(warthog::sn_id_t node_id);
-
 	void
-	print_node(warthog::search::search_node* n, std::ostream& out);
+	expand(
+	    warthog::search::search_node*,
+	    warthog::search::search_problem_instance*) override;
 
-	virtual warthog::search::search_node*
-	generate_start_node(warthog::search::problem_instance* pi);
+	warthog::search::search_node*
+	generate_start_node(warthog::search::search_problem_instance* pi) override;
 
-	virtual warthog::search::search_node*
-	generate_target_node(warthog::search::problem_instance* pi);
+	warthog::search::search_node*
+	generate_target_node(
+	    warthog::search::search_problem_instance* pi) override;
 
-	virtual size_t
-	mem()
+	size_t
+	mem() override
 	{
 		return expansion_policy::mem() + sizeof(*this) + map_->mem()
 		    + jpl_->mem();
 	}
 
 private:
-	warthog::domain::gridmap* map_;
-	warthog::four_connected_jps_locator* jpl_;
+	jump::four_connected_jps_locator* jpl_;
 };
 
 }

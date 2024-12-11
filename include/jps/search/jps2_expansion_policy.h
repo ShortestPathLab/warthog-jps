@@ -14,25 +14,25 @@
 #include "jps.h"
 #include <jps/jump/online_jump_point_locator2.h>
 #include <warthog/domain/gridmap.h>
-#include <warthog/search/expansion_policy.h>
+#include <warthog/search/gridmap_expansion_policy.h>
 #include <warthog/search/problem_instance.h>
 #include <warthog/search/search_node.h>
 #include <warthog/util/helpers.h>
 
-#include <cstdint>
-
 namespace jps::search
 {
 
-class jps2_expansion_policy : public warthog::search::expansion_policy
+class jps2_expansion_policy
+    : public warthog::search::gridmap_expansion_policy_base
 {
 public:
 	jps2_expansion_policy(warthog::domain::gridmap* map);
 	virtual ~jps2_expansion_policy();
 
 	void
-	expand(warthog::search::search_node*, warthog::search::problem_instance*)
-	    override;
+	expand(
+	    warthog::search::search_node*,
+	    warthog::search::search_problem_instance*) override;
 
 	size_t
 	mem() override
@@ -41,17 +41,12 @@ public:
 		    + jpl_->mem();
 	}
 
-	uint32_t
-	get_state(warthog::sn_id_t node_id);
-
-	void
-	print_node(warthog::search::search_node* n, std::ostream& out);
+	warthog::search::search_node*
+	generate_start_node(warthog::search::search_problem_instance* pi) override;
 
 	warthog::search::search_node*
-	generate_start_node(warthog::search::problem_instance* pi) override;
-
-	warthog::search::search_node*
-	generate_target_node(warthog::search::problem_instance* pi) override;
+	generate_target_node(
+	    warthog::search::search_problem_instance* pi) override;
 
 	// this function gets called whenever a successor node is relaxed. at that
 	// point we set the node currently being expanded (==current) as the
@@ -61,10 +56,9 @@ public:
 	// update_parent_direction(warthog::search::search_node* n);
 
 private:
-	warthog::domain::gridmap* map_;
-	warthog::jps::online_jump_point_locator2* jpl_;
-	std::vector<uint32_t> jp_ids_;
-	std::vector<warthog::cost_t> jp_costs_;
+	jump::online_jump_point_locator2* jpl_;
+	vec_jps_id jp_ids_;
+	vec_jps_cost jp_costs_;
 };
 
 }

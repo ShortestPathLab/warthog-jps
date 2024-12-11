@@ -14,14 +14,11 @@
 // @created: 03/09/2012
 //
 
-#include <jps/search/jps.h>
+#include <jps/forward.h>
 #include <vector>
 #include <warthog/domain/gridmap.h>
 
 namespace jps::jump
-{
-
-namespace jps
 {
 
 class online_jump_point_locator2
@@ -32,8 +29,8 @@ public:
 
 	void
 	jump(
-	    warthog::jps::direction d, uint32_t node_id, uint32_t goalid,
-	    std::vector<uint32_t>& jpoints, std::vector<warthog::cost_t>& costs);
+	    direction d, jps_id node_id, jps_id goal_id, vec_jps_id& jpoints,
+	    vec_jps_cost& costs);
 
 	size_t
 	mem()
@@ -43,48 +40,40 @@ public:
 
 private:
 	void
-	jump_north(
-	    std::vector<uint32_t>& jpoints, std::vector<warthog::cost_t>& costs);
+	jump_north(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_south(
-	    std::vector<uint32_t>& jpoints, std::vector<warthog::cost_t>& costs);
+	jump_south(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_east(
-	    std::vector<uint32_t>& jpoints, std::vector<warthog::cost_t>& costs);
+	jump_east(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_west(
-	    std::vector<uint32_t>& jpoints, std::vector<warthog::cost_t>& costs);
+	jump_west(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_northeast(
-	    std::vector<uint32_t>& jpoints, std::vector<warthog::cost_t>& costs);
+	jump_northeast(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_northwest(
-	    std::vector<uint32_t>& jpoints, std::vector<warthog::cost_t>& costs);
+	jump_northwest(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_southeast(
-	    std::vector<uint32_t>& jpoints, std::vector<warthog::cost_t>& costs);
+	jump_southeast(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_southwest(
-	    std::vector<uint32_t>& jpoints, std::vector<warthog::cost_t>& costs);
+	jump_southwest(vec_jps_id& jpoints, vec_jps_cost& costs);
 
 	// these versions can be passed a map parameter to
 	// use when jumping. they allow switching between
 	// map_ and rmap_ (a rotated counterpart).
 	void
 	jump_north_(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 	void
 	jump_south_(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 	void
 	jump_east_(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 	void
 	jump_west_(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 
 	// these versions perform a single diagonal jump, returning
@@ -92,55 +81,51 @@ private:
 	// jump points that caused the jumping process to stop
 	void
 	jump_northeast_(
-	    uint32_t& node_id, uint32_t& rnode_id, uint32_t goal_id,
-	    uint32_t rgoal_id, uint32_t& jumpnode_id, warthog::cost_t& jumpcost,
-	    uint32_t& jp1_id, warthog::cost_t& jp1_cost, uint32_t& jp2_id,
-	    warthog::cost_t& jp2_cost);
+	    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
+	    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp1_id,
+	    warthog::cost_t& jp1_cost, jps_id& jp2_id, warthog::cost_t& jp2_cost);
 	void
 	jump_northwest_(
-	    uint32_t& node_id, uint32_t& rnode_id, uint32_t goal_id,
-	    uint32_t rgoal_id, uint32_t& jumpnode_id, warthog::cost_t& jumpcost,
-	    uint32_t& jp1_id, warthog::cost_t& jp1_cost, uint32_t& jp2_id,
-	    warthog::cost_t& jp2_cost);
+	    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
+	    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp1_id,
+	    warthog::cost_t& jp1_cost, jps_id& jp2_id, warthog::cost_t& jp2_cost);
 	void
 	jump_southeast_(
-	    uint32_t& node_id, uint32_t& rnode_id, uint32_t goal_id,
-	    uint32_t rgoal_id, uint32_t& jumpnode_id, warthog::cost_t& jumpcost,
-	    uint32_t& jp1_id, warthog::cost_t& jp1_cost, uint32_t& jp2_id,
-	    warthog::cost_t& jp2_cost);
+	    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
+	    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp1_id,
+	    warthog::cost_t& jp1_cost, jps_id& jp2_id, warthog::cost_t& jp2_cost);
 	void
 	jump_southwest_(
-	    uint32_t& node_id, uint32_t& rnode_id, uint32_t goal_id,
-	    uint32_t rgoal_id, uint32_t& jumpnode_id, warthog::cost_t& jumpcost,
-	    uint32_t& jp1_id, warthog::cost_t& jp1_cost, uint32_t& jp2_id,
-	    warthog::cost_t& jp2_cost);
+	    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
+	    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp1_id,
+	    warthog::cost_t& jp1_cost, jps_id& jp2_id, warthog::cost_t& jp2_cost);
 
 	// functions to convert map indexes to rmap indexes
-	inline uint32_t
-	map_id_to_rmap_id(uint32_t mapid)
+	inline jps_id
+	map_id_to_rmap_id(jps_id mapid)
 	{
-		if(mapid == warthog::INF32) { return mapid; }
+		if(mapid.is_none()) { return jps_id::none(); }
 
 		uint32_t x, y;
 		uint32_t rx, ry;
 		map_->to_unpadded_xy(mapid, x, y);
 		ry = x;
 		rx = map_->header_height() - y - 1;
-		return rmap_->to_padded_id(rx, ry);
+		return jps_id(rmap_->to_padded_id(rx, ry));
 	}
 
 	// convert rmap indexes to map indexes
-	inline uint32_t
-	rmap_id_to_map_id(uint32_t rmapid)
+	inline jps_id
+	rmap_id_to_map_id(jps_id rmapid)
 	{
-		if(rmapid == warthog::INF32) { return rmapid; }
+		if(rmapid.is_none()) { return jps_id::none(); }
 
 		uint32_t x, y;
 		uint32_t rx, ry;
 		rmap_->to_unpadded_xy(rmapid, rx, ry);
 		x = ry;
 		y = rmap_->header_width() - rx - 1;
-		return map_->to_padded_id(x, y);
+		return jps_id(map_->to_padded_id(x, y));
 	}
 
 	warthog::domain::gridmap*
@@ -150,23 +135,22 @@ private:
 	warthog::domain::gridmap* rmap_;
 	// uint32_t jumplimit_;
 
-	uint32_t current_goal_id_;
-	uint32_t current_rgoal_id_;
-	uint32_t current_node_id_;
-	uint32_t current_rnode_id_;
+	jps_id current_goal_id_;
+	jps_id current_rgoal_id_;
+	jps_id current_node_id_;
+	jps_id current_rnode_id_;
 
 	// these function pointers allow us to switch between forward jumping
 	// and backward jumping (i.e. with the parent direction reversed)
-	void (warthog::jps::online_jump_point_locator2::*__jump_east_fp)(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	void (online_jump_point_locator2::*jump_east_fp)(
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 
-	void (warthog::jps::online_jump_point_locator2::*__jump_west_fp)(
-	    uint32_t node_id, uint32_t goal_id, uint32_t& jumpnode_id,
+	void (online_jump_point_locator2::*jump_west_fp)(
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost, warthog::domain::gridmap* mymap);
 };
-}
 
-}
+} // namespace jps::jump
 
 #endif // JPS_JUMP_ONLINE_JUMP_POINT_LOCATOR2_H
