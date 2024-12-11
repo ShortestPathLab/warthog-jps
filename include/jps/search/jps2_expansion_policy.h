@@ -22,15 +22,17 @@
 namespace jps::search
 {
 
-class jps2_expansion_policy : public warthog::search::gridmap_expansion_policy_base
+class jps2_expansion_policy
+    : public warthog::search::gridmap_expansion_policy_base
 {
 public:
 	jps2_expansion_policy(warthog::domain::gridmap* map);
 	virtual ~jps2_expansion_policy();
 
 	void
-	expand(warthog::search::search_node*, warthog::search::search_problem_instance*)
-	    override;
+	expand(
+	    warthog::search::search_node*,
+	    warthog::search::search_problem_instance*) override;
 
 	size_t
 	mem() override
@@ -43,7 +45,8 @@ public:
 	generate_start_node(warthog::search::search_problem_instance* pi) override;
 
 	warthog::search::search_node*
-	generate_target_node(warthog::search::search_problem_instance* pi) override;
+	generate_target_node(
+	    warthog::search::search_problem_instance* pi) override;
 
 	// this function gets called whenever a successor node is relaxed. at that
 	// point we set the node currently being expanded (==current) as the

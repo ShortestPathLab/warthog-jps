@@ -29,8 +29,8 @@ public:
 
 	void
 	jump(
-	    direction d, jps_id node_id, jps_id goal_id,
-	    vec_jps_id& jpoints, vec_jps_cost& costs);
+	    direction d, jps_id node_id, jps_id goal_id, vec_jps_id& jpoints,
+	    vec_jps_cost& costs);
 
 	size_t
 	mem()
@@ -40,29 +40,21 @@ public:
 
 private:
 	void
-	jump_north(
-	    vec_jps_id& jpoints, vec_jps_cost& costs);
+	jump_north(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_south(
-	    vec_jps_id& jpoints, vec_jps_cost& costs);
+	jump_south(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_east(
-	    vec_jps_id& jpoints, vec_jps_cost& costs);
+	jump_east(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_west(
-	    vec_jps_id& jpoints, vec_jps_cost& costs);
+	jump_west(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_northeast(
-	    vec_jps_id& jpoints, vec_jps_cost& costs);
+	jump_northeast(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_northwest(
-	    vec_jps_id& jpoints, vec_jps_cost& costs);
+	jump_northwest(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_southeast(
-	    vec_jps_id& jpoints, vec_jps_cost& costs);
+	jump_southeast(vec_jps_id& jpoints, vec_jps_cost& costs);
 	void
-	jump_southwest(
-	    vec_jps_id& jpoints, vec_jps_cost& costs);
+	jump_southwest(vec_jps_id& jpoints, vec_jps_cost& costs);
 
 	// these versions can be passed a map parameter to
 	// use when jumping. they allow switching between
@@ -91,26 +83,22 @@ private:
 	jump_northeast_(
 	    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
 	    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp1_id,
-	    warthog::cost_t& jp1_cost, jps_id& jp2_id,
-	    warthog::cost_t& jp2_cost);
+	    warthog::cost_t& jp1_cost, jps_id& jp2_id, warthog::cost_t& jp2_cost);
 	void
 	jump_northwest_(
 	    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
 	    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp1_id,
-	    warthog::cost_t& jp1_cost, jps_id& jp2_id,
-	    warthog::cost_t& jp2_cost);
+	    warthog::cost_t& jp1_cost, jps_id& jp2_id, warthog::cost_t& jp2_cost);
 	void
 	jump_southeast_(
 	    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
 	    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp1_id,
-	    warthog::cost_t& jp1_cost, jps_id& jp2_id,
-	    warthog::cost_t& jp2_cost);
+	    warthog::cost_t& jp1_cost, jps_id& jp2_id, warthog::cost_t& jp2_cost);
 	void
 	jump_southwest_(
 	    jps_id& node_id, jps_id& rnode_id, jps_id goal_id, jps_id rgoal_id,
 	    jps_id& jumpnode_id, warthog::cost_t& jumpcost, jps_id& jp1_id,
-	    warthog::cost_t& jp1_cost, jps_id& jp2_id,
-	    warthog::cost_t& jp2_cost);
+	    warthog::cost_t& jp1_cost, jps_id& jp2_id, warthog::cost_t& jp2_cost);
 
 	// functions to convert map indexes to rmap indexes
 	inline jps_id

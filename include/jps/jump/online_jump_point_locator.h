@@ -28,8 +28,8 @@ public:
 
 	void
 	jump(
-	    direction d, jps_id node_id, jps_id goal_id,
-	    jps_id& jumpnode_id, warthog::cost_t& jumpcost);
+	    direction d, jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
+	    warthog::cost_t& jumpcost);
 
 	size_t
 	mem()

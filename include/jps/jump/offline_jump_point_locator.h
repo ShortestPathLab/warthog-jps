@@ -24,8 +24,8 @@ public:
 
 	void
 	jump(
-	    direction d, jps_id node_id, jps_id goal_id,
-	    jps_id& jumpnode_id, double& jumpcost);
+	    direction d, jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
+	    double& jumpcost);
 
 	uint32_t
 	mem()
@@ -45,36 +45,28 @@ private:
 
 	void
 	jump_northwest(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost);
 	void
 	jump_northeast(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost);
 	void
 	jump_southwest(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost);
 	void
 	jump_southeast(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost);
 	void
 	jump_north(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost);
 	void
 	jump_south(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost);
 	void
 	jump_east(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost);
 	void
 	jump_west(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost);
 
 	warthog::domain::gridmap* map_;
 	uint32_t dbsize_;

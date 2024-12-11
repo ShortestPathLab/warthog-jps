@@ -38,40 +38,36 @@ public:
 	// private:
 	void
 	jump_north(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost);
 	void
 	jump_south(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost);
 	void
 	jump_east(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost);
 	void
 	jump_west(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost);
 
 	// these versions can be passed a map parameter to
 	// use when jumping. they allow switching between
 	// map_ and rmap_ (a rotated counterpart).
 	void
 	jump_east_(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost, warthog::domain::gridmap* mymap);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost,
+	    warthog::domain::gridmap* mymap);
 	void
 	jump_west_(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost, warthog::domain::gridmap* mymap);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost,
+	    warthog::domain::gridmap* mymap);
 	void
 	jump_north_(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost, warthog::domain::gridmap* mymap);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost,
+	    warthog::domain::gridmap* mymap);
 	void
 	jump_south_(
-	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
-	    double& jumpcost, warthog::domain::gridmap* mymap);
+	    jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost,
+	    warthog::domain::gridmap* mymap);
 
 	warthog::domain::gridmap* map_;
 	// uint32_t jumplimit_;

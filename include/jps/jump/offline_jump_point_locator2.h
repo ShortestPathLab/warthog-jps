@@ -28,8 +28,8 @@ public:
 
 	void
 	jump(
-	    direction d, jps_id node_id, jps_id goal_id,
-	    vec_jps_id& neighbours, vec_jps_cost& costs);
+	    direction d, jps_id node_id, jps_id goal_id, vec_jps_id& neighbours,
+	    vec_jps_cost& costs);
 
 	uint32_t
 	mem()

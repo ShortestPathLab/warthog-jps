@@ -23,20 +23,24 @@
 namespace jps::search
 {
 
-class jps4c_expansion_policy : public warthog::search::gridmap_expansion_policy_base
+class jps4c_expansion_policy
+    : public warthog::search::gridmap_expansion_policy_base
 {
 public:
 	jps4c_expansion_policy(warthog::domain::gridmap* map);
 	virtual ~jps4c_expansion_policy();
 
 	void
-	expand(warthog::search::search_node*, warthog::search::search_problem_instance*) override;
+	expand(
+	    warthog::search::search_node*,
+	    warthog::search::search_problem_instance*) override;
 
 	warthog::search::search_node*
 	generate_start_node(warthog::search::search_problem_instance* pi) override;
 
 	warthog::search::search_node*
-	generate_target_node(warthog::search::search_problem_instance* pi) override;
+	generate_target_node(
+	    warthog::search::search_problem_instance* pi) override;
 
 	size_t
 	mem() override
