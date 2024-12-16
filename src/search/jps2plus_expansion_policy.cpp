@@ -60,7 +60,7 @@ jps2plus_expansion_policy::expand(
 		jps_id jp_id = jp_ids_.at(i);
 		// TODO: FIX jps node id
 		warthog::search::search_node* mynode
-		    = generate(jps_id(jp_id.id & jps::JPS_ID_MASK));
+		    = generate(jps_id(jp_id.id));
 		add_neighbour(mynode, costs_.at(i));
 	}
 }
