@@ -111,21 +111,23 @@ check_optimality(
 }
 
 template<typename Search>
-void
+int
 run_experiments(
     Search& algo, std::string alg_name,
     warthog::util::scenario_manager& scenmgr, bool verbose, bool checkopt,
     std::ostream& out)
 {
-	std::cout << "id\talg\texpanded\tgenerated\treopen\tsurplus\theapops"
-	          << "\tnanos\tplen\tpcost\tscost\tmap\n";
+	auto* expander = algo.get_expander();
+	if (expander == nullptr)
+		return 1;
+	out << "id\talg\texpanded\tgenerated\treopen\tsurplus\theapops"
+	    << "\tnanos\tplen\tpcost\tscost\tmap\n";
 	for(unsigned int i = 0; i < scenmgr.num_experiments(); i++)
 	{
 		warthog::util::experiment* exp = scenmgr.get_experiment(i);
 
-		warthog::pack_id startid{
-		    exp->starty() * exp->mapwidth() + exp->startx()};
-		warthog::pack_id goalid{exp->goaly() * exp->mapwidth() + exp->goalx()};
+		warthog::pack_id startid = expander->get_pack(exp->startx(), exp->starty());
+		warthog::pack_id goalid = expander->get_pack(exp->goalx(), exp->goaly());
 		warthog::search::problem_instance pi(startid, goalid, verbose);
 		warthog::search::search_parameters par;
 		warthog::search::solution sol;
@@ -141,12 +143,17 @@ run_experiments(
 		    << exp->distance() << "\t" << scenmgr.last_file_loaded()
 		    << std::endl;
 
-		if(checkopt) { check_optimality(sol, exp); }
+		if(checkopt) {
+			if (!check_optimality(sol, exp))
+				return 4;
+		}
 	}
+
+	return 0;
 }
 
 template<typename ExpansionPolicy>
-void
+int
 run_jps(
     warthog::util::scenario_manager& scenmgr, std::string mapname,
     std::string alg_name)
@@ -158,8 +165,13 @@ run_jps(
 
 	warthog::search::unidirectional_search jps(&heuristic, &expander, &open);
 
-	run_experiments(jps, alg_name, scenmgr, verbose, checkopt, std::cout);
+	int ret = run_experiments(jps, alg_name, scenmgr, verbose, checkopt, std::cout);
+	if (ret != 0) {
+		std::cerr << "run_experiments error code " << ret << std::endl;
+		return ret;
+	}
 	std::cerr << "done. total memory: " << jps.mem() + scenmgr.mem() << "\n";
+	return 0;
 }
 
 } // namespace
