@@ -255,7 +255,7 @@ create_corner_map(warthog::domain::gridmap* gm)
 	{
 		for(uint32_t x = 0; x < mapwidth; x++)
 		{
-			jps_id from_id = jps_id(gm->to_padded_id(x, y));
+			jps_id from_id = jps_id(gm->to_padded_id_from_unpadded(x, y));
 			if(!gm->get_label(from_id)) { continue; }
 
 			jps_id w_id = jps_id(from_id.id - 1);

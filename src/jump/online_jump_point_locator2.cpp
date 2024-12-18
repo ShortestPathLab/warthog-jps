@@ -38,10 +38,10 @@ online_jump_point_locator2::create_rmap()
 	{
 		for(uint32_t y = 0; y < maph; y++)
 		{
-			uint32_t label = map_->get_label(map_->to_padded_id(x, y));
+			uint32_t label = map_->get_label(map_->to_padded_id_from_unpadded(x, y));
 			uint32_t rx = ((rmapw - 1) - y);
 			uint32_t ry = x;
-			rmap->set_label(rmap->to_padded_id(rx, ry), label);
+			rmap->set_label(rmap->to_padded_id_from_unpadded(rx, ry), label);
 		}
 	}
 	return rmap;
