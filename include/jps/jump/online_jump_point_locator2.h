@@ -111,7 +111,7 @@ private:
 		map_->to_unpadded_xy(mapid, x, y);
 		ry = x;
 		rx = map_->header_height() - y - 1;
-		return jps_id(rmap_->to_padded_id(rx, ry));
+		return jps_id(rmap_->to_padded_id_from_unpadded(rx, ry));
 	}
 
 	// convert rmap indexes to map indexes
@@ -125,7 +125,7 @@ private:
 		rmap_->to_unpadded_xy(rmapid, rx, ry);
 		x = ry;
 		y = rmap_->header_width() - rx - 1;
-		return jps_id(map_->to_padded_id(x, y));
+		return jps_id(map_->to_padded_id_from_unpadded(x, y));
 	}
 
 	warthog::domain::gridmap*

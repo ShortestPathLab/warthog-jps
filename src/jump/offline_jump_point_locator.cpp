@@ -36,7 +36,7 @@ offline_jump_point_locator::preproc()
 	{
 		for(uint32_t x = 0; x < map_->header_width(); x++)
 		{
-			jps_id mapid = jps_id{map_->to_padded_id(x, y)};
+			jps_id mapid = jps_id{map_->to_padded_id_from_unpadded(x, y)};
 			//			std::cout << mapid << " ";
 			for(uint32_t i = 0; i < 8; i++)
 			{
