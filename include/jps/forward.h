@@ -29,6 +29,18 @@ typedef enum
 using vec_jps_id = std::vector<jps_id>;
 using vec_jps_cost = std::vector<warthog::cost_t>;
 
+struct alignas(uint32_t) point
+{
+	uint16_t x;
+	uint16_t y;
+};
+
+enum class JpsFeature
+{
+	DEFAULT = 0, // uses block-based jumping
+	IMPROVE_PRUNING = 1,
+};
+
 } // namespace jps
 
 #endif // JPS_SEARCH_FORWARD_H
