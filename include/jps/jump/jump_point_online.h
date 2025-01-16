@@ -1,17 +1,12 @@
 #ifndef JPS_JUMP_ONLINE_JUMP_POINT_LOCATOR_H
 #define JPS_JUMP_ONLINE_JUMP_POINT_LOCATOR_H
 
-// online_jump_point_locator.h
-//
 // A class wrapper around some code that finds, online, jump point
 // successors of an arbitrary nodes in a uniform-cost grid map.
 //
 // For theoretical details see:
 // [Harabor D. and Grastien A, 2011,
 // Online Graph Pruning Pathfinding on Grid Maps, AAAI]
-//
-// @author: dharabor
-// @created: 03/09/2012
 //
 
 #include <jps/forward.h>
@@ -21,6 +16,81 @@
 
 namespace jps::jump
 {
+
+namespace details
+{
+
+/// @brief 
+/// @tparam East Jump east (true) or west (false)
+/// @param map 
+/// @param node 
+/// @param goal 
+/// @return 
+template <bool East>
+uint32_t jump_point_online_hori(const ::warthog::domain::gridmap& map, jps_id node, jps_id goal)
+{
+	// read tiles from the grid:
+	// - along the row of node_id
+	// - from the row above node_id
+	// - from the row below node_id
+	// NB: the jump direction (here, EAST) corresponds to moving from the
+	// low bit of the tileset and towards the high bit
+	auto nei_slider = map.get_neighbours_slider(node);
+	nei_slider.adj_bytes(East ? -1 : -6); // current location is 1 byte from boundrary
+		// bit position 0 = highest bit order, reverse of normal
+	nei_slider.width8_bits = East ? nei_slider.width8_bits - 8 : 15 - nei_slider.width8_bits;
+
+	// order going east is stored as least significant bit to most significant bit
+
+	while(true)
+	{
+		std::array<uint64_t, 3 neis = nei_slider.get_neighbours_64bit_le();
+		assert(nei_slider.width8_bits < 16);
+		uint64_t tmp = East ? ~(~0ull << nei_slider.width8_bits)
+			: ~(~0ull >> nei_slider.width8_bits);
+		// shift above and below 2 points east
+		// mask out to trav(1) before node
+		neis[0] |= tmp;
+		neis[1] |= tmp;
+		neis[2] |= tmp;
+		//   v  & will make this the least sig bit, and is where the jump point is located
+		// 10100011 : 0
+		// 10111000 : <<1~
+		if constexpr (East) {
+			tmp = ((~neis[1] << 1) & neis[1]) // above row: block(zero) trailing trav(one)
+				| ((~neis[2] << 1) & neis[2]); // below row: block(zero) trailing trav(one)
+		} else {
+			tmp = ((~neis[1] >> 1) & neis[1]) // above row: block(zero) trailing trav(one)
+				| ((~neis[2] >> 1) & neis[2]); // below row: block(zero) trailing trav(one)
+		}
+		tmp = tmp | ~neis[0];
+		if (tmp) {
+			int stop_pos = East ? std::countr_zero(tmp) : std::countl_zero(tmp); // the location to stop at
+			//  v is blocker location, prune unless target is present
+			// 10111111
+			// dead end takes president as jump point can't pass a blocker
+			jump_count += static_cast<uint32_t>(stop_pos) - nei_slider.width8_bits;
+			if ( East ?
+				(tmp & (1u << stop_pos)) :
+				(tmp & (std::numeric_limits<uint64_t>::min() >> stop_pos))
+				) // deadend
+			{
+				// jump_count = blocker_pos, jump_count-1 = true stop_pos
+				uint32_t goal_jump = East ? static_cast<uint32_t>(goal) - static_cast<uint32_t>(node)
+					: static_cast<uint32_t>(node) - static_cast<uint32_t>(goal);
+				jump_count = goal_jump < jump_count ? goal_jump : 0;
+			}
+			return jump_count;
+		}
+
+		// failed, goto next 56 bits
+		jump_count += 63 - nei_slider.width8_bits;
+		nei_slider.adj_bytes(East ? 7 : -7);
+		nei_slider.width8_bits = 7;
+	}
+}
+
+}
 
 template <JpsFeature Feature = JpsFeature::DEFAULT>
 class jump_point_online
@@ -34,7 +104,7 @@ public:
 	void set_map(const gridmap& map)
 	{
 		map_ = &map;
-		transpose_ = create_transpose_(map_);
+		rotate_map_ = create_rotate_(map_);
 	}
 
 	void
@@ -50,8 +120,11 @@ public:
 
 protected:
 
-	static point jump_east(const gridmap& map, jps_id node, jps_id goal);
-	static point jump_west(const gridmap& map, jps_id node, jps_id goal);
+	static uint32_t jump_east(const gridmap& map, jps_id node, jps_id goal);
+	static uint32_t jump_west(const gridmap& map, jps_id node, jps_id goal);
+
+	template <direction D>
+	static uint32_t jump_inter_cardinal(const gridmap& map, jps_id node, jps_id goal);
 
 	inline jps_id
 	map_id_to_rmap_id(jps_id mapid)
@@ -119,6 +192,8 @@ protected:
 protected:
 	const gridmap* map_ = {};
 	std::unique_ptr<gridmap> rotate_map_;
+	uint32_t map_width_ = 0;
+	uint32_t rotate_map_width_ = 0;
 	point transpose_adj_ = {};
 };
 
@@ -148,135 +223,55 @@ jump_point_online<Feature>::create_rotate_(const gridmap& orig) -> std::unique_p
 }
 
 template <JpsFeature Feature>
-point jump_point_online<Feature>::jump_east(const gridmap& map, jps_id node, jps_id goal)
+uint32_t jump_point_online<Feature>::jump_east(const gridmap& map, jps_id node, jps_id goal)
 {
-	std::array<uint64_t, 3> neis{};
-	bool deadend = false;
+	return details::jump_point_online_hori<true>(map, node, goal);
+}
 
-	// read tiles from the grid:
-	// - along the row of node_id
-	// - from the row above node_id
-	// - from the row below node_id
-	// NB: the jump direction (here, EAST) corresponds to moving from the
-	// low bit of the tileset and towards the high bit
-	auto nei_slider = map.get_neighbours_slider(node);
-	nei_slider.adj_bytes(-1); // current location is within byte 1 for detecting
+template <JpsFeature Feature>
+uint32_t jump_point_online<Feature>::jump_west(const gridmap& map, jps_id node, jps_id goal)
+{
+	return details::jump_point_online_hori<false>(map, node, goal);
+}
 
-	// order going east is stored as least significant bit to most significant bit
+template <direction D>
+uint32_t jump_inter_cardinal(const gridmap& map, jps_id node, jps_id goal)
+{
+	/*
+	map:
+	NW N NE
+	 W   E
+	SW S SE
 
-	while(true)
-	{
-		neis = nei_slider.get_neighbours_64bit_le();
-		// example version
-		// ~neis[1] | (~neis[0] << 1) | (~neis[2] << 1)
-		// the lsb denotes a turning point
-		// while lsb(~neis[1]) is a dead end
-		// as we need 1 bit shift for upper and lower row, we start in byte 1 and shift 7 bytes
-	}
+	rmap = rotate 90 CW:
+	SW W NW
+	 S   N
+	SE E NE
 
-	// look for tiles with forced neighbours in the rows above and below
-	// A forced neighbour can be identified as a non-obstacle tile that
-	// follows immediately  after an obstacle tile.
-	// we ignore forced tiles which are at offsets >= bit_offset
-	// (i.e., all tiles in {WEST of, above, below} the current location)
-	uint64_t forced_bits = (~neis[0] << 1) & neis[0];
-	forced_bits |= (~neis[2] << 1) & neis[2];
-	forced_bits &= ~((1LL << bit_offset) | ((1LL << bit_offset) - 1));
+	SE = jump_intercardinal_pos(M0=map,M1=rmap)
+	map:  x+=1, y+=1, pos += mapW+1
+	rmap: x-=1, y+=1, pos += rmapW-1
+	jump_south = rmap: jump_west(M1), (x,y+r)
+	jump_east = map: jump_east(M0), (x+r,y)
 
-	// look for obstacles tiles in the current row
-	// we ignore obstacles at offsets > bit_offset
-	uint64_t deadend_bits = ~neis[1];
-	deadend_bits &= ~((1LL << bit_offset) - 1);
+	NE = jump_intercardinal_pos(M0=rmap,M1=map)
+	rmap: x+=1, y+=1, pos += rmapW+1
+	map:  x+=1, y-=1, pos -= mapW-1
+	jump_east = map: jump_east(M1), (x+r,y)
+	jump_north = rmap: jump_east(M0), (x,y-r)
 
-	// stop jumping if any forced or deadend locations are found
-	uint64_t stop_bits = (forced_bits | deadend_bits);
-	if(stop_bits)
-	{
-		// figure out how far we jumped (we count trailing zeroes)
-		// we then subtract -1 because we want to know how many
-		// steps from the bit offset to the stop bit
-		int stop_pos = __builtin_ctzll(stop_bits);
-		uint32_t num_steps = (stop_pos - bit_offset);
+	NW = jump_intercardinal_neg(M0=map,M1=rmap)
+	map:  x-=1, y-=1, pos -= mapW+1
+	rmap: x+=1, y-=1, pos -= rmapW-1
+	jump_north = rmap: jump_east(M1), (x,y-r)
+	jump_west = map: jump_west(M0), (x-r,y)
 
-		// don't jump over the target
-		uint32_t goal_dist = goal_id.id - node_id.id;
-		if(num_steps > goal_dist)
-		{
-			jumpnode_id = goal_id;
-			jumpcost = goal_dist;
-			return;
-		}
-
-		// did we reach a jump point or a dead-end?
-		deadend = (deadend_bits & (1LL << stop_pos));
-		if(deadend)
-		{
-			jumpcost = num_steps - (1 && num_steps);
-			jumpnode_id = jps_id::none();
-			return;
-		}
-
-		jumpnode_id = jps_id(node_id.id + num_steps);
-		jumpcost = num_steps;
-		return;
-	}
-
-	// keep jumping. the procedure below is implemented
-	// similarly to the above. but now the stride is a
-	// fixed 64bit and the jumps are word-aligned.
-	jumpnode_id = jps_id(node_id.id + 64 - bit_offset);
-	while(true)
-	{
-		// we need to forced neighbours might occur across
-		// 64bit boundaries. to check for these we keep the
-		// high-byte of the previous set of neighbours
-		uint64_t high_ra = neis[0] >> 63;
-		uint64_t high_rb = neis[2] >> 63;
-
-		// read next 64bit set of tile data
-		mymap->get_neighbours_64bit(jumpnode_id, neis);
-
-		// identify forced neighbours and deadend tiles.
-		uint64_t forced_bits = ~((neis[0] << 1) | high_ra) & neis[0];
-		forced_bits |= ~((neis[2] << 1) | high_rb) & neis[2];
-		uint64_t deadend_bits = ~neis[1];
-
-		// stop if we found any forced or dead-end tiles
-		uint64_t stop_bits = (forced_bits | deadend_bits);
-		if(stop_bits)
-		{
-			int stop_pos = __builtin_ctzll(stop_bits);
-			jumpnode_id.id += stop_pos;
-			deadend = deadend_bits & (1LL << stop_pos);
-			break;
-		}
-		jumpnode_id.id += 64;
-	}
-
-	// figure out how far we jumped
-	uint32_t num_steps = jumpnode_id.id - node_id.id;
-
-	// don't jump over the target
-	uint32_t goal_dist = goal_id.id - node_id.id;
-	if(num_steps > goal_dist)
-	{
-		jumpnode_id = goal_id;
-		jumpcost = goal_dist;
-		return;
-	}
-
-	// did we hit a dead-end?
-	if(deadend)
-	{
-		// in this case we want to return the number of steps to
-		// the last traversable tile (not to the obstacle)
-		// need -1 to fix it.
-		num_steps -= (1 && num_steps);
-		jumpnode_id = jps_id::none();
-	}
-
-	// return the number of steps to reach the jump point or deadend
-	jumpcost = num_steps;
+	SW = jump_intercardinal_neg(M0=rmap,M1=map)
+	rmap: x-=1, y-=1, pos -= rmapW+1
+	map:  x-=1, y+=1, pos += mapW-1
+	jump_south = rmap: jump_west(M0), (x,y+r)
+	jump_west = map: jump_west(M1), (x-r,y)
+	*/
 }
 
 }
