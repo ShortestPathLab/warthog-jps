@@ -124,7 +124,16 @@ protected:
 	static uint32_t jump_west(const gridmap& map, jps_id node, jps_id goal);
 
 	template <direction D>
-	static uint32_t jump_inter_cardinal(const gridmap& map, jps_id node, jps_id goal);
+	uint32_t jump_inter_cardinal(jps_id node, jps_id rnode);
+
+	point point_to_rpoint(point p) noexcept
+	{
+		return {static_cast<uint16_t>(p.y), static_cast<uint16_t>(rotate_map_height_m1_ - p.x)};
+	}
+	jps_id point_to_jps_id(point p) noexcept
+	{
+		return 
+	}
 
 	inline jps_id
 	map_id_to_rmap_id(jps_id mapid)
@@ -193,8 +202,11 @@ protected:
 	const gridmap* map_ = {};
 	std::unique_ptr<gridmap> rotate_map_;
 	uint32_t map_width_ = 0;
-	uint32_t rotate_map_width_ = 0;
+	uint32_t rmap_width_ = 0;
+	uint32_t rotate_map_height_m1_ = 0;
 	point transpose_adj_ = {};
+	jps_id goal = {};
+	jps_id rotate_goal_ = {};
 };
 
 
@@ -234,9 +246,11 @@ uint32_t jump_point_online<Feature>::jump_west(const gridmap& map, jps_id node, 
 	return details::jump_point_online_hori<false>(map, node, goal);
 }
 
+template <JpsFeature Feature>
 template <direction D>
-uint32_t jump_inter_cardinal(const gridmap& map, jps_id node, jps_id goal)
+uint32_t jump_point_online<Feature>::jump_inter_cardinal(jps_id node, jps_id rnode)
 {
+	static_assert(D == NORTHEAST || D == NORTHWEST || D == SOUTHEAST || D == SOUTHWEST, "D must be inter-cardinal.");
 	/*
 	map:
 	NW N NE
@@ -255,8 +269,8 @@ uint32_t jump_inter_cardinal(const gridmap& map, jps_id node, jps_id goal)
 	jump_east = map: jump_east(M0), (x+r,y)
 
 	NE = jump_intercardinal_pos(M0=rmap,M1=map)
-	rmap: x+=1, y+=1, pos += rmapW+1
 	map:  x+=1, y-=1, pos -= mapW-1
+	rmap: x+=1, y+=1, pos += rmapW+1
 	jump_east = map: jump_east(M1), (x+r,y)
 	jump_north = rmap: jump_east(M0), (x,y-r)
 
@@ -267,11 +281,34 @@ uint32_t jump_inter_cardinal(const gridmap& map, jps_id node, jps_id goal)
 	jump_west = map: jump_west(M0), (x-r,y)
 
 	SW = jump_intercardinal_neg(M0=rmap,M1=map)
-	rmap: x-=1, y-=1, pos -= rmapW+1
 	map:  x-=1, y+=1, pos += mapW-1
+	rmap: x-=1, y-=1, pos -= rmapW+1
 	jump_south = rmap: jump_west(M0), (x,y+r)
 	jump_west = map: jump_west(M1), (x-r,y)
 	*/
+
+	int32_t node_at = static_cast<int32_t>(static_cast<uint32_t>(node));
+	int32_t rnode_at = static_cast<int32_t>(static_cast<uint32_t>(rnode));
+	int32_t adj_width, adj_rwidth;
+	// setup node and rnode adjust per diagonal
+	switch (D) {
+	case NORTHEAST:
+		adj_width = -static_cast<int32_t>(map_width_ - 1); // - (mapW-1)
+		adj_rwidth = static_cast<int32_t>(rmap_width_ + 1); // + (rmapW+1)
+		break;
+	case SOUTHEAST:
+		adj_width = static_cast<int32_t>(map_width_ + 1); // + (mapW+1)
+		adj_rwidth = static_cast<int32_t>(rmap_width_ - 1); // + (rmapW-1)
+		break;
+	case SOUTHWEST:
+		adj_width = static_cast<int32_t>(map_width_ - 1); // + (mapW-1)
+		adj_rwidth = -static_cast<int32_t>(rmap_width_ + 1); // - (rmapW+1)
+		break;
+	case NORTHWEST:
+		adj_width = -static_cast<int32_t>(map_width_ + 1); // - (mapW+1)
+		adj_rwidth = -static_cast<int32_t>(rmap_width_ - 1); // - (rmapW-1)
+		break;
+	}
 }
 
 }
