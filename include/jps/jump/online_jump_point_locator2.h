@@ -33,7 +33,7 @@ public:
 	    vec_jps_cost& costs);
 
 	size_t
-	mem()
+	mem() const noexcept
 	{
 		return sizeof(this) + rmap_->mem();
 	}

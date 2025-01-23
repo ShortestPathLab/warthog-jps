@@ -32,7 +32,7 @@ public:
 	    warthog::cost_t& jumpcost);
 
 	size_t
-	mem()
+	mem() const noexcept
 	{
 		return sizeof(this) + rmap_->mem();
 	}

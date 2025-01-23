@@ -32,7 +32,7 @@ public:
 	    vec_jps_cost& costs);
 
 	uint32_t
-	mem()
+	mem() const noexcept
 	{
 		return sizeof(this) + sizeof(*db_) * dbsize_;
 	}

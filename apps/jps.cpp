@@ -21,6 +21,8 @@
 #include <warthog/util/scenario_manager.h>
 #include <warthog/util/timer.h>
 
+#include <jps/jump/jump_point_online.h>
+
 #include "cfg.h"
 #include "config.h"
 #include <getopt.h>

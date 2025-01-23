@@ -11,7 +11,10 @@ namespace jps
 
 using warthog::pack_id;
 using warthog::pad_id;
-using jps_id = pad_id;
+using jps_id = warthog::pad32_id;
+struct rmap_id_tag { };
+using jps_rid = warthog::identity_base<rmap_id_tag, jps_id::id_type>;
+using warthog::cost_t;
 
 enum direction
 {
@@ -28,7 +31,7 @@ enum direction
 };
 
 using vec_jps_id = std::vector<jps_id>;
-using vec_jps_cost = std::vector<warthog::cost_t>;
+using vec_jps_cost = std::vector<cost_t>;
 
 struct alignas(uint32_t) point
 {
@@ -39,15 +42,10 @@ struct alignas(uint32_t) point
 enum class JpsFeature : uint8_t
 {
 	DEFAULT = 0, // uses block-based jumping
-	IMPROVE_PRUNING = 1 << 0,
-#ifdef WARTHOG_INT128_ENABLED
-	FORCE_INT128 = 1 << 1,
-	TRY_INT128 = FORCE_INT128,
-#else
-	TRY_INT128 = 0
-#endif
+	PRUNE_INTERCARDINAL = 1 << 0,
+	STORE_CARDIANL_JUMP = 1 << 1, // if not PRUNE_INTERCARDINAL, then store cardinal results in intercandial jump
 };
-JpsFeature operator|(JpsFeature a, JpsFeature b) noexcept
+inline JpsFeature operator|(JpsFeature a, JpsFeature b) noexcept
 {
 	return static_cast<JpsFeature>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
 }

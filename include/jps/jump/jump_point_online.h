@@ -1,5 +1,5 @@
-#ifndef JPS_JUMP_ONLINE_JUMP_POINT_LOCATOR_H
-#define JPS_JUMP_ONLINE_JUMP_POINT_LOCATOR_H
+#ifndef JPS_JUMP_JUMP_POINT_ONLINE_H
+#define JPS_JUMP_JUMP_POINT_ONLINE_H
 
 // A class wrapper around some code that finds, online, jump point
 // successors of an arbitrary nodes in a uniform-cost grid map.
@@ -27,7 +27,7 @@ namespace details
 /// @param goal 
 /// @return 
 template <bool East>
-uint32_t jump_point_online_hori(const ::warthog::domain::gridmap& map, jps_id node, jps_id goal)
+uint32_t jump_point_online_hori(const ::warthog::domain::gridmap& map, uint32_t node, uint32_t goal)
 {
 	// read tiles from the grid:
 	// - along the row of node_id
@@ -35,16 +35,17 @@ uint32_t jump_point_online_hori(const ::warthog::domain::gridmap& map, jps_id no
 	// - from the row below node_id
 	// NB: the jump direction (here, EAST) corresponds to moving from the
 	// low bit of the tileset and towards the high bit
-	auto nei_slider = map.get_neighbours_slider(node);
+	auto nei_slider = map.get_neighbours_slider(pad_id{node});
 	nei_slider.adj_bytes(East ? -1 : -6); // current location is 1 byte from boundrary
 		// bit position 0 = highest bit order, reverse of normal
 	nei_slider.width8_bits = East ? nei_slider.width8_bits - 8 : 15 - nei_slider.width8_bits;
+	uint32_t jump_count = 0;
 
 	// order going east is stored as least significant bit to most significant bit
 
 	while(true)
 	{
-		std::array<uint64_t, 3 neis = nei_slider.get_neighbours_64bit_le();
+		std::array<uint64_t, 3> neis = nei_slider.get_neighbours_64bit_le();
 		assert(nei_slider.width8_bits < 16);
 		uint64_t tmp = East ? ~(~0ull << nei_slider.width8_bits)
 			: ~(~0ull >> nei_slider.width8_bits);
@@ -76,8 +77,8 @@ uint32_t jump_point_online_hori(const ::warthog::domain::gridmap& map, jps_id no
 				) // deadend
 			{
 				// jump_count = blocker_pos, jump_count-1 = true stop_pos
-				uint32_t goal_jump = East ? static_cast<uint32_t>(goal) - static_cast<uint32_t>(node)
-					: static_cast<uint32_t>(node) - static_cast<uint32_t>(goal);
+				uint32_t goal_jump = East ? goal - node
+					: node - goal;
 				jump_count = goal_jump < jump_count ? goal_jump : 0;
 			}
 			return jump_count;
@@ -97,20 +98,70 @@ class jump_point_online
 {
 public:
 	using gridmap = warthog::domain::gridmap;
-	online_jump_point_locator();
-	online_jump_point_locator(const gridmap& map);
-	~online_jump_point_locator();
+	jump_point_online();
+	jump_point_online(const gridmap& map);
+	~jump_point_online();
 
-	void set_map(const gridmap& map)
+	static consteval bool feature_prune_intercardinal() noexcept { return (static_cast<uint32_t>(Feature) & static_cast<uint32_t>(JpsFeature::PRUNE_INTERCARDINAL)) != 0; }
+	static consteval bool feature_store_cardinal() noexcept { return (static_cast<uint32_t>(Feature) & static_cast<uint32_t>(JpsFeature::STORE_CARDIANL_JUMP)) != 0; }
+
+	void set_map(gridmap& map);
+	void set_goal(point goal_id) noexcept;
+
+	const gridmap* get_map() const noexcept
 	{
-		map_ = &map;
-		rotate_map_ = create_rotate_(map_);
+		return map_;
+	}
+	gridmap* get_map() noexcept
+	{
+		return map_;
+	}
+	const gridmap* get_rmap() const noexcept
+	{
+		return rmap_.get();
+	}
+	gridmap* get_rmap() noexcept
+	{
+		return rmap_.get();
 	}
 
 	void
 	jump(
 	    direction d, jps_id node_id, jps_id goal_id, jps_id& jumpnode_id,
 	    warthog::cost_t& jumpcost);
+	
+	uint32_t jump_north(jps_rid rnode)
+	{
+		return jump_east(*rmap_, rnode.id, rgoal_.id);
+	}
+	uint32_t jump_east(jps_id node)
+	{
+		return jump_east(*map_, node.id, goal_.id);
+	}
+	uint32_t jump_south(jps_rid rnode)
+	{
+		return jump_west(*rmap_, rnode.id, rgoal_.id);
+	}
+	uint32_t jump_west(jps_id node)
+	{
+		return jump_west(*map_, node.id, goal_.id);
+	}
+	uint32_t jump_northeast(jps_id node, jps_rid rnode)
+	{
+		return jump_inter_cardinal<NORTHEAST>(node, rnode);
+	}
+	uint32_t jump_southeast(jps_id node, jps_rid rnode)
+	{
+		return jump_inter_cardinal<SOUTHEAST>(node, rnode);
+	}
+	uint32_t jump_southwest(jps_id node, jps_rid rnode)
+	{
+		return jump_inter_cardinal<SOUTHWEST>(node, rnode);
+	}
+	uint32_t jump_northwest(jps_id node, jps_rid rnode)
+	{
+		return jump_inter_cardinal<NORTHWEST>(node, rnode);
+	}
 
 	size_t
 	mem()
@@ -118,24 +169,19 @@ public:
 		return sizeof(this) + rmap_->mem();
 	}
 
-protected:
-
-	static uint32_t jump_east(const gridmap& map, jps_id node, jps_id goal);
-	static uint32_t jump_west(const gridmap& map, jps_id node, jps_id goal);
-
-	template <direction D>
-	uint32_t jump_inter_cardinal(jps_id node, jps_id rnode);
-
-	point point_to_rpoint(point p) noexcept
+	point point_to_rpoint(point p) const noexcept
 	{
-		return {static_cast<uint16_t>(p.y), static_cast<uint16_t>(rotate_map_height_m1_ - p.x)};
+		return {static_cast<uint16_t>(p.y), static_cast<uint16_t>(rmap_height_m1_ - p.x)};
 	}
-	jps_id point_to_jps_id(point p) noexcept
+	jps_id point_to_id(point p) const noexcept
 	{
-		return 
+		return jps_id{static_cast<uint32_t>(p.y + gridmap::PADDED_ROWS) * map_width_ + static_cast<uint32_t>(p.x)};
 	}
-
-	inline jps_id
+	jps_id rpoint_to_rid(point p) const noexcept
+	{
+		return jps_rid{static_cast<uint32_t>(p.y + gridmap::PADDED_ROWS) * rmap_width_ + static_cast<uint32_t>(p.x)};
+	}
+	jps_id
 	map_id_to_rmap_id(jps_id mapid)
 	{
 		if(mapid.is_none()) { return jps_id::none(); }
@@ -147,6 +193,39 @@ protected:
 		rx = map_->header_height() - y - 1;
 		return jps_id(rmap_->to_padded_id_from_unpadded(rx, ry));
 	}
+
+protected:
+
+	static uint32_t jump_east(const gridmap& map, jps_id node, jps_id goal);
+	static uint32_t jump_west(const gridmap& map, jps_id node, jps_id goal);
+
+	/**
+	 * Jumps on the inter_cardinal.
+	 * The result_* variables store the cardinal jump results (if enabled)
+	 * result_count only used for PRUNE_INTERCARDINAL.
+	 * result_* must be big enough to store:
+	 * !PRUNE_INTERCARDINAL & !STORE_CARDIANL_JUMP => 0 (should be nullptr)
+	 * !PRUNE_INTERCARDINAL & STORE_CARDIANL_JUMP => 2
+	 * PRUNE_INTERCARDINAL => result_cost (min 4)
+	 * 
+	 * if !PRUNE_INTERCARDINAL & STORE_CARDIANL_JUMP:
+	 *   results[0] = east/west result or jps_id::none() if none
+	 *   results[1] = north/south result or jps_id::none() if none
+	 * 
+	 * The return pair is as follows:
+	 * first: return end point id, or jps_id::none() if no more successors.
+	 * second: !PRUNE_INTERCARDINAL => distance jumped
+	 *          PRUNE_INTERCARDINAL => the number of elements pushed on the result node
+	 */
+	template <direction D>
+	std::pair<jps_id, uint32_t> jump_inter_cardinal(jps_id node, jps_id rnode, jps_id* result_node, cost_t* result_cost, uint32_t result_size = 0);
+
+	// jps_id point_to_jps_id(point p) noexcept
+	// {
+	// 	return 
+	// }
+
+
 
 	inline jps_id
 	rmap_id_to_map_id(jps_id rmapid)
@@ -175,44 +254,36 @@ protected:
 	 * 
 	 * unpadded (x,y) -> (y, Rh-1-x)
 	 */
-	std::unique_ptr<gridmap>
-	create_rotate_(const gridmap& orig)
-	{
-		const uint32_t maph = map_->header_height();
-		const uint32_t mapw = map_->header_width();
-		const uint32_t rmaph = mapw - 1;
-		const uint32_t rmapw = maph;
-		auto tmap = std::make_unique<gridmap>(rmaph + 1, rmapw);
-
-		for(uint32_t x = 0; x < mapw; x++)
-		{
-			for(uint32_t y = 0; y < maph; y++)
-			{
-				bool label
-					= map_->get_label(map_->to_padded_id_from_unpadded(x, y));
-				uint32_t rx = y;
-				uint32_t ry = rmaph - x;
-				tmap->set_label(tmap->to_padded_id_from_unpadded(rx, ry), label);
-			}
-		}
-		return tmap;
-	}
+	void
+	create_rotate_(const gridmap& orig);
 
 protected:
-	const gridmap* map_ = {};
-	std::unique_ptr<gridmap> rotate_map_;
+	gridmap* map_ = {};
+	std::unique_ptr<gridmap> rmap_;
 	uint32_t map_width_ = 0;
 	uint32_t rmap_width_ = 0;
-	uint32_t rotate_map_height_m1_ = 0;
-	point transpose_adj_ = {};
-	jps_id goal = {};
-	jps_id rotate_goal_ = {};
+	uint32_t rmap_height_m1_ = 0;
+	jps_id goal_ = {};
+	jps_rid rgoal_ = {};
 };
 
+template <JpsFeature Feature>
+void jump_point_online<Feature>::set_map(gridmap& orig)
+{
+	map_ = &orig;
+	rmap_ = create_rotate_(orig);
+}
 
 template <JpsFeature Feature>
-auto
-jump_point_online<Feature>::create_rotate_(const gridmap& orig) -> std::unique_ptr<gridmap>
+void jump_point_online<Feature>::set_goal(point p) noexcept
+{
+	goal_ = point_to_id(p);
+	rgoal_ = rpoint_to_rid(point_to_rpoint(p));
+}
+
+template <JpsFeature Feature>
+void
+jump_point_online<Feature>::create_rotate_(const gridmap& orig)
 {
 	const uint32_t maph = map_->header_height();
 	const uint32_t mapw = map_->header_width();
@@ -231,7 +302,12 @@ jump_point_online<Feature>::create_rotate_(const gridmap& orig) -> std::unique_p
 			tmap->set_label(tmap->to_padded_id_from_unpadded(rx, ry), label);
 		}
 	}
-	return tmap;
+	
+	// set values
+	rmap_ = std::move(tmap);
+	map_width_ = mapw;
+	rmap_width_ = rmapw;
+	rmap_height_m1_ = rmaph;
 }
 
 template <JpsFeature Feature>
@@ -248,7 +324,7 @@ uint32_t jump_point_online<Feature>::jump_west(const gridmap& map, jps_id node, 
 
 template <JpsFeature Feature>
 template <direction D>
-uint32_t jump_point_online<Feature>::jump_inter_cardinal(jps_id node, jps_id rnode)
+std::pair<jps_id, uint32_t> jump_point_online<Feature>::jump_inter_cardinal(jps_id node, jps_id rnode, jps_id* result_node[[maybe_unused]], cost_t* result_cost[[maybe_unused]], uint32_t result_size[[maybe_unused]])
 {
 	static_assert(D == NORTHEAST || D == NORTHWEST || D == SOUTHEAST || D == SOUTHWEST, "D must be inter-cardinal.");
 	/*
@@ -287,30 +363,204 @@ uint32_t jump_point_online<Feature>::jump_inter_cardinal(jps_id node, jps_id rno
 	jump_west = map: jump_west(M1), (x-r,y)
 	*/
 
-	int32_t node_at = static_cast<int32_t>(static_cast<uint32_t>(node));
-	int32_t rnode_at = static_cast<int32_t>(static_cast<uint32_t>(rnode));
-	int32_t adj_width, adj_rwidth;
+	union LongJumpRes {
+		uint32_t dist[2];
+		uint64_t joint;
+	};
+	struct Walker
+	{
+		const gridmap* map[2];
+		uint32_t node_at[2];
+		int32_t adj_width[2];
+		union {
+			uint8_t row[2];
+			uint16_t row_i;
+		};
+		jps_id goal[2];
+
+		void next_index() noexcept
+		{
+			node_at[0] = static_cast<uint32_t>(static_cast<int32_t>(node_at[0]) + adj_width[0]);
+			node_at[1] += static_cast<uint32_t>(static_cast<int32_t>(node_at[1]) + adj_width[1]);;
+		}
+
+		uint8_t get_row() const noexcept
+		{
+			// get node_at-1..node_at+1
+			return static_cast<uint8_t>(map[0]->template get_span<3>(pad_id{node_at[0]-1}));
+		}
+		void first_row() noexcept
+		{
+			row[1] = get_row();
+		}
+		void next_row() noexcept
+		{
+			next_index();
+			row[0] = row[1];
+			row[1] = get_row();
+		}
+		jps_id get_last_row() const noexcept
+		{
+			return jps_id{static_cast<uint32_t>(static_cast<int32_t>(node_at[0]) - adj_width[0])};
+		}
+		jps_id adj_hori(uint32_t node, uint32_t dist) const noexcept
+		{
+			if constexpr (D == NORTHEAST || D == SOUTHEAST) {
+				return jps_id{node + dist};
+			} else {
+				return jps_id{node - dist};
+			}
+		}
+		jps_id adj_vert(uint32_t node, uint32_t dist) const noexcept
+		{
+			if constexpr (D == NORTHEAST || D == SOUTHEAST) {
+				return jps_id{node + (adj_width[0]-1) * dist};
+			} else {
+				return jps_id{node + (adj_width[0]+1) * dist};
+			}
+		}
+		bool valid_space() const noexcept
+		{
+			// east | west differernce
+			// north/south does not make a difference
+			if constexpr (D == NORTHEAST || D == SOUTHEAST) {
+				// we want from grid
+				// .xx  == row[0] = 0bxx.
+				//  xx. == row[1] = 0b.xx
+				// all[x] = 1
+				constexpr uint16_t mask = std::endian::native == std::endian::little ?
+					0b0000'0011'0000'0110 :
+					0b0000'0110'0000'0011;
+				return (row_i & mask) == mask;
+			} else {
+				// we want from grid
+				//  xx. == row[0] = 0b.xx
+				// .xx  == row[1] = 0bxx.
+				// all[x] = 1
+				constexpr uint16_t mask = std::endian::native == std::endian::little ?
+					0b0000'0110'0000'0011 :
+					0b0000'0011'0000'0110;
+				return (row_i & mask) == mask;
+			}
+		}
+		// return {hori,vert}
+		LongJumpRes long_jump()
+		{
+			if constexpr (D == NORTHEAST) {
+				return {
+					jump_east(*map[0], jps_id{node_at[0]}, goal[0]), // east
+					jump_east(*map[1], jps_id{node_at[1]}, goal[1]) // north
+				};
+			} else if constexpr (D == SOUTHEAST) {
+				return {
+					jump_east(*map[0], jps_id{node_at[0]}, goal[0]), // east
+					jump_west(*map[1], jps_id{node_at[1]}, goal[1]) // south
+				};
+			} else if constexpr (D == SOUTHWEST) {
+				return {
+					jump_west(*map[0], jps_id{node_at[0]}, goal[0]), // west
+					jump_west(*map[1], jps_id{node_at[1]}, goal[1]) // south
+				};
+			} else if constexpr (D == NORTHWEST) {
+				return {
+					jump_west(*map[0], jps_id{node_at[0]}, goal[0]), // west
+					jump_east(*map[1], jps_id{node_at[1]}, goal[1]) // north
+				};
+			}
+		}
+	} walker;
+	walker.gridmap = {
+		map_,
+		rmap_.get()
+	};
+	walker.node_at[0] = static_cast<uint32_t>(node);
+	walker.node_at[1] =static_cast<uint32_t>(rnode);
+	// 0 = map, 1 = rname
 	// setup node and rnode adjust per diagonal
 	switch (D) {
 	case NORTHEAST:
-		adj_width = -static_cast<int32_t>(map_width_ - 1); // - (mapW-1)
-		adj_rwidth = static_cast<int32_t>(rmap_width_ + 1); // + (rmapW+1)
+		walker.adj_width[0] = -static_cast<int32_t>(map_width_ - 1); // - (mapW-1)
+		walker.adj_width[1] = static_cast<int32_t>(rmap_width_ + 1); // + (rmapW+1)
 		break;
 	case SOUTHEAST:
-		adj_width = static_cast<int32_t>(map_width_ + 1); // + (mapW+1)
-		adj_rwidth = static_cast<int32_t>(rmap_width_ - 1); // + (rmapW-1)
+		walker.adj_width[0] = static_cast<int32_t>(map_width_ + 1); // + (mapW+1)
+		walker.adj_width[1] = static_cast<int32_t>(rmap_width_ - 1); // + (rmapW-1)
 		break;
 	case SOUTHWEST:
-		adj_width = static_cast<int32_t>(map_width_ - 1); // + (mapW-1)
-		adj_rwidth = -static_cast<int32_t>(rmap_width_ + 1); // - (rmapW+1)
+		walker.adj_width[0] = static_cast<int32_t>(map_width_ - 1); // + (mapW-1)
+		walker.adj_width[1] = -static_cast<int32_t>(rmap_width_ + 1); // - (rmapW+1)
 		break;
 	case NORTHWEST:
-		adj_width = -static_cast<int32_t>(map_width_ + 1); // - (mapW+1)
-		adj_rwidth = -static_cast<int32_t>(rmap_width_ - 1); // - (rmapW-1)
+		walker.adj_width[0] = -static_cast<int32_t>(map_width_ + 1); // - (mapW+1)
+		walker.adj_width[1] = -static_cast<int32_t>(rmap_width_ - 1); // - (rmapW-1)
 		break;
+	}
+	walker.goal = { goal_, rgoal_ };
+
+	assert(!(feature_pruning() || feature_store_cardinal()) // both not enabled = fine
+		|| (result_node != nullptr && result_cost != nullptr) // must be set if enabled
+	);
+
+	if constexpr (!feature_pruning()) {
+		uint32_t walk_count = 1;
+		walker.first_row();
+		while (true) {
+			walker.next_row();
+			if (!walker.valid_space())
+				return {jps_id::none(), 0};
+			auto res = walker.long_jump();
+			if (res.joint != 0) {
+				jps_id last_node = walker.get_last_row();
+				if (feature_store_cardinal()) {
+					cost_t current_cost = walk_count * warthog::DBL_ROOT_TWO;
+					if (res.dist[0] != 0) {
+						result_node[0] = walker.adj_hori(last_node, res.dist[0]);
+						result_cost[0] = current_cost + res.dist[0] * warthog::DBL_ONE;
+					} else {
+						result_node[0] = jps_id::none();
+					}
+					if (res.dist[1] != 0) {
+						result_node[1] = walker.adj_vert(last_node, res.dist[1]);
+						result_cost[1] = current_cost + res.dist[1] * warthog::DBL_ONE;
+					} else {
+						result_node[1] = jps_id::none();
+					}
+				}
+				// found jump point
+				return {last_node, walk_count};
+			}
+			walk_count += 1;
+		}
+	} else {
+		// prunes intercardinal, progress and add successors to count
+		assert(result_size > 2);
+		result_size -= 1; // ensure there is always space for at least 2 results
+		uint32_t walk_count = 1;
+		uint32_t result_count = 0;
+		walker.first_row();
+		while (result_count < result_size) {
+			walker.next_row();
+			if (!walker.valid_space())
+				return {0,result_count};
+			auto res = walker.long_jump();
+			cost_t current_cost = walk_count * warthog::DBL_ROOT_TWO;
+			if (res.dist[0] != 0) { // east/west
+				result_size += 1;
+				*result_node++ = walker.adj_hori(walker.node_at[0], res.dist[0]);
+				*result_cost++ = current_cost + res.dist[0] * warthog::DBL_ONE;
+			}
+			if (res.dist[1] != 0) { // north/south
+				result_size += 1;
+				// NORTH/SOUTH handles the correct sing, adjust for EAST/WEST diff
+				*result_node++ = walker.adj_vert(walker.node_at[0], res.dist[1]);
+				*result_cost++ = current_cost + res.dist[1] * warthog::DBL_ONE;
+			}
+			walk_count += 1;
+		}
+		// not enough buffer, return result and start again
 	}
 }
 
 }
 
-#endif // JPS_JUMP_ONLINE_JUMP_POINT_LOCATOR_H
+#endif // JPS_JUMP_JUMP_POINT_ONLINE_H
