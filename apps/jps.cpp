@@ -21,7 +21,7 @@
 #include <warthog/util/scenario_manager.h>
 #include <warthog/util/timer.h>
 
-#include <jps/jump/jump_point_online.h>
+#include <jps/search/jps_expansion_policy2.h>
 
 #include "cfg.h"
 #include "config.h"
@@ -71,7 +71,8 @@ help(std::ostream& out)
 	    << "Invoking the program this way solves all instances in [scen "
 	       "file] with algorithm [alg]\n"
 	    << "Currently recognised values for [alg]:\n"
-	    << "\tjps, jps+, jps2, jps2+\n";
+	    << "\tjps, jps+, jps2, jps2+\n"
+		<< "\tjpsV2\n";
 	// << ""
 	// << "The following are valid parameters for GENERATING instances:\n"
 	// << "\t --gen [map file (required)]\n"
@@ -263,18 +264,25 @@ main(int argc, char** argv)
 	std::cerr << "mapfile=" << mapfile << std::endl;
 
 	using namespace jps::search;
-	if(alg == "jps") { run_jps<jps_expansion_policy>(scenmgr, mapfile, alg); }
+	if(alg == "jps") {
+		return run_jps<jps_expansion_policy>(scenmgr, mapfile, alg);
+	}
 	else if(alg == "jps+")
 	{
-		run_jps<jpsplus_expansion_policy>(scenmgr, mapfile, alg);
+		return run_jps<jpsplus_expansion_policy>(scenmgr, mapfile, alg);
 	}
 	else if(alg == "jps2")
 	{
-		run_jps<jps2_expansion_policy>(scenmgr, mapfile, alg);
+		return run_jps<jps2_expansion_policy>(scenmgr, mapfile, alg);
 	}
 	else if(alg == "jps2+")
 	{
-		run_jps<jps2plus_expansion_policy>(scenmgr, mapfile, alg);
+		return run_jps<jps2plus_expansion_policy>(scenmgr, mapfile, alg);
+	}
+	else if(alg == "jpsV2")
+	{
+		using jump_point = jps::jump::jump_point_online<jps::JpsFeature::DEFAULT>;
+		return run_jps<jps_expansion_policy2<jump_point>>(scenmgr, mapfile, alg);
 	}
 	else
 	{
