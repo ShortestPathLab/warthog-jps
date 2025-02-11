@@ -40,12 +40,14 @@ uint32_t jump_point_online_hori(const ::warthog::domain::gridmap& map, uint32_t 
 	// - along the row of node_id
 	// - from the row above node_id
 	// - from the row below node_id
-	// NB: the jump direction (here, EAST) corresponds to moving from the
-	// low bit of the tileset and towards the high bit
+	// NB: the jump direction corresponds to moving from the
+	// low bit of the tileset and towards the high bit (EAST)
+	// or high bit to low bit (WEST)
 	auto nei_slider = map.get_neighbours_slider(pad_id{node});
 	nei_slider.adj_bytes(East ? -1 : -6); // current location is 1 byte from boundrary
-		// bit position 0 = highest bit order, reverse of normal
+	// width8_bits is how many bits in on word current node is at, from lsb EAST and from msb WEST
 	nei_slider.width8_bits = East ? nei_slider.width8_bits + 8 : 15 - nei_slider.width8_bits;
+		// 15 - width8_bits == 63 - (width8_bits + 6 * 8)
 	uint32_t jump_count = 0;
 
 	// order going east is stored as least significant bit to most significant bit
@@ -79,7 +81,7 @@ uint32_t jump_point_online_hori(const ::warthog::domain::gridmap& map, uint32_t 
 			// dead end takes president as jump point can't pass a blocker
 			jump_count += static_cast<uint32_t>(stop_pos) - nei_slider.width8_bits;
 			uint32_t goal_jump = East ? goal - node : node - goal;
-			// if blocked: jump_count = trav cell before block
+			// if blocked: pos + jump_count = first block
 			//  otherwise: jump_count = trav cell after turn (jump point location)
 			// check for goal with goal_jump (dist) <= jump_count, as if < than goal is reachable,
 			// if equal then trav pos is the goal
@@ -88,8 +90,8 @@ uint32_t jump_point_online_hori(const ::warthog::domain::gridmap& map, uint32_t 
 				// goal reached
 				jump_count = goal_jump;
 			} else if ( East ?
-				(tmp & (1u << stop_pos)) :
-				(tmp & (static_cast<uint64_t>(std::numeric_limits<int64_t>::min()) >> stop_pos))
+				!(neis[0] & (1u << stop_pos)) :
+				!(neis[0] & (static_cast<uint64_t>(std::numeric_limits<int64_t>::min()) >> stop_pos))
 				) // deadend
 			{
 				jump_count = 0;
@@ -588,6 +590,18 @@ intercardinal_jump_result jump_point_online<Feature>::jump_intercardinal(jps_id 
 			walker.next_row();
 			if (!walker.valid_space())
 				return {jps_id::none(), jps_rid::none(), 0};
+			if (walker.node_at[0] == walker.goal[0]) [[unlikely]] {
+				// reached goal
+				intercardinal_jump_result result;
+				result.node = jps_id{walker.node_at[0]};
+				result.rnode = jps_rid::none(); // walker.get_last_rrow();
+				result.dist = walk_count;
+				if (feature_store_cardinal()) {
+					result_node[0] = jps_id::none();
+					result_node[1] = jps_id::none();
+				}
+				return result;
+			}
 			auto res = walker.long_jump();
 			if (res.joint != 0) {
 				intercardinal_jump_result result;
@@ -625,15 +639,23 @@ intercardinal_jump_result jump_point_online<Feature>::jump_intercardinal(jps_id 
 			walker.next_row();
 			if (!walker.valid_space())
 				return {jps_id::none(), jps_rid::none(), result_count};
+			if (walker.node_at[0] == walker.goal[0]) [[unlikely]] {
+				// reached goal
+				intercardinal_jump_result result;
+				result.node = jps_id{walker.node_at[0]};
+				result.rnode = jps_rid::none(); // walker.get_last_rrow();
+				result.dist = 0;
+				return result;
+			}
 			auto res = walker.long_jump();
 			cost_t current_cost = walk_count * warthog::DBL_ROOT_TWO;
 			if (res.dist[0] != 0) { // east/west
-				result_size += 1;
+				result_count += 1;
 				*result_node++ = walker.adj_hori(walker.node_at[0], res.dist[0]);
 				*result_cost++ = current_cost + res.dist[0] * warthog::DBL_ONE;
 			}
 			if (res.dist[1] != 0) { // north/south
-				result_size += 1;
+				result_count += 1;
 				// NORTH/SOUTH handles the correct sing, adjust for EAST/WEST diff
 				*result_node++ = walker.adj_vert(walker.node_at[0], res.dist[1]);
 				*result_cost++ = current_cost + res.dist[1] * warthog::DBL_ONE;
@@ -641,7 +663,7 @@ intercardinal_jump_result jump_point_online<Feature>::jump_intercardinal(jps_id 
 			walk_count += 1;
 		}
 		// not enough buffer, return result and start again
-		return {jps_id{walker.node_at[0]}, jps_rid{walker.node_at[1]}, walk_count};
+		return {jps_id{walker.node_at[0]}, jps_rid{walker.node_at[1]}, result_count};
 	}
 }
 
