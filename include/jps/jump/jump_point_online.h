@@ -90,7 +90,7 @@ uint32_t jump_point_online_hori(const ::warthog::domain::gridmap& map, uint32_t 
 				// goal reached
 				jump_count = goal_jump;
 			} else if ( East ?
-				!(neis[0] & (1u << stop_pos)) :
+				!(neis[0] & (static_cast<uint64_t>(1) << stop_pos)) :
 				!(neis[0] & (static_cast<uint64_t>(std::numeric_limits<int64_t>::min()) >> stop_pos))
 				) // deadend
 			{
