@@ -71,7 +71,7 @@ help(std::ostream& out)
 	       "file] with algorithm [alg]\n"
 	    << "Currently recognised values for [alg]:\n"
 	    << "\tjps, jps+, jps2, jps2+\n"
-		<< "\tjpsV2\n";
+		<< "\tjpsV2, jpsV2-cardinal, jpsV2-prune\n";
 	// << ""
 	// << "The following are valid parameters for GENERATING instances:\n"
 	// << "\t --gen [map file (required)]\n"
@@ -269,6 +269,16 @@ main(int argc, char** argv)
 	else if(alg == "jpsV2")
 	{
 		using jump_point = jps::jump::jump_point_online<jps::JpsFeature::DEFAULT>;
+		return run_jps<jps_expansion_policy2<jump_point>>(scenmgr, mapfile, alg);
+	}
+	else if(alg == "jpsV2-cardinal")
+	{
+		using jump_point = jps::jump::jump_point_online<jps::JpsFeature::STORE_CARDIANL_JUMP>;
+		return run_jps<jps_expansion_policy2<jump_point>>(scenmgr, mapfile, alg);
+	}
+	else if(alg == "jpsV2-prune")
+	{
+		using jump_point = jps::jump::jump_point_online<jps::JpsFeature::PRUNE_INTERCARDINAL>;
 		return run_jps<jps_expansion_policy2<jump_point>>(scenmgr, mapfile, alg);
 	}
 	else

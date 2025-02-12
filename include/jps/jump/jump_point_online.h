@@ -583,6 +583,10 @@ intercardinal_jump_result jump_point_online<Feature>::jump_intercardinal(jps_id 
 		|| (result_node != nullptr && result_cost != nullptr) // must be set if enabled
 	);
 
+	if constexpr (feature_store_cardinal()) {
+		result_node[0] = result_node[1] = jps_id::none();
+	}
+
 	if constexpr (!feature_prune_intercardinal()) {
 		uint32_t walk_count = 1;
 		walker.first_row();
@@ -596,32 +600,34 @@ intercardinal_jump_result jump_point_online<Feature>::jump_intercardinal(jps_id 
 				result.node = jps_id{walker.node_at[0]};
 				result.rnode = jps_rid::none(); // walker.get_last_rrow();
 				result.dist = walk_count;
-				if (feature_store_cardinal()) {
-					result_node[0] = jps_id::none();
-					result_node[1] = jps_id::none();
-				}
 				return result;
 			}
 			auto res = walker.long_jump();
 			if (res.joint != 0) {
 				intercardinal_jump_result result;
-				result.node = jps_id{walker.node_at[0]};
-				result.rnode = jps_rid::none(); // walker.get_last_rrow();
-				result.dist = walk_count;
-				if (feature_store_cardinal()) {
+				if (!feature_store_cardinal()) {
+					result.node = jps_id{walker.node_at[0]};
+					result.rnode = jps_rid::none(); // walker.get_last_rrow();
+					result.dist = walk_count;
+				} else {
 					cost_t current_cost = walk_count * warthog::DBL_ROOT_TWO;
 					if (res.dist[0] != 0) {
-						result_node[0] = walker.adj_hori(result.node.id, res.dist[0]);
+						result_node[0] = walker.adj_hori(walker.node_at[0], res.dist[0]);
 						result_cost[0] = current_cost + res.dist[0] * warthog::DBL_ONE;
 					} else {
 						result_node[0] = jps_id::none();
 					}
 					if (res.dist[1] != 0) {
-						result_node[1] = walker.adj_vert(result.node.id, res.dist[1]);
+						result_node[1] = walker.adj_vert(walker.node_at[0], res.dist[1]);
 						result_cost[1] = current_cost + res.dist[1] * warthog::DBL_ONE;
 					} else {
 						result_node[1] = jps_id::none();
 					}
+					// get next dia to return result as
+					walker.next_row();
+					result.node = jps_id{walker.node_at[0]};
+					result.rnode = jps_rid::none(); // walker.get_last_rrow();
+					result.dist = walker.valid_space() ? walk_count+1 : 0;
 				}
 				// found jump point
 				return result;
@@ -641,24 +647,23 @@ intercardinal_jump_result jump_point_online<Feature>::jump_intercardinal(jps_id 
 				return {jps_id::none(), jps_rid::none(), result_count};
 			if (walker.node_at[0] == walker.goal[0]) [[unlikely]] {
 				// reached goal
-				intercardinal_jump_result result;
-				result.node = jps_id{walker.node_at[0]};
-				result.rnode = jps_rid::none(); // walker.get_last_rrow();
-				result.dist = 0;
-				return result;
+				result_count += 1;
+				*(result_node++) = jps_id{walker.node_at[0]};
+				*(result_cost++) = walk_count * warthog::DBL_ROOT_TWO;
+				break;
 			}
 			auto res = walker.long_jump();
 			cost_t current_cost = walk_count * warthog::DBL_ROOT_TWO;
 			if (res.dist[0] != 0) { // east/west
 				result_count += 1;
-				*result_node++ = walker.adj_hori(walker.node_at[0], res.dist[0]);
-				*result_cost++ = current_cost + res.dist[0] * warthog::DBL_ONE;
+				*(result_node++) = walker.adj_hori(walker.node_at[0], res.dist[0]);
+				*(result_cost++) = current_cost + res.dist[0] * warthog::DBL_ONE;
 			}
 			if (res.dist[1] != 0) { // north/south
 				result_count += 1;
 				// NORTH/SOUTH handles the correct sing, adjust for EAST/WEST diff
-				*result_node++ = walker.adj_vert(walker.node_at[0], res.dist[1]);
-				*result_cost++ = current_cost + res.dist[1] * warthog::DBL_ONE;
+				*(result_node++) = walker.adj_vert(walker.node_at[0], res.dist[1]);
+				*(result_cost++) = current_cost + res.dist[1] * warthog::DBL_ONE;
 			}
 			walk_count += 1;
 		}

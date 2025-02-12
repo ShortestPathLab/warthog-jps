@@ -82,12 +82,7 @@ jps_expansion_policy2<JpsJump>::expand(
 
 	// look for jump points in the direction of each natural
 	// and forced neighbour
-	uint32_t succ_dirs;
-	if constexpr (!feature_prune_intercardinal() && feature_store_cardinal()) {
-		succ_dirs = dir_c; // point's cardinals already added, continue
-	} else {
-		succ_dirs = compute_successors(dir_c, c_tiles);
-	}
+	uint32_t succ_dirs = compute_successors(dir_c, c_tiles);
 	
 	// cardinal directions
 	for(uint32_t i = 0; i < 4; i++)
