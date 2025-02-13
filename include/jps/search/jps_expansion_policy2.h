@@ -29,7 +29,7 @@ class jps_expansion_policy2
     : public warthog::search::gridmap_expansion_policy_base
 {
 public:
-	jps_expansion_policy2(warthog::domain::gridmap* map) : gridmap_expansion_policy_base(map), jpl_(map)
+	jps_expansion_policy2(warthog::domain::gridmap* map, bool setup_map = true) : gridmap_expansion_policy_base(map), jpl_(setup_map ? map : nullptr)
 	{ }
 	virtual ~jps_expansion_policy2() = default;
 
@@ -56,6 +56,9 @@ public:
 		return expansion_policy::mem() + sizeof(*this) + map_->mem()
 		    + jpl_.mem();
 	}
+
+	jump_point& get_jump_point() noexcept { return jpl_; }
+	const jump_point& get_jump_point() const noexcept { return jpl_; }
 
 private:
 	JpsJump jpl_;
