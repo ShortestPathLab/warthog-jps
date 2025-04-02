@@ -20,6 +20,7 @@
 
 #include "jps.h"
 #include <jps/jump/jump_point_online.h>
+#include <warthog/search/gridmap_expansion_policy.h>
 
 namespace jps::search
 {
