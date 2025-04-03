@@ -27,7 +27,7 @@ namespace details
 /// @param goal the goal location
 /// @return 
 template <bool East>
-uint32_t jump_point_online_hori(::warthog::domain::gridmap map, uint32_t node, uint32_t goal)
+uint32_t jump_point_online_hori(::warthog::domain::gridmap::bittable map, uint32_t node, uint32_t goal)
 {
 	// read tiles from the grid:
 	// - along the row of node_id
@@ -115,8 +115,9 @@ struct IntercardinalWalker
 		uint32_t dist[2]; /// distance hori/vert of D a jump is valid to
 		uint64_t joint;
 	};
+	using map_type = ::warthog::domain::gridmap::bitarray;
 	/// @brief map and rmap (as bit array for small memory size)
-	warthog::domain::gridmap::bitarray map[2];
+	map_type map[2];
 	/// @brief location of current node on map and rmap
 	uint32_t node_at[2];
 	/// @brief map and rmap value to adjust node_at for each row
@@ -129,13 +130,93 @@ struct IntercardinalWalker
 		uint16_t row_i_;
 	};
 
-	static uint32_t jump_hori(const ::warthog::domain::gridmap& map, uint32_t node, uint32_t goal)
+	template <direction D2 = D>
+	static constexpr int32_t to_map_adj_width(uint32_t width) noexcept
 	{
-		return details::jump_point_online_hori<true>(map, node, goal);
+		assert(width > 0);
+		if constexpr (D2 == NORTHEAST) {
+			return -static_cast<int32_t>(width - 1); // - (mapW-1)
+		} else if constexpr (D2 == SOUTHEAST) {
+			return static_cast<int32_t>(width + 1); // + (mapW+1)
+		} else if constexpr (D2 == SOUTHWEST) {
+			return static_cast<int32_t>(width - 1); // + (mapW-1)
+		} else { // NORTHWEST
+			return -static_cast<int32_t>(width + 1); // - (mapW+1)
+		}
 	}
-	static uint32_t jump_vert(const ::warthog::domain::gridmap& map, uint32_t node, uint32_t goal)
+	template <direction D2 = D>
+	static constexpr int32_t to_rmap_adj_width(uint32_t width) noexcept
 	{
-		return details::jump_point_online_hori<false>(map, node, goal);
+		return to_map_adj_width<dir_cw(D2)>(width);
+	}
+
+	template <direction D2 = D>
+	static constexpr uint32_t from_map_adj_width(int32_t adj_width) noexcept
+	{
+		if constexpr (D2 == NORTHEAST) {
+			return static_cast<uint32_t>(-adj_width + 1);
+		} else if constexpr (D2 == SOUTHEAST) {
+			return static_cast<uint32_t>(adj_width - 1);
+		} else if constexpr (D2 == SOUTHWEST) {
+			return static_cast<uint32_t>(adj_width + 1);
+		} else { // NORTHWEST
+			return static_cast<uint32_t>(-adj_width - 1);
+		}
+	}
+	template <direction D2 = D>
+	static constexpr uint32_t from_rmap_adj_width(int32_t adj_width) noexcept
+	{
+		return from_map_adj_width<dir_cw(D2)>(adj_width);
+	}
+
+	void map_width(uint32_t width) noexcept
+	{
+		adj_width[0] = to_map_adj_width(width);
+	}
+	uint32_t map_width() const noexcept
+	{
+		return from_map_adj_width(adj_width[0]);
+	}
+	void rmap_width(uint32_t width) noexcept
+	{
+		adj_width[1] = to_rmap_adj_width(width);
+	}
+	uint32_t rmap_width() const noexcept
+	{
+		return from_rmap_adj_width(adj_width[1]);
+	}
+
+	static uint32_t jump_hori(map_type map, uint32_t width, uint32_t node, uint32_t goal)
+	{
+		return details::jump_point_online_hori<true>(::warthog::domain::gridmap::bittable(map, width, 0), node, goal);
+	}
+	static uint32_t jump_vert(map_type map, uint32_t width, uint32_t node, uint32_t goal)
+	{
+		return details::jump_point_online_hori<false>(::warthog::domain::gridmap::bittable(map, width, 0), node, goal);
+	}
+	uint32_t jump_hori()
+	{
+		if constexpr (D == NORTHEAST) {
+			return jump_hori(map[0], map_width(), node_at[0], goal[0]); // east
+		} else if constexpr (D == SOUTHEAST) {
+			return jump_hori(map[0], map_width(), node_at[0], goal[0]); // east
+		} else if constexpr (D == SOUTHWEST) {
+			return jump_vert(map[0], map_width(), node_at[0], goal[0]); // west
+		} else if constexpr (D == NORTHWEST) {
+			return jump_vert(map[0], map_width(), node_at[0], goal[0]); // west
+		}
+	}
+	uint32_t jump_vert()
+	{
+		if constexpr (D == NORTHEAST) {
+			return jump_hori(map[1], rmap_width(), node_at[1], goal[1]); // north
+		} else if constexpr (D == SOUTHEAST) {
+			return jump_vert(map[1], rmap_width(), node_at[1], goal[1]); // south
+		} else if constexpr (D == SOUTHWEST) {
+			return jump_vert(map[1], rmap_width(), node_at[1], goal[1]); // south
+		} else if constexpr (D == NORTHWEST) {
+			return jump_hori(map[1], rmap_width(), node_at[1], goal[1]); // north
+		}
 	}
 
 	void next_index() noexcept
@@ -147,7 +228,7 @@ struct IntercardinalWalker
 	uint8_t get_row() const noexcept
 	{
 		// get node_at-1..node_at+1
-		return static_cast<uint8_t>(map[0]->template get_span<3>(pad_id{node_at[0]-1}));
+		return static_cast<uint8_t>(map[0].get_span<3>(pad_id{node_at[0]-1}));
 	}
 	/// @brief call for first row, then call next_row
 	void first_row() noexcept
@@ -162,7 +243,7 @@ struct IntercardinalWalker
 		row_[1] = get_row();
 	}
 	/// @brief get node id for location node + dist(EAST/WEST of D)
-	static jps_id adj_hori(uint32_t node, uint32_t dist) const noexcept
+	jps_id adj_hori(uint32_t node, uint32_t dist) const noexcept
 	{
 		if constexpr (D == NORTHEAST || D == SOUTHEAST) {
 			return jps_id{node + dist};
@@ -171,7 +252,7 @@ struct IntercardinalWalker
 		}
 	}
 	/// @brief get node id for location node + dist(NORTH/SOUTH of D)
-	static jps_id adj_vert(uint32_t node, uint32_t dist) const noexcept
+	jps_id adj_vert(uint32_t node, uint32_t dist) const noexcept
 	{
 		if constexpr (D == NORTHEAST || D == SOUTHEAST) {
 			return jps_id{node + (adj_width[0]-1) * dist};
@@ -192,7 +273,7 @@ struct IntercardinalWalker
 			constexpr uint16_t mask = std::endian::native == std::endian::little ?
 				0b0000'0011'0000'0110 :
 				0b0000'0110'0000'0011;
-			return (row_i & mask) == mask;
+			return (row_i_ & mask) == mask;
 		} else {
 			// we want from grid
 			//  xx. == row[0] = 0b.xx
@@ -201,33 +282,13 @@ struct IntercardinalWalker
 			constexpr uint16_t mask = std::endian::native == std::endian::little ?
 				0b0000'0110'0000'0011 :
 				0b0000'0011'0000'0110;
-			return (row_i & mask) == mask;
+			return (row_i_ & mask) == mask;
 		}
 	}
 	// {hori,vert} of jump hori/vert of D, from node_at.
 	LongJumpRes long_jump()
 	{
-		if constexpr (D == NORTHEAST) {
-			return {
-				jump_hori(*map[0], node_at[0], goal[0]), // east
-				jump_hori(*map[1], node_at[1], goal[1]) // north
-			};
-		} else if constexpr (D == SOUTHEAST) {
-			return {
-				jump_hori(*map[0], node_at[0], goal[0]), // east
-				jump_vert(*map[1], node_at[1], goal[1]) // south
-			};
-		} else if constexpr (D == SOUTHWEST) {
-			return {
-				jump_vert(*map[0], node_at[0], goal[0]), // west
-				jump_vert(*map[1], node_at[1], goal[1]) // south
-			};
-		} else if constexpr (D == NORTHWEST) {
-			return {
-				jump_vert(*map[0], node_at[0], goal[0]), // west
-				jump_hori(*map[1], node_at[1], goal[1]) // north
-			};
-		}
+		return {jump_hori(), jump_vert()};
 	}
 };
 
@@ -236,6 +297,7 @@ class jump_point_online
 {
 public:
 	using gridmap = warthog::domain::gridmap;
+	using map_type = gridmap::bittable;
 	jump_point_online();
 	jump_point_online(gridmap* map)
 	{
@@ -272,19 +334,19 @@ public:
 	
 	uint32_t jump_north(jps_rid rnode)
 	{
-		return jump_east(*rmap_, rnode.id, rgoal_.id);
+		return jump_east(rmap_, rnode.id, rgoal_.id);
 	}
 	uint32_t jump_east(jps_id node)
 	{
-		return jump_east(*map_, node.id, goal_.id);
+		return jump_east(map_, node.id, goal_.id);
 	}
 	uint32_t jump_south(jps_rid rnode)
 	{
-		return jump_west(*rmap_, rnode.id, rgoal_.id);
+		return jump_west(rmap_, rnode.id, rgoal_.id);
 	}
 	uint32_t jump_west(jps_id node)
 	{
-		return jump_west(*map_, node.id, goal_.id);
+		return jump_west(map_, node.id, goal_.id);
 	}
 	intercardinal_jump_result jump_northeast(jps_id node, jps_rid rnode, jps_id* result_node, cost_t* result_cost, uint32_t result_size = 0)
 	{
@@ -306,7 +368,7 @@ public:
 	size_t
 	mem()
 	{
-		return sizeof(this) + rmap_->mem();
+		return sizeof(this) + (rmap_data_ ? rmap_data_->mem() : 0);
 	}
 
 	point point_to_rpoint(point p) const noexcept
@@ -319,19 +381,19 @@ public:
 	}
 	jps_id point_to_id(point p) const noexcept
 	{
-		return jps_id{static_cast<jps_id::id_type>(p.y + gridmap::PADDED_ROWS) * map_width_ + static_cast<jps_id::id_type>(p.x)};
+		return jps_id{static_cast<jps_id::id_type>(p.y + gridmap::PADDED_ROWS) * map_.width() + static_cast<jps_id::id_type>(p.x)};
 	}
 	jps_rid rpoint_to_rid(point p) const noexcept
 	{
-		return jps_rid{static_cast<jps_rid::id_type>(p.y + gridmap::PADDED_ROWS) * rmap_width_ + static_cast<jps_rid::id_type>(p.x)};
+		return jps_rid{static_cast<jps_rid::id_type>(p.y + gridmap::PADDED_ROWS) * rmap_.width() + static_cast<jps_rid::id_type>(p.x)};
 	}
 	point id_to_point(jps_id p) const noexcept
 	{
-		return {static_cast<uint16_t>(p.id % map_width_), static_cast<uint16_t>(p.id / map_width_ - gridmap::PADDED_ROWS)};
+		return {static_cast<uint16_t>(p.id % map_.width()), static_cast<uint16_t>(p.id / map_.width() - gridmap::PADDED_ROWS)};
 	}
 	point rid_to_rpoint(jps_rid p) const noexcept
 	{
-		return {static_cast<uint16_t>(p.id % rmap_width_), static_cast<uint16_t>(p.id / rmap_width_ - gridmap::PADDED_ROWS)};
+		return {static_cast<uint16_t>(p.id % rmap_.width()), static_cast<uint16_t>(p.id / rmap_.width() - gridmap::PADDED_ROWS)};
 	}
 	jps_rid
 	id_to_rid(jps_id mapid)
@@ -348,8 +410,8 @@ public:
 
 protected:
 
-	static uint32_t jump_east(const gridmap& map, uint32_t node, uint32_t goal);
-	static uint32_t jump_west(const gridmap& map, uint32_t node, uint32_t goal);
+	static uint32_t jump_east(map_type map, uint32_t node, uint32_t goal);
+	static uint32_t jump_west(map_type map, uint32_t node, uint32_t goal);
 
 	/**
 	 * Jumps on the intercardinal.
@@ -397,8 +459,8 @@ protected:
 
 protected:
 	std::unique_ptr<gridmap> rmap_data_;
-	gridmap::bittable map_ = {};
-	gridmap::bittable rmap_ = {};
+	map_type map_ = {};
+	map_type rmap_ = {};
 	// uint32_t map_width_ = 0;
 	// uint32_t rmap_width_ = 0;
 	uint32_t map_unpad_height_m1_ = 0;
@@ -409,7 +471,7 @@ protected:
 template <JpsFeature Feature>
 void jump_point_online<Feature>::set_map(gridmap& orig)
 {
-	map_ = &orig;
+	map_ = orig;
 	create_rotate_(orig);
 }
 
@@ -439,7 +501,7 @@ jump_point_online<Feature>::create_rotate_(const gridmap& orig)
 		for(uint32_t x = 0; x < mapw; x++)
 		{
 			bool label
-				= orig.get_label(map_->to_padded_id_from_unpadded(x, y));
+				= orig.get_label(orig.to_padded_id_from_unpadded(x, y));
 			uint32_t rx = (maph-1) - y;
 			uint32_t ry = x;
 			tmap->set_label(tmap->to_padded_id_from_unpadded(rx, ry), label);
@@ -449,8 +511,8 @@ jump_point_online<Feature>::create_rotate_(const gridmap& orig)
 	// set values
 	rmap_data_ = std::move(tmap);
 	rmap_ = *rmap_data_;
-	// map_width_ = map_->width();
-	// rmap_width_ = rmap_->width();
+	// map_.width() = map_->width();
+	// rmap_.width() = rmap_->width();
 	map_unpad_height_m1_ = maph-1;
 }
 
@@ -463,11 +525,11 @@ jump_point_online<Feature>::jump_cardinal(direction d, jps_id node_id, jps_rid r
 	switch (d) {
 	case NORTH:
 		node.first = jump_north(rnode_id);
-		node.second.id = node_id.id - map_width_ * node.first;
+		node.second.id = node_id.id - map_.width() * node.first;
 		break;
 	case SOUTH:
 		node.first = jump_south(rnode_id);
-		node.second.id = node_id.id + map_width_ * node.first;
+		node.second.id = node_id.id + map_.width() * node.first;
 		break;
 	case EAST:
 		node.first = jump_east(node_id);
@@ -509,13 +571,13 @@ jump_point_online<Feature>::jump_intercardinal(direction d, jps_id node_id, jps_
 }
 
 template <JpsFeature Feature>
-uint32_t jump_point_online<Feature>::jump_east(const gridmap& map, uint32_t node, uint32_t goal)
+uint32_t jump_point_online<Feature>::jump_east(map_type map, uint32_t node, uint32_t goal)
 {
 	return details::jump_point_online_hori<true>(map, node, goal);
 }
 
 template <JpsFeature Feature>
-uint32_t jump_point_online<Feature>::jump_west(const gridmap& map, uint32_t node, uint32_t goal)
+uint32_t jump_point_online<Feature>::jump_west(map_type map, uint32_t node, uint32_t goal)
 {
 	return details::jump_point_online_hori<false>(map, node, goal);
 }
@@ -571,30 +633,13 @@ intercardinal_jump_result jump_point_online<Feature>::jump_intercardinal(jps_id 
 	// setup the walker members
 	// 0 = map, 1 = rmap
 	walker.map[0] = map_;
-	walker.map[1] = rmap_.get();
+	walker.map[1] = rmap_;
+	walker.map_width(map_.width());
+	walker.rmap_width(rmap_.width());
 	walker.node_at[0] = static_cast<uint32_t>(node);
 	walker.node_at[1] = static_cast<uint32_t>(rnode);
 	walker.goal[0] = goal_.id;
 	walker.goal[1] = rgoal_.id;
-	// setup node and rnode adjust per intercardinal row adjust location
-	switch (D) {
-	case NORTHEAST:
-		walker.adj_width[0] = -static_cast<int32_t>(map_width_ - 1); // - (mapW-1)
-		walker.adj_width[1] = static_cast<int32_t>(rmap_width_ + 1); // + (rmapW+1)
-		break;
-	case SOUTHEAST:
-		walker.adj_width[0] = static_cast<int32_t>(map_width_ + 1); // + (mapW+1)
-		walker.adj_width[1] = static_cast<int32_t>(rmap_width_ - 1); // + (rmapW-1)
-		break;
-	case SOUTHWEST:
-		walker.adj_width[0] = static_cast<int32_t>(map_width_ - 1); // + (mapW-1)
-		walker.adj_width[1] = -static_cast<int32_t>(rmap_width_ + 1); // - (rmapW+1)
-		break;
-	case NORTHWEST:
-		walker.adj_width[0] = -static_cast<int32_t>(map_width_ + 1); // - (mapW+1)
-		walker.adj_width[1] = -static_cast<int32_t>(rmap_width_ - 1); // - (rmapW-1)
-		break;
-	}
 
 	// pre-set cardinal results to none, in case no successors are found
 	if constexpr (feature_store_cardinal()) {
@@ -607,7 +652,7 @@ intercardinal_jump_result jump_point_online<Feature>::jump_intercardinal(jps_id 
 		walker.first_row();
 		while (true) {
 			walker.next_row(); // walk_count adjusted at end of loop
-			if (!walker.valid_space()) // no successors
+			if (!walker.valid_row()) // no successors
 				return {jps_id::none(), jps_rid::none(), 0};
 			// check if intercardinal is passing over goal
 			if (walker.node_at[0] == walker.goal[0]) [[unlikely]] {
@@ -648,7 +693,7 @@ intercardinal_jump_result jump_point_online<Feature>::jump_intercardinal(jps_id 
 					walker.next_row();
 					result.node = jps_id{walker.node_at[0]};
 					result.rnode = jps_rid::none(); // walker.get_last_rrow();
-					result.dist = walker.valid_space() ? walk_count+1 : 0;
+					result.dist = walker.valid_row() ? walk_count+1 : 0;
 				}
 				// found jump point, return
 				return result;
@@ -665,7 +710,7 @@ intercardinal_jump_result jump_point_online<Feature>::jump_intercardinal(jps_id 
 		// only continue if there is room to store results
 		while (result_count < result_size) {
 			walker.next_row();
-			if (!walker.valid_space())
+			if (!walker.valid_row())
 				return {jps_id::none(), jps_rid::none(), result_count};
 			if (walker.node_at[0] == walker.goal[0]) [[unlikely]] {
 				// reached goal

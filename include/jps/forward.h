@@ -5,6 +5,7 @@
 #include <warthog/constants.h>
 #include <warthog/forward.h>
 #include <warthog/defines.h>
+#include <warthog/domain/grid.h>
 
 namespace jps
 {
@@ -16,19 +17,7 @@ struct rmap_id_tag { };
 using jps_rid = warthog::identity_base<rmap_id_tag, jps_id::id_type>;
 using warthog::cost_t;
 
-enum direction
-{
-	NONE = 0,
-	NORTH = 1,
-	SOUTH = 2,
-	EAST = 4,
-	WEST = 8,
-	NORTHEAST = 16,
-	NORTHWEST = 32,
-	SOUTHEAST = 64,
-	SOUTHWEST = 128,
-	ALL = 255
-};
+using namespace warthog::grid;
 
 using vec_jps_id = std::vector<jps_id>;
 using vec_jps_cost = std::vector<cost_t>;
