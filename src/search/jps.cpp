@@ -37,16 +37,28 @@ compute_forced(direction d, uint32_t tiles)
 	// NB: to avoid branching statements, bit operations are
 	// used below to determine which neighbours are traversable
 	// and which are obstacles
+	enum : uint32_t
+	{
+		NW = 0b00000000'00000000'00000001,
+		N  = 0b00000000'00000000'00000010,
+		NE = 0b00000000'00000000'00000100,
+		W  = 0b00000000'00000001'00000000,
+		X  = 0b00000000'00000010'00000000,
+		E  = 0b00000000'00000100'00000000,
+		SW = 0b00000001'00000000'00000000,
+		S  = 0b00000010'00000000'00000000,
+		SE = 0b00000100'00000000'00000000,
+	};
 	uint32_t ret = 0;
 	switch(d)
 	{
 	case NORTH:
 	{
-		uint32_t branch_nw = ((tiles & 65792) == 256);
+		uint32_t branch_nw = ((tiles & 0b001'00000001'00000000) == 256);
 		ret |= (branch_nw << 3); // force west
 		ret |= (branch_nw << 5); // force northwest
 
-		uint32_t branch_ne = ((tiles & 263168) == 1024);
+		uint32_t branch_ne = ((tiles & 0b100'00000100'00000000) == 1024);
 		ret |= (branch_ne << 2); // force east
 		ret |= (branch_ne << 4); // force northeast
 		break;

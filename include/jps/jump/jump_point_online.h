@@ -186,36 +186,36 @@ struct IntercardinalWalker
 		return from_rmap_adj_width(adj_width[1]);
 	}
 
-	static uint32_t jump_hori(map_type map, uint32_t width, uint32_t node, uint32_t goal)
+	static uint32_t jump_east(map_type map, uint32_t width, uint32_t node, uint32_t goal)
 	{
 		return details::jump_point_online_hori<true>(::warthog::domain::gridmap::bittable(map, width, 0), node, goal);
 	}
-	static uint32_t jump_vert(map_type map, uint32_t width, uint32_t node, uint32_t goal)
+	static uint32_t jump_west(map_type map, uint32_t width, uint32_t node, uint32_t goal)
 	{
 		return details::jump_point_online_hori<false>(::warthog::domain::gridmap::bittable(map, width, 0), node, goal);
 	}
 	uint32_t jump_hori()
 	{
 		if constexpr (D == NORTHEAST) {
-			return jump_hori(map[0], map_width(), node_at[0], goal[0]); // east
+			return jump_east(map[0], map_width(), node_at[0], goal[0]); // east
 		} else if constexpr (D == SOUTHEAST) {
-			return jump_hori(map[0], map_width(), node_at[0], goal[0]); // east
+			return jump_east(map[0], map_width(), node_at[0], goal[0]); // east
 		} else if constexpr (D == SOUTHWEST) {
-			return jump_vert(map[0], map_width(), node_at[0], goal[0]); // west
+			return jump_west(map[0], map_width(), node_at[0], goal[0]); // west
 		} else if constexpr (D == NORTHWEST) {
-			return jump_vert(map[0], map_width(), node_at[0], goal[0]); // west
+			return jump_west(map[0], map_width(), node_at[0], goal[0]); // west
 		}
 	}
 	uint32_t jump_vert()
 	{
 		if constexpr (D == NORTHEAST) {
-			return jump_hori(map[1], rmap_width(), node_at[1], goal[1]); // north
+			return jump_east(map[1], rmap_width(), node_at[1], goal[1]); // north
 		} else if constexpr (D == SOUTHEAST) {
-			return jump_vert(map[1], rmap_width(), node_at[1], goal[1]); // south
+			return jump_west(map[1], rmap_width(), node_at[1], goal[1]); // south
 		} else if constexpr (D == SOUTHWEST) {
-			return jump_vert(map[1], rmap_width(), node_at[1], goal[1]); // south
+			return jump_west(map[1], rmap_width(), node_at[1], goal[1]); // south
 		} else if constexpr (D == NORTHWEST) {
-			return jump_hori(map[1], rmap_width(), node_at[1], goal[1]); // north
+			return jump_east(map[1], rmap_width(), node_at[1], goal[1]); // north
 		}
 	}
 
