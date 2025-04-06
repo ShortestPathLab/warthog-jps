@@ -126,13 +126,15 @@ struct IntercardinalWalker
 	uint32_t goal[2];
 	/// @brief row scan
 	union {
-		uint8_t row_[2];
+		uint8_t row_[2]; ///< stores 3 bits at node_at[0]+-1, 0=prev, 1=current; high order bits 3..7 are not zero'd
 		uint16_t row_i_;
 	};
 
+	/// @brief convert map width to a map adj_width variable suited to intercardinal D2
 	template <direction D2 = D>
 	static constexpr int32_t to_map_adj_width(uint32_t width) noexcept
 	{
+		static_assert(D2 == NORTHEAST || D2 == NORTHWEST || D2 == SOUTHEAST || D2 == SOUTHWEST, "Must be intercardinal direction");
 		assert(width > 0);
 		if constexpr (D2 == NORTHEAST) {
 			return -static_cast<int32_t>(width - 1); // - (mapW-1)
@@ -144,15 +146,18 @@ struct IntercardinalWalker
 			return -static_cast<int32_t>(width + 1); // - (mapW+1)
 		}
 	}
+	/// @brief convert rmap width to a rmap adj_width variable suited to intercardinal D2
 	template <direction D2 = D>
 	static constexpr int32_t to_rmap_adj_width(uint32_t width) noexcept
 	{
 		return to_map_adj_width<dir_cw(D2)>(width);
 	}
 
+	/// @brief convert map adj_width to map width, reciprocal to to_map_adj_width
 	template <direction D2 = D>
 	static constexpr uint32_t from_map_adj_width(int32_t adj_width) noexcept
 	{
+		static_assert(D2 == NORTHEAST || D2 == NORTHWEST || D2 == SOUTHEAST || D2 == SOUTHWEST, "Must be intercardinal direction");
 		if constexpr (D2 == NORTHEAST) {
 			return static_cast<uint32_t>(-adj_width + 1);
 		} else if constexpr (D2 == SOUTHEAST) {
@@ -163,24 +168,29 @@ struct IntercardinalWalker
 			return static_cast<uint32_t>(-adj_width - 1);
 		}
 	}
+	/// @brief convert rmap adj_width to rmap width, reciprocal to to_rmap_adj_width
 	template <direction D2 = D>
 	static constexpr uint32_t from_rmap_adj_width(int32_t adj_width) noexcept
 	{
 		return from_map_adj_width<dir_cw(D2)>(adj_width);
 	}
 
+	/// @brief set map width`
 	void map_width(uint32_t width) noexcept
 	{
 		adj_width[0] = to_map_adj_width(width);
 	}
+	/// @brief get map width
 	uint32_t map_width() const noexcept
 	{
 		return from_map_adj_width(adj_width[0]);
 	}
+	/// @brief set rmap width
 	void rmap_width(uint32_t width) noexcept
 	{
 		adj_width[1] = to_rmap_adj_width(width);
 	}
+	/// @brief get rmap width
 	uint32_t rmap_width() const noexcept
 	{
 		return from_rmap_adj_width(adj_width[1]);
@@ -225,9 +235,9 @@ struct IntercardinalWalker
 		node_at[1] = static_cast<uint32_t>(static_cast<int32_t>(node_at[1]) + adj_width[1]);
 	}
 
+	/// @brief return get node_at[0]-1..node_at[0]+1 bits. CAUTION: return bits 3..7 may not all be 0.
 	uint8_t get_row() const noexcept
 	{
-		// get node_at-1..node_at+1
 		return static_cast<uint8_t>(map[0].get_span<3>(pad_id{node_at[0]-1}));
 	}
 	/// @brief call for first row, then call next_row
@@ -587,6 +597,8 @@ template <direction D>
 intercardinal_jump_result jump_point_online<Feature>::jump_intercardinal(jps_id node, jps_rid rnode, jps_id* result_node[[maybe_unused]], cost_t* result_cost[[maybe_unused]], uint32_t result_size[[maybe_unused]])
 {
 	static_assert(D == NORTHEAST || D == NORTHWEST || D == SOUTHEAST || D == SOUTHWEST, "D must be inter-cardinal.");
+
+	assert(!node.is_none() && !rnode.is_none());
 
 	// precondition
 	assert(!(feature_prune_intercardinal() || feature_store_cardinal()) // both not enabled = fine
