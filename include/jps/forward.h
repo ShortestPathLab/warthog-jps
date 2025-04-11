@@ -3,9 +3,9 @@
 
 #include <vector>
 #include <warthog/constants.h>
-#include <warthog/forward.h>
 #include <warthog/defines.h>
 #include <warthog/domain/grid.h>
+#include <warthog/forward.h>
 
 namespace jps
 {
@@ -13,7 +13,8 @@ namespace jps
 using warthog::pack_id;
 using warthog::pad_id;
 using jps_id = warthog::pad32_id;
-struct rmap_id_tag { };
+struct rmap_id_tag
+{ };
 using jps_rid = warthog::identity_base<rmap_id_tag, jps_id::id_type>;
 using warthog::cost_t;
 
@@ -32,11 +33,14 @@ enum class JpsFeature : uint8_t
 {
 	DEFAULT = 0, // uses block-based jumping
 	PRUNE_INTERCARDINAL = 1 << 0,
-	STORE_CARDIANL_JUMP = 1 << 1, // if not PRUNE_INTERCARDINAL, then store cardinal results in intercandial jump
+	STORE_CARDIANL_JUMP = 1 << 1, // if not PRUNE_INTERCARDINAL, then store
+	                              // cardinal results in intercandial jump
 };
-inline JpsFeature operator|(JpsFeature a, JpsFeature b) noexcept
+inline JpsFeature
+operator|(JpsFeature a, JpsFeature b) noexcept
 {
-	return static_cast<JpsFeature>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
+	return static_cast<JpsFeature>(
+	    static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
 }
 
 } // namespace jps

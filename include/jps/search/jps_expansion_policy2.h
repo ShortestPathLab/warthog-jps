@@ -25,19 +25,28 @@
 namespace jps::search
 {
 
-template <typename JpsJump>
+template<typename JpsJump>
 class jps_expansion_policy2
     : public warthog::search::gridmap_expansion_policy_base
 {
 public:
-	jps_expansion_policy2(warthog::domain::gridmap* map, bool setup_map = true) : gridmap_expansion_policy_base(map), jpl_(setup_map ? map : nullptr)
+	jps_expansion_policy2(warthog::domain::gridmap* map, bool setup_map = true)
+	    : gridmap_expansion_policy_base(map), jpl_(setup_map ? map : nullptr)
 	{ }
 	virtual ~jps_expansion_policy2() = default;
 
 	using jump_point = JpsJump;
 
-	static consteval bool feature_prune_intercardinal() noexcept { return jump_point::feature_prune_intercardinal(); }
-	static consteval bool feature_store_cardinal() noexcept { return jump_point::feature_store_cardinal(); }
+	static consteval bool
+	feature_prune_intercardinal() noexcept
+	{
+		return jump_point::feature_prune_intercardinal();
+	}
+	static consteval bool
+	feature_store_cardinal() noexcept
+	{
+		return jump_point::feature_store_cardinal();
+	}
 
 	void
 	expand(
@@ -58,18 +67,26 @@ public:
 		    + jpl_.mem();
 	}
 
-	jump_point& get_jump_point() noexcept { return jpl_; }
-	const jump_point& get_jump_point() const noexcept { return jpl_; }
+	jump_point&
+	get_jump_point() noexcept
+	{
+		return jpl_;
+	}
+	const jump_point&
+	get_jump_point() const noexcept
+	{
+		return jpl_;
+	}
 
 private:
 	JpsJump jpl_;
 };
 
-template <typename JpsJump>
+template<typename JpsJump>
 void
 jps_expansion_policy2<JpsJump>::expand(
-	warthog::search::search_node* current,
-	warthog::search::search_problem_instance* instance)
+    warthog::search::search_node* current,
+    warthog::search::search_problem_instance* instance)
 {
 	reset();
 
@@ -87,7 +104,7 @@ jps_expansion_policy2<JpsJump>::expand(
 	// look for jump points in the direction of each natural
 	// and forced neighbour
 	uint32_t succ_dirs = compute_successors(dir_c, c_tiles);
-	
+
 	// cardinal directions
 	for(uint32_t i = 0; i < 4; i++)
 	{
@@ -95,7 +112,8 @@ jps_expansion_policy2<JpsJump>::expand(
 		if(succ_dirs & d)
 		{
 			auto jump_result = jpl_.jump_cardinal(d, current_id, current_rid);
-			if (jump_result.first != 0) {
+			if(jump_result.first != 0)
+			{
 				// successful jump
 				warthog::search::search_node* jp_succ
 				    = this->generate(jump_result.second);
@@ -106,42 +124,66 @@ jps_expansion_policy2<JpsJump>::expand(
 		}
 	}
 	// intercardinal
-	constexpr size_t buffer_size = feature_prune_intercardinal() ? 1024 : feature_store_cardinal() ? 4 : 1;
-	std::array<jps_id, buffer_size> id_array[[maybe_unused]];
-	std::array<cost_t, buffer_size> cost_array[[maybe_unused]];
+	constexpr size_t buffer_size = feature_prune_intercardinal() ? 1024
+	    : feature_store_cardinal()                               ? 4
+	                                                             : 1;
+	std::array<jps_id, buffer_size> id_array [[maybe_unused]];
+	std::array<cost_t, buffer_size> cost_array [[maybe_unused]];
 	for(uint32_t i = 4; i < 8; i++)
 	{
 		direction d = (direction)(1 << i);
 		if(succ_dirs & d)
 		{
-			jump::intercardinal_jump_result jump_result{current_id, current_rid, 0};
-			uint32_t jump_span[[maybe_unused]] = 0;
-			while (true) {
+			jump::intercardinal_jump_result jump_result{
+			    current_id, current_rid, 0};
+			uint32_t jump_span [[maybe_unused]] = 0;
+			while(true)
+			{
 				// exit conditions: do while
-				//    => feature_prune_intercardinal(): jump_span.dist != 0 # if buffer_size is not large enough, do multiple iterations
+				//    => feature_prune_intercardinal(): jump_span.dist != 0 #
+				//    if buffer_size is not large enough, do multiple
+				//    iterations
 				//    => otherwise: always break, only single run required
-				if constexpr (feature_prune_intercardinal() || feature_store_cardinal()) {
-					jump_result = jpl_.jump_intercardinal(d, jump_result.node, jump_result.rnode, id_array.data(), cost_array.data(), id_array.size());
-				} else {
-					jump_result = jpl_.jump_intercardinal(d, jump_result.node, jump_result.rnode, nullptr, nullptr);
+				if constexpr(
+				    feature_prune_intercardinal() || feature_store_cardinal())
+				{
+					jump_result = jpl_.jump_intercardinal(
+					    d, jump_result.node, jump_result.rnode,
+					    id_array.data(), cost_array.data(), id_array.size());
+				}
+				else
+				{
+					jump_result = jpl_.jump_intercardinal(
+					    d, jump_result.node, jump_result.rnode, nullptr,
+					    nullptr);
 				}
 				// add successor from id_array (if any)
-				if constexpr (feature_prune_intercardinal()) {
-					if (jump_result.dist != 0) {
+				if constexpr(feature_prune_intercardinal())
+				{
+					if(jump_result.dist != 0)
+					{
 						// successful jump
-						for (uint32_t j = 0; j < jump_result.dist; ++j) {
+						for(uint32_t j = 0; j < jump_result.dist; ++j)
+						{
 							warthog::search::search_node* jp_succ
-								= this->generate(id_array[j]);
+							    = this->generate(id_array[j]);
 							// if(jp_succ->get_searchid() != search_id) {
 							// jp_succ->reset(search_id); }
-							add_neighbour(jp_succ, jump_span * warthog::DBL_ROOT_TWO + cost_array[j]);
+							add_neighbour(
+							    jp_succ,
+							    jump_span * warthog::DBL_ROOT_TWO
+							        + cost_array[j]);
 						}
 					}
-				} else if constexpr (feature_store_cardinal()) {
-					for (uint32_t j = 0; j < 2; ++j) {
-						if (auto expand_id = id_array[j]; !expand_id.is_none()) {
+				}
+				else if constexpr(feature_store_cardinal())
+				{
+					for(uint32_t j = 0; j < 2; ++j)
+					{
+						if(auto expand_id = id_array[j]; !expand_id.is_none())
+						{
 							warthog::search::search_node* jp_succ
-								= this->generate(expand_id);
+							    = this->generate(expand_id);
 							// if(jp_succ->get_searchid() != search_id) {
 							// jp_succ->reset(search_id); }
 							add_neighbour(jp_succ, cost_array[j]);
@@ -149,17 +191,22 @@ jps_expansion_policy2<JpsJump>::expand(
 					}
 				}
 				// add successor return from function
-				if constexpr (!feature_prune_intercardinal()) {
-					if (jump_result.dist != 0) {
+				if constexpr(!feature_prune_intercardinal())
+				{
+					if(jump_result.dist != 0)
+					{
 						warthog::search::search_node* jp_succ
-							= this->generate(jump_result.node);
+						    = this->generate(jump_result.node);
 						// if(jp_succ->get_searchid() != search_id) {
 						// jp_succ->reset(search_id); }
-						add_neighbour(jp_succ, jump_result.dist * warthog::DBL_ROOT_TWO);
+						add_neighbour(
+						    jp_succ, jump_result.dist * warthog::DBL_ROOT_TWO);
 					}
 					break; // do not loop
-				} else {
-					if (jump_result.node.is_none())
+				}
+				else
+				{
+					if(jump_result.node.is_none())
 						break; // exit loop after reaching end
 				}
 			}
@@ -167,7 +214,7 @@ jps_expansion_policy2<JpsJump>::expand(
 	}
 }
 
-template <typename JpsJump>
+template<typename JpsJump>
 warthog::search::search_node*
 jps_expansion_policy2<JpsJump>::generate_start_node(
     warthog::search::search_problem_instance* pi)
@@ -180,7 +227,7 @@ jps_expansion_policy2<JpsJump>::generate_start_node(
 	return generate(padded_id);
 }
 
-template <typename JpsJump>
+template<typename JpsJump>
 warthog::search::search_node*
 jps_expansion_policy2<JpsJump>::generate_target_node(
     warthog::search::search_problem_instance* pi)

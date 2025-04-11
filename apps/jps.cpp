@@ -71,7 +71,7 @@ help(std::ostream& out)
 	       "file] with algorithm [alg]\n"
 	    << "Currently recognised values for [alg]:\n"
 	    << "\tjps, jps+, jps2, jps2+\n"
-		<< "\tjpsV2, jpsV2-cardinal, jpsV2-prune\n";
+	    << "\tjpsV2, jpsV2-cardinal, jpsV2-prune\n";
 	// << ""
 	// << "The following are valid parameters for GENERATING instances:\n"
 	// << "\t --gen [map file (required)]\n"
@@ -142,9 +142,9 @@ run_experiments(
 		    << sol.met_.nodes_reopen_ << "\t" << sol.met_.nodes_surplus_
 		    << "\t" << sol.met_.heap_ops_ << "\t"
 		    << sol.met_.time_elapsed_nano_.count() << "\t"
-		    << (!sol.path_.empty() ? sol.path_.size() - 1 : 0) << "\t" << sol.sum_of_edge_costs_ << "\t"
-		    << exp->distance() << "\t" << scenmgr.last_file_loaded()
-		    << std::endl;
+		    << (!sol.path_.empty() ? sol.path_.size() - 1 : 0) << "\t"
+		    << sol.sum_of_edge_costs_ << "\t" << exp->distance() << "\t"
+		    << scenmgr.last_file_loaded() << std::endl;
 
 		if(checkopt)
 		{
@@ -251,7 +251,8 @@ main(int argc, char** argv)
 	std::cerr << "mapfile=" << mapfile << std::endl;
 
 	using namespace jps::search;
-	if(alg == "jps") {
+	if(alg == "jps")
+	{
 		return run_jps<jps_expansion_policy>(scenmgr, mapfile, alg);
 	}
 	else if(alg == "jps+")
@@ -268,18 +269,24 @@ main(int argc, char** argv)
 	}
 	else if(alg == "jpsV2")
 	{
-		using jump_point = jps::jump::jump_point_online<jps::JpsFeature::DEFAULT>;
-		return run_jps<jps_expansion_policy2<jump_point>>(scenmgr, mapfile, alg);
+		using jump_point
+		    = jps::jump::jump_point_online<jps::JpsFeature::DEFAULT>;
+		return run_jps<jps_expansion_policy2<jump_point>>(
+		    scenmgr, mapfile, alg);
 	}
 	else if(alg == "jpsV2-cardinal")
 	{
-		using jump_point = jps::jump::jump_point_online<jps::JpsFeature::STORE_CARDIANL_JUMP>;
-		return run_jps<jps_expansion_policy2<jump_point>>(scenmgr, mapfile, alg);
+		using jump_point = jps::jump::jump_point_online<
+		    jps::JpsFeature::STORE_CARDIANL_JUMP>;
+		return run_jps<jps_expansion_policy2<jump_point>>(
+		    scenmgr, mapfile, alg);
 	}
 	else if(alg == "jpsV2-prune")
 	{
-		using jump_point = jps::jump::jump_point_online<jps::JpsFeature::PRUNE_INTERCARDINAL>;
-		return run_jps<jps_expansion_policy2<jump_point>>(scenmgr, mapfile, alg);
+		using jump_point = jps::jump::jump_point_online<
+		    jps::JpsFeature::PRUNE_INTERCARDINAL>;
+		return run_jps<jps_expansion_policy2<jump_point>>(
+		    scenmgr, mapfile, alg);
 	}
 	else
 	{
