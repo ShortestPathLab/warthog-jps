@@ -38,7 +38,7 @@ offline_jump_point_locator2::preproc()
 	if(load(map_->filename())) { return; }
 
 	dbsize_ = 8 * map_->padded_mapsize();
-	db_ = new uint16_t[dbsize_];
+	db_     = new uint16_t[dbsize_];
 	for(uint32_t i = 0; i < dbsize_; i++)
 		db_[i] = 0;
 
@@ -183,9 +183,9 @@ offline_jump_point_locator2::jump_northwest(
     vec_jps_cost& costs)
 
 {
-	uint16_t label = 0;
-	uint16_t num_steps = 0;
-	uint32_t mapw = map_->width();
+	uint16_t label           = 0;
+	uint16_t num_steps       = 0;
+	uint32_t mapw            = map_->width();
 	uint32_t diag_step_delta = (mapw + 1);
 
 	// keep jumping until we hit a dead-end. take note of the
@@ -194,9 +194,9 @@ offline_jump_point_locator2::jump_northwest(
 	jps_id jump_from = node_id;
 
 	// step diagonally to an intermediate location jump_from
-	label = db_[8 * jump_from.id + 5];
+	label      = db_[8 * jump_from.id + 5];
 	num_steps += label & 32767;
-	jump_from = jps_id(node_id.id - num_steps * diag_step_delta);
+	jump_from  = jps_id(node_id.id - num_steps * diag_step_delta);
 	while(!(label & 32768))
 	{
 		// north of jump_from
@@ -204,7 +204,7 @@ offline_jump_point_locator2::jump_northwest(
 		if(!(label_straight1 & 32768))
 		{
 			uint32_t jp_cost = (label_straight1 & 32767);
-			jps_id jp_id = jps_id(jump_from.id - mapw * jp_cost);
+			jps_id jp_id     = jps_id(jump_from.id - mapw * jp_cost);
 			neighbours.push_back(jp_id);
 			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
@@ -214,13 +214,13 @@ offline_jump_point_locator2::jump_northwest(
 		if(!(label_straight2 & 32768))
 		{
 			uint32_t jp_cost = (label_straight2 & 32767);
-			jps_id jp_id = jps_id(jump_from.id - jp_cost);
+			jps_id jp_id     = jps_id(jump_from.id - jp_cost);
 			neighbours.push_back(jp_id);
 			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
-		label = db_[8 * jump_from.id + 5];
+		label      = db_[8 * jump_from.id + 5];
 		num_steps += label & 32767;
-		jump_from = jps_id(node_id.id - num_steps * diag_step_delta);
+		jump_from  = jps_id(node_id.id - num_steps * diag_step_delta);
 	}
 
 	// goal test (so many div ops! and branches! how ugly!)
@@ -237,13 +237,13 @@ offline_jump_point_locator2::jump_northwest(
 		{
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
-				jps_id jp_id = jps_id(node_id.id - diag_step_delta * ydelta);
+				jps_id jp_id   = jps_id(node_id.id - diag_step_delta * ydelta);
 				double jp_cost = warthog::DBL_ROOT_TWO * ydelta;
 				jump_west(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
 			else if(xdelta <= num_steps)
 			{
-				jps_id jp_id = jps_id(node_id.id - diag_step_delta * xdelta);
+				jps_id jp_id   = jps_id(node_id.id - diag_step_delta * xdelta);
 				double jp_cost = warthog::DBL_ROOT_TWO * xdelta;
 				jump_north(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
@@ -256,16 +256,16 @@ offline_jump_point_locator2::jump_northeast(
     jps_id node_id, jps_id goal_id, vec_jps_id& neighbours,
     vec_jps_cost& costs)
 {
-	uint16_t label = 0;
-	uint16_t num_steps = 0;
-	uint32_t mapw = map_->width();
+	uint16_t label           = 0;
+	uint16_t num_steps       = 0;
+	uint32_t mapw            = map_->width();
 	uint32_t diag_step_delta = (mapw - 1);
 
 	jps_id jump_from = node_id;
 	// step diagonally to an intermediate location jump_from
-	label = db_[8 * jump_from.id + 4];
+	label      = db_[8 * jump_from.id + 4];
 	num_steps += label & 32767;
-	jump_from = jps_id(node_id.id - num_steps * diag_step_delta);
+	jump_from  = jps_id(node_id.id - num_steps * diag_step_delta);
 	while(!(label & 32768))
 	{
 
@@ -274,7 +274,7 @@ offline_jump_point_locator2::jump_northeast(
 		if(!(label_straight1 & 32768))
 		{
 			uint32_t jp_cost = (label_straight1 & 32767);
-			jps_id jp_id = jps_id(jump_from.id - mapw * jp_cost);
+			jps_id jp_id     = jps_id(jump_from.id - mapw * jp_cost);
 			neighbours.push_back(jp_id);
 			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
@@ -283,13 +283,13 @@ offline_jump_point_locator2::jump_northeast(
 		if(!(label_straight2 & 32768))
 		{
 			uint32_t jp_cost = (label_straight2 & 32767);
-			jps_id jp_id = jps_id(jump_from.id + jp_cost);
+			jps_id jp_id     = jps_id(jump_from.id + jp_cost);
 			neighbours.push_back(jp_id);
 			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
-		label = db_[8 * jump_from.id + 4];
+		label      = db_[8 * jump_from.id + 4];
 		num_steps += label & 32767;
-		jump_from = jps_id(node_id.id - num_steps * diag_step_delta);
+		jump_from  = jps_id(node_id.id - num_steps * diag_step_delta);
 	}
 
 	// goal test (so many div ops! and branches! how ugly!)
@@ -306,13 +306,13 @@ offline_jump_point_locator2::jump_northeast(
 		{
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
-				jps_id jp_id = jps_id(node_id.id - diag_step_delta * ydelta);
+				jps_id jp_id   = jps_id(node_id.id - diag_step_delta * ydelta);
 				double jp_cost = warthog::DBL_ROOT_TWO * ydelta;
 				jump_east(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
 			else if(xdelta <= num_steps)
 			{
-				jps_id jp_id = jps_id(node_id.id - diag_step_delta * xdelta);
+				jps_id jp_id   = jps_id(node_id.id - diag_step_delta * xdelta);
 				double jp_cost = warthog::DBL_ROOT_TWO * xdelta;
 				jump_north(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
@@ -325,16 +325,16 @@ offline_jump_point_locator2::jump_southwest(
     jps_id node_id, jps_id goal_id, vec_jps_id& neighbours,
     vec_jps_cost& costs)
 {
-	uint32_t mapw = map_->width();
+	uint32_t mapw            = map_->width();
 	uint32_t diag_step_delta = (mapw - 1);
 	uint16_t label, num_steps;
 	label = num_steps = 0;
 
 	jps_id jump_from = node_id;
 	// step diagonally to an intermediate location jump_from
-	label = db_[8 * jump_from.id + 7];
+	label      = db_[8 * jump_from.id + 7];
 	num_steps += label & 32767;
-	jump_from = jps_id(node_id.id + num_steps * diag_step_delta);
+	jump_from  = jps_id(node_id.id + num_steps * diag_step_delta);
 	while(!(label & 32768))
 	{
 		// south of jump_from
@@ -342,7 +342,7 @@ offline_jump_point_locator2::jump_southwest(
 		if(!(label_straight1 & 32768))
 		{
 			uint32_t jp_cost = (label_straight1 & 32767);
-			jps_id jp_id = jps_id(jump_from.id + mapw * jp_cost);
+			jps_id jp_id     = jps_id(jump_from.id + mapw * jp_cost);
 			neighbours.push_back(jp_id);
 			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
@@ -351,13 +351,13 @@ offline_jump_point_locator2::jump_southwest(
 		if(!(label_straight2 & 32768))
 		{
 			uint32_t jp_cost = (label_straight2 & 32767);
-			jps_id jp_id = jps_id(jump_from.id - jp_cost);
+			jps_id jp_id     = jps_id(jump_from.id - jp_cost);
 			neighbours.push_back(jp_id);
 			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
-		label = db_[8 * jump_from.id + 7];
+		label      = db_[8 * jump_from.id + 7];
 		num_steps += label & 32767;
-		jump_from = jps_id(node_id.id + num_steps * diag_step_delta);
+		jump_from  = jps_id(node_id.id + num_steps * diag_step_delta);
 	}
 
 	// goal test (so many div ops! and branches! how ugly!)
@@ -374,13 +374,13 @@ offline_jump_point_locator2::jump_southwest(
 		{
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
-				jps_id jp_id = jps_id(node_id.id + diag_step_delta * ydelta);
+				jps_id jp_id   = jps_id(node_id.id + diag_step_delta * ydelta);
 				double jp_cost = warthog::DBL_ROOT_TWO * ydelta;
 				jump_west(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
 			else if(xdelta <= num_steps)
 			{
-				jps_id jp_id = jps_id(node_id.id + diag_step_delta * xdelta);
+				jps_id jp_id   = jps_id(node_id.id + diag_step_delta * xdelta);
 				double jp_cost = warthog::DBL_ROOT_TWO * xdelta;
 				jump_south(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
@@ -394,17 +394,17 @@ offline_jump_point_locator2::jump_southeast(
     vec_jps_cost& costs)
 
 {
-	uint16_t label = 0;
-	uint16_t num_steps = 0;
-	uint32_t mapw = map_->width();
+	uint16_t label           = 0;
+	uint16_t num_steps       = 0;
+	uint32_t mapw            = map_->width();
 	uint32_t diag_step_delta = (mapw + 1);
 
 	jps_id jump_from = node_id;
 
 	// step diagonally to an intermediate location jump_from
-	label = db_[8 * jump_from.id + 6];
+	label      = db_[8 * jump_from.id + 6];
 	num_steps += label & 32767;
-	jump_from = jps_id(node_id.id + num_steps * diag_step_delta);
+	jump_from  = jps_id(node_id.id + num_steps * diag_step_delta);
 	while(!(label & 32768))
 	{
 		// south of jump_from
@@ -412,7 +412,7 @@ offline_jump_point_locator2::jump_southeast(
 		if(!(label_straight1 & 32768))
 		{
 			uint32_t jp_cost = (label_straight1 & 32767);
-			jps_id jp_id = jps_id(jump_from.id + mapw * jp_cost);
+			jps_id jp_id     = jps_id(jump_from.id + mapw * jp_cost);
 			neighbours.push_back(jp_id);
 			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
@@ -421,14 +421,14 @@ offline_jump_point_locator2::jump_southeast(
 		if(!(label_straight2 & 32768))
 		{
 			uint32_t jp_cost = (label_straight2 & 32767);
-			jps_id jp_id = jps_id(jump_from.id + jp_cost);
+			jps_id jp_id     = jps_id(jump_from.id + jp_cost);
 			neighbours.push_back(jp_id);
 			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
 		// step diagonally to an intermediate location jump_from
-		label = db_[8 * jump_from.id + 6];
+		label      = db_[8 * jump_from.id + 6];
 		num_steps += label & 32767;
-		jump_from = jps_id(node_id.id + num_steps * diag_step_delta);
+		jump_from  = jps_id(node_id.id + num_steps * diag_step_delta);
 	}
 
 	// goal test (so many div ops! and branches! how ugly!)
@@ -445,13 +445,13 @@ offline_jump_point_locator2::jump_southeast(
 		{
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
-				jps_id jp_id = jps_id(node_id.id + diag_step_delta * ydelta);
+				jps_id jp_id   = jps_id(node_id.id + diag_step_delta * ydelta);
 				double jp_cost = warthog::DBL_ROOT_TWO * ydelta;
 				jump_east(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
 			else if(xdelta <= num_steps)
 			{
-				jps_id jp_id = jps_id(node_id.id + diag_step_delta * xdelta);
+				jps_id jp_id   = jps_id(node_id.id + diag_step_delta * xdelta);
 				double jp_cost = warthog::DBL_ROOT_TWO * xdelta;
 				jump_south(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
@@ -464,11 +464,11 @@ offline_jump_point_locator2::jump_north(
     jps_id node_id, jps_id goal_id, double cost_to_node_id,
     vec_jps_id& neighbours, vec_jps_cost& costs)
 {
-	uint16_t label = db_[8 * node_id.id];
+	uint16_t label     = db_[8 * node_id.id];
 	uint16_t num_steps = label & 32767;
 
 	// do not jump over the goal
-	uint32_t id_delta = num_steps * map_->width();
+	uint32_t id_delta   = num_steps * map_->width();
 	uint32_t goal_delta = node_id.id - goal_id.id;
 	if(id_delta >= goal_delta)
 	{
@@ -496,11 +496,11 @@ offline_jump_point_locator2::jump_south(
     jps_id node_id, jps_id goal_id, double cost_to_node_id,
     vec_jps_id& neighbours, vec_jps_cost& costs)
 {
-	uint16_t label = db_[8 * node_id.id + 1];
+	uint16_t label     = db_[8 * node_id.id + 1];
 	uint16_t num_steps = label & 32767;
 
 	// do not jump over the goal
-	uint32_t id_delta = num_steps * map_->width();
+	uint32_t id_delta   = num_steps * map_->width();
 	uint32_t goal_delta = goal_id.id - node_id.id;
 	if(id_delta >= goal_delta)
 	{
@@ -528,7 +528,7 @@ offline_jump_point_locator2::jump_east(
     jps_id node_id, jps_id goal_id, double cost_to_node_id,
     vec_jps_id& neighbours, vec_jps_cost& costs)
 {
-	uint16_t label = db_[8 * node_id.id + 2];
+	uint16_t label     = db_[8 * node_id.id + 2];
 	uint32_t num_steps = label & 32767;
 
 	// do not jump over the goal
@@ -554,7 +554,7 @@ offline_jump_point_locator2::jump_west(
     jps_id node_id, jps_id goal_id, double cost_to_node_id,
     vec_jps_id& neighbours, vec_jps_cost& costs)
 {
-	uint16_t label = db_[8 * node_id.id + 3];
+	uint16_t label     = db_[8 * node_id.id + 3];
 	uint32_t num_steps = label & 32767;
 
 	// do not jump over the goal

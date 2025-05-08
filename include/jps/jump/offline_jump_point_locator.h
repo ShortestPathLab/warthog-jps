@@ -28,7 +28,7 @@ public:
 	    double& jumpcost);
 
 	uint32_t
-	mem()
+	mem() const noexcept
 	{
 		return sizeof(this) + sizeof(*db_) * dbsize_;
 	}

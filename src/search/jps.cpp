@@ -37,51 +37,63 @@ compute_forced(direction d, uint32_t tiles)
 	// NB: to avoid branching statements, bit operations are
 	// used below to determine which neighbours are traversable
 	// and which are obstacles
+	enum : uint32_t
+	{
+		NW = 0b00000000'00000000'00000001,
+		N  = 0b00000000'00000000'00000010,
+		NE = 0b00000000'00000000'00000100,
+		W  = 0b00000000'00000001'00000000,
+		X  = 0b00000000'00000010'00000000,
+		E  = 0b00000000'00000100'00000000,
+		SW = 0b00000001'00000000'00000000,
+		S  = 0b00000010'00000000'00000000,
+		SE = 0b00000100'00000000'00000000,
+	};
 	uint32_t ret = 0;
 	switch(d)
 	{
 	case NORTH:
 	{
-		uint32_t branch_nw = ((tiles & 65792) == 256);
-		ret |= (branch_nw << 3); // force west
-		ret |= (branch_nw << 5); // force northwest
+		uint32_t branch_nw = ((tiles & 0b001'00000001'00000000) == 256);
+		ret               |= (branch_nw << 3); // force west
+		ret               |= (branch_nw << 5); // force northwest
 
-		uint32_t branch_ne = ((tiles & 263168) == 1024);
-		ret |= (branch_ne << 2); // force east
-		ret |= (branch_ne << 4); // force northeast
+		uint32_t branch_ne = ((tiles & 0b100'00000100'00000000) == 1024);
+		ret               |= (branch_ne << 2); // force east
+		ret               |= (branch_ne << 4); // force northeast
 		break;
 	}
 	case SOUTH:
 	{
 		uint32_t branch_sw = ((tiles & 257) == 256);
-		ret |= (branch_sw << 3); // force west
-		ret |= (branch_sw << 7); // force southwest
+		ret               |= (branch_sw << 3); // force west
+		ret               |= (branch_sw << 7); // force southwest
 
 		uint32_t branch_se = ((tiles & 1028) == 1024);
-		ret |= (branch_se << 2); // force east
-		ret |= (branch_se << 6); // force southeast
+		ret               |= (branch_se << 2); // force east
+		ret               |= (branch_se << 6); // force southeast
 		break;
 	}
 	case EAST:
 	{
 		uint32_t branch_ne = ((tiles & 3) == 2);
-		ret |= branch_ne;        // force north
-		ret |= (branch_ne << 4); // force northeast
+		ret               |= branch_ne;        // force north
+		ret               |= (branch_ne << 4); // force northeast
 
 		uint32_t branch_se = ((tiles & 196608) == 131072);
-		ret |= (branch_se << 1); // force south
-		ret |= (branch_se << 6); // force southeast
+		ret               |= (branch_se << 1); // force south
+		ret               |= (branch_se << 6); // force southeast
 		break;
 	}
 	case WEST:
 	{
 		uint32_t force_nw = ((tiles & 6) == 2);
-		ret |= force_nw;        // force north
-		ret |= (force_nw << 5); // force northwest
+		ret              |= force_nw;        // force north
+		ret              |= (force_nw << 5); // force northwest
 
 		uint32_t force_sw = ((tiles & 393216) == 131072);
-		ret |= (force_sw << 1); // force south
-		ret |= (force_sw << 7); // force southwest
+		ret              |= (force_sw << 1); // force south
+		ret              |= (force_sw << 7); // force southwest
 		break;
 	}
 	default:
@@ -243,7 +255,7 @@ create_jump_point_graph(warthog::domain::gridmap* gm)
 warthog::domain::gridmap*
 create_corner_map(warthog::domain::gridmap* gm)
 {
-	uint32_t mapwidth = gm->header_width();
+	uint32_t mapwidth  = gm->header_width();
 	uint32_t mapheight = gm->header_height();
 	warthog::domain::gridmap* corner_map
 	    = new warthog::domain::gridmap(mapheight, mapwidth);
@@ -258,10 +270,10 @@ create_corner_map(warthog::domain::gridmap* gm)
 			jps_id from_id = jps_id(gm->to_padded_id_from_unpadded(x, y));
 			if(!gm->get_label(from_id)) { continue; }
 
-			jps_id w_id = jps_id(from_id.id - 1);
-			jps_id e_id = jps_id(from_id.id + 1);
-			jps_id s_id = jps_id(from_id.id + gmwidth);
-			jps_id n_id = jps_id(from_id.id - gmwidth);
+			jps_id w_id  = jps_id(from_id.id - 1);
+			jps_id e_id  = jps_id(from_id.id + 1);
+			jps_id s_id  = jps_id(from_id.id + gmwidth);
+			jps_id n_id  = jps_id(from_id.id - gmwidth);
 			jps_id nw_id = jps_id((from_id.id - gmwidth) - 1);
 			jps_id ne_id = jps_id((from_id.id - gmwidth) + 1);
 			jps_id sw_id = jps_id((from_id.id + gmwidth) - 1);

@@ -21,8 +21,9 @@
 #include <warthog/util/scenario_manager.h>
 #include <warthog/util/timer.h>
 
+#include <jps/search/jps_expansion_policy2.h>
+
 #include "cfg.h"
-#include "config.h"
 #include <getopt.h>
 
 #include <cmath>
@@ -69,7 +70,8 @@ help(std::ostream& out)
 	    << "Invoking the program this way solves all instances in [scen "
 	       "file] with algorithm [alg]\n"
 	    << "Currently recognised values for [alg]:\n"
-	    << "\tjps, jps+, jps2, jps2+\n";
+	    << "\tjps, jps+, jps2, jps2+\n"
+	    << "\tjpsV2, jpsV2-cardinal, jpsV2-prune\n";
 	// << ""
 	// << "The following are valid parameters for GENERATING instances:\n"
 	// << "\t --gen [map file (required)]\n"
@@ -83,8 +85,8 @@ check_optimality(
     warthog::search::solution& sol, warthog::util::experiment* exp)
 {
 	uint32_t precision = 2;
-	double epsilon = (1.0 / (int)pow(10, precision)) / 2;
-	double delta = fabs(sol.sum_of_edge_costs_ - exp->distance());
+	double epsilon     = (1.0 / (int)pow(10, precision)) / 2;
+	double delta       = fabs(sol.sum_of_edge_costs_ - exp->distance());
 
 	if(fabs(delta - epsilon) > epsilon)
 	{
@@ -140,9 +142,9 @@ run_experiments(
 		    << sol.met_.nodes_reopen_ << "\t" << sol.met_.nodes_surplus_
 		    << "\t" << sol.met_.heap_ops_ << "\t"
 		    << sol.met_.time_elapsed_nano_.count() << "\t"
-		    << (sol.path_.size() - 1) << "\t" << sol.sum_of_edge_costs_ << "\t"
-		    << exp->distance() << "\t" << scenmgr.last_file_loaded()
-		    << std::endl;
+		    << (!sol.path_.empty() ? sol.path_.size() - 1 : 0) << "\t"
+		    << sol.sum_of_edge_costs_ << "\t" << exp->distance() << "\t"
+		    << scenmgr.last_file_loaded() << std::endl;
 
 		if(checkopt)
 		{
@@ -204,9 +206,9 @@ main(int argc, char** argv)
 	}
 
 	std::string sfile = cfg.get_param_value("scen");
-	std::string alg = cfg.get_param_value("alg");
+	std::string alg   = cfg.get_param_value("alg");
 	// std::string gen = cfg.get_param_value("gen");
-	std::string mapfile = cfg.get_param_value("map");
+	std::string mapfile  = cfg.get_param_value("map");
 	std::string costfile = cfg.get_param_value("costs");
 
 	// if(gen != "")
@@ -238,41 +240,53 @@ main(int argc, char** argv)
 	// the map filename can be given or (default) taken from the scenario file
 	if(mapfile == "")
 	{
-		// first, try to load the map from the scenario file
-		mapfile = scenmgr.get_experiment(0)->map().c_str();
-		if(!std::filesystem::exists(std::filesystem::path(mapfile)))
+		mapfile = warthog::util::find_map_filename(scenmgr, sfile);
+		if(mapfile.empty())
 		{
-			// else, look for the map in the current directory
-			mapfile = std::filesystem::path(mapfile).filename();
-			if(!std::filesystem::exists(std::filesystem::path(mapfile)))
-			{
-				// else, try to infer the map name from the scenario filename
-				std::filesystem::path p(sfile);
-				mapfile = std::filesystem::path(sfile).replace_extension("");
-				if(!std::filesystem::exists(std::filesystem::path(mapfile)))
-				{
-					std::cerr << "could not locate a corresponding map file\n";
-					help(std::cout);
-					exit(0);
-				}
-			}
+			std::cerr << "could not locate a corresponding map file\n";
+			help(std::cout);
+			return 0;
 		}
 	}
 	std::cerr << "mapfile=" << mapfile << std::endl;
 
 	using namespace jps::search;
-	if(alg == "jps") { run_jps<jps_expansion_policy>(scenmgr, mapfile, alg); }
+	if(alg == "jps")
+	{
+		return run_jps<jps_expansion_policy>(scenmgr, mapfile, alg);
+	}
 	else if(alg == "jps+")
 	{
-		run_jps<jpsplus_expansion_policy>(scenmgr, mapfile, alg);
+		return run_jps<jpsplus_expansion_policy>(scenmgr, mapfile, alg);
 	}
 	else if(alg == "jps2")
 	{
-		run_jps<jps2_expansion_policy>(scenmgr, mapfile, alg);
+		return run_jps<jps2_expansion_policy>(scenmgr, mapfile, alg);
 	}
 	else if(alg == "jps2+")
 	{
-		run_jps<jps2plus_expansion_policy>(scenmgr, mapfile, alg);
+		return run_jps<jps2plus_expansion_policy>(scenmgr, mapfile, alg);
+	}
+	else if(alg == "jpsV2")
+	{
+		using jump_point
+		    = jps::jump::jump_point_online<jps::JpsFeature::DEFAULT>;
+		return run_jps<jps_expansion_policy2<jump_point>>(
+		    scenmgr, mapfile, alg);
+	}
+	else if(alg == "jpsV2-cardinal")
+	{
+		using jump_point = jps::jump::jump_point_online<
+		    jps::JpsFeature::STORE_CARDIANL_JUMP>;
+		return run_jps<jps_expansion_policy2<jump_point>>(
+		    scenmgr, mapfile, alg);
+	}
+	else if(alg == "jpsV2-prune")
+	{
+		using jump_point = jps::jump::jump_point_online<
+		    jps::JpsFeature::PRUNE_INTERCARDINAL>;
+		return run_jps<jps_expansion_policy2<jump_point>>(
+		    scenmgr, mapfile, alg);
 	}
 	else
 	{

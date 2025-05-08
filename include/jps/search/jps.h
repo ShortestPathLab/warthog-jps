@@ -160,10 +160,10 @@ compute_successors_4c(direction d, uint32_t tiles)
 
 		// forced
 		uint32_t force_n = ((tiles & 3) == 2);
-		retval |= force_n; // force north
+		retval          |= force_n; // force north
 
 		uint32_t force_s = ((tiles & 196608) == 131072);
-		retval |= (force_s << 1); // force south
+		retval          |= (force_s << 1); // force south
 		break;
 	}
 	case WEST:
@@ -173,10 +173,10 @@ compute_successors_4c(direction d, uint32_t tiles)
 
 		// forced
 		uint32_t force_n = ((tiles & 6) == 2);
-		retval |= force_n; // force north
+		retval          |= force_n; // force north
 
 		uint32_t force_s = ((tiles & 393216) == 131072);
-		retval |= (force_s << 1); // force south
+		retval          |= (force_s << 1); // force south
 		break;
 	}
 	case NONE:

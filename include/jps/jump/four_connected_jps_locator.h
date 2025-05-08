@@ -30,7 +30,7 @@ public:
 	    double& jumpcost);
 
 	size_t
-	mem()
+	mem() const noexcept
 	{
 		return sizeof(this);
 	}

@@ -24,8 +24,8 @@ jps_expansion_policy::expand(
 
 	// compute the direction of travel used to reach the current node.
 	jps_id current_id = jps_id(current->get_id());
-	direction dir_c = from_direction(
-	    jps_id(current->get_parent()), current_id, map_->width());
+	direction dir_c   = from_direction(
+        jps_id(current->get_parent()), current_id, map_->width());
 
 	// get the tiles around the current node c
 	uint32_t c_tiles;
@@ -34,7 +34,7 @@ jps_expansion_policy::expand(
 	// look for jump points in the direction of each natural
 	// and forced neighbour
 	uint32_t succ_dirs = compute_successors(dir_c, c_tiles);
-	jps_id goal_id = jps_id(problem->target_);
+	jps_id goal_id     = jps_id(problem->target_);
 	// uint32_t search_id = problem->get_searchid();
 	for(uint32_t i = 0; i < 8; i++)
 	{

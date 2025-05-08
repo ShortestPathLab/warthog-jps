@@ -35,7 +35,7 @@ jpsplus_expansion_policy::expand(
 	// look for jump points in the direction of each natural
 	// and forced neighbour
 	uint32_t succ_dirs = compute_successors(dir_c, c_tiles);
-	jps_id goal_id = jps_id(problem->target_);
+	jps_id goal_id     = jps_id(problem->target_);
 	for(uint32_t i = 0; i < 8; i++)
 	{
 		direction d = (direction)(1 << i);

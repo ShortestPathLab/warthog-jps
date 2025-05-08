@@ -49,7 +49,7 @@ four_connected_jps_locator::jump_north(
     jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	uint32_t num_steps = 0;
-	uint32_t mapw = map_->width();
+	uint32_t mapw      = map_->width();
 
 	jps_id jp_w_id;
 	jps_id jp_e_id;
@@ -76,7 +76,7 @@ four_connected_jps_locator::jump_north(
 	}
 
 	jumpnode_id = next_id;
-	jumpcost = num_steps;
+	jumpcost    = num_steps;
 
 	// adjust num_steps if we stopped due to a deadend
 	// (we return the distance to the last traversable tile)
@@ -88,7 +88,7 @@ four_connected_jps_locator::jump_south(
     jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
 	uint32_t num_steps = 0;
-	uint32_t mapw = map_->width();
+	uint32_t mapw      = map_->width();
 
 	jps_id jp_w_id;
 	jps_id jp_e_id;
@@ -114,7 +114,7 @@ four_connected_jps_locator::jump_south(
 		if(!jp_w_id.is_none()) { break; }
 	}
 	jumpnode_id = next_id;
-	jumpcost = num_steps;
+	jumpcost    = num_steps;
 
 	// adjust num_steps if we stopped due to a deadend
 	// (we return the distance to the last traversable tile)
@@ -128,7 +128,7 @@ four_connected_jps_locator::jump_east(
 	jumpnode_id = node_id;
 
 	uint32_t neis[3] = {0, 0, 0};
-	bool deadend = false;
+	bool deadend     = false;
 
 	jumpnode_id = node_id;
 	while(true)
@@ -142,8 +142,8 @@ four_connected_jps_locator::jump_east(
 		// can be identified as a non-obstacle tile that follows
 		// immediately  after an obstacle tile. A dead-end tile is
 		// an obstacle found  on the middle row;
-		uint32_t forced_bits = (~neis[0] << 1) & neis[0];
-		forced_bits |= (~neis[2] << 1) & neis[2];
+		uint32_t forced_bits  = (~neis[0] << 1) & neis[0];
+		forced_bits          |= (~neis[2] << 1) & neis[2];
 		uint32_t deadend_bits = ~neis[1];
 
 		// stop if we found any forced or dead-end tiles
@@ -152,8 +152,8 @@ four_connected_jps_locator::jump_east(
 		{
 			// TODO: remove builtin
 			uint32_t stop_pos = __builtin_ffs(stop_bits) - 1; // returns idx+1
-			jumpnode_id.id += stop_pos;
-			deadend = deadend_bits & (1 << stop_pos);
+			jumpnode_id.id   += stop_pos;
+			deadend           = deadend_bits & (1 << stop_pos);
 			break;
 		}
 
@@ -169,7 +169,7 @@ four_connected_jps_locator::jump_east(
 	if(num_steps > goal_dist)
 	{
 		jumpnode_id = goal_id;
-		jumpcost = goal_dist;
+		jumpcost    = goal_dist;
 		return;
 	}
 
@@ -178,7 +178,7 @@ four_connected_jps_locator::jump_east(
 		// number of steps to reach the deadend tile is not
 		// correct here since we just inverted neis[1] and then
 		// looked for the first set bit. need -1 to fix it.
-		num_steps -= (1 && num_steps);
+		num_steps  -= (1 && num_steps);
 		jumpnode_id = jps_id::none();
 	}
 	jumpcost = num_steps;
@@ -188,7 +188,7 @@ void
 four_connected_jps_locator::jump_west(
     jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
-	bool deadend = false;
+	bool deadend     = false;
 	uint32_t neis[3] = {0, 0, 0};
 
 	jumpnode_id = node_id;
@@ -199,8 +199,8 @@ four_connected_jps_locator::jump_west(
 		map_->get_neighbours_upper_32bit(jumpnode_id, neis);
 
 		// identify forced and dead-end nodes
-		uint32_t forced_bits = (~neis[0] >> 1) & neis[0];
-		forced_bits |= (~neis[2] >> 1) & neis[2];
+		uint32_t forced_bits  = (~neis[0] >> 1) & neis[0];
+		forced_bits          |= (~neis[2] >> 1) & neis[2];
 		uint32_t deadend_bits = ~neis[1];
 
 		// stop if we encounter any forced or deadend nodes
@@ -208,8 +208,8 @@ four_connected_jps_locator::jump_west(
 		if(stop_bits)
 		{
 			uint32_t stop_pos = (uint32_t)__builtin_clz(stop_bits);
-			jumpnode_id.id -= stop_pos;
-			deadend = deadend_bits & (0x80000000 >> stop_pos);
+			jumpnode_id.id   -= stop_pos;
+			deadend           = deadend_bits & (0x80000000 >> stop_pos);
 			break;
 		}
 		// jump to the end of cache. jumping +32 involves checking
@@ -222,7 +222,7 @@ four_connected_jps_locator::jump_west(
 	if(num_steps > goal_dist)
 	{
 		jumpnode_id = goal_id;
-		jumpcost = goal_dist;
+		jumpcost    = goal_dist;
 		return;
 	}
 
@@ -231,7 +231,7 @@ four_connected_jps_locator::jump_west(
 		// number of steps to reach the deadend tile is not
 		// correct here since we just inverted neis[1] and then
 		// counted leading zeroes. need -1 to fix it.
-		num_steps -= (1 && num_steps);
+		num_steps  -= (1 && num_steps);
 		jumpnode_id = jps_id::none();
 	}
 	jumpcost = num_steps;
