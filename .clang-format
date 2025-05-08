@@ -18,7 +18,6 @@ AllowShortBlocksOnASingleLine: true
 AllowShortIfStatementsOnASingleLine: WithoutElse
 AllowShortFunctionsOnASingleLine: Inline
 AlignOperands: false
-AlignEscapedNewlines: LeftWithLastLine
 AlignConsecutiveAssignments:
   Enabled: true
   AlignCompound: true
