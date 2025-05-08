@@ -20,7 +20,7 @@ include(cmake/headers.cmake)
 
 add_executable(warthog_jps)
 add_executable(warthog::jps ALIAS warthog_jps)
-set_target_properties(warthog_jps PROPERTIES OUTPUT_NAME "jps")
+set_target_properties(warthog_jps PROPERTIES OUTPUT_NAME "warthog-jps")
 target_link_libraries(warthog_jps PUBLIC warthog::libjps)
 
 add_subdirectory(src)

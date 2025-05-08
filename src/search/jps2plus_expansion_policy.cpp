@@ -41,7 +41,7 @@ jps2plus_expansion_policy::expand(
 	// look for jump points in the direction of each natural
 	// and forced neighbour
 	uint32_t succ_dirs = compute_successors(dir_c, c_tiles);
-	jps_id goal_id = jps_id(problem->target_);
+	jps_id goal_id     = jps_id(problem->target_);
 
 	for(uint32_t i = 0; i < 8; i++)
 	{
@@ -69,7 +69,7 @@ jps2plus_expansion_policy::generate_start_node(
     warthog::search::search_problem_instance* pi)
 {
 	uint32_t max_id = map_->width() * map_->height();
-	jps_id start = jps_id(pi->start_);
+	jps_id start    = jps_id(pi->start_);
 
 	if(start.id >= max_id) { return nullptr; }
 	jps_id padded_id = jps_id(start);
@@ -82,7 +82,7 @@ jps2plus_expansion_policy::generate_target_node(
     warthog::search::search_problem_instance* pi)
 {
 	uint32_t max_id = map_->width() * map_->height();
-	jps_id target = jps_id(pi->target_);
+	jps_id target   = jps_id(pi->target_);
 
 	if(target.id >= max_id) { return nullptr; }
 	jps_id padded_id = target;

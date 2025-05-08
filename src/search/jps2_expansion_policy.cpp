@@ -27,8 +27,8 @@ jps2_expansion_policy::expand(
 	// compute the direction of travel used to reach the current node.
 	// TODO: store this value with the jump point location so we don't need
 	// to compute it all the time
-	jps_id p_id = jps_id(current->get_parent());
-	jps_id c_id = jps_id(current->get_id());
+	jps_id p_id     = jps_id(current->get_parent());
+	jps_id c_id     = jps_id(current->get_id());
 	direction dir_c = from_direction(p_id, c_id, map_->width());
 
 	// get the tiles around the current node c
@@ -39,7 +39,7 @@ jps2_expansion_policy::expand(
 	// look for jump points in the direction of each natural
 	// and forced neighbour
 	uint32_t succ_dirs = compute_successors(dir_c, c_tiles);
-	jps_id goal_id = jps_id(problem->target_);
+	jps_id goal_id     = jps_id(problem->target_);
 
 	for(uint32_t i = 0; i < 8; i++)
 	{
@@ -55,7 +55,7 @@ jps2_expansion_policy::expand(
 	{
 		// bits 0-23 store the id of the jump point
 		// bits 24-31 store the direction to the parent
-		jps_id jp_id = jp_ids_.at(i);
+		jps_id jp_id            = jp_ids_.at(i);
 		warthog::cost_t jp_cost = jp_costs_.at(i);
 
 		warthog::search::search_node* mynode = generate(jp_id);
@@ -78,7 +78,7 @@ warthog::search::search_node*
 jps2_expansion_policy::generate_start_node(
     warthog::search::search_problem_instance* pi)
 {
-	jps_id start = jps_id(pi->start_);
+	jps_id start    = jps_id(pi->start_);
 	uint32_t max_id = map_->width() * map_->height();
 
 	if(start.id >= max_id) { return nullptr; }
@@ -91,7 +91,7 @@ warthog::search::search_node*
 jps2_expansion_policy::generate_target_node(
     warthog::search::search_problem_instance* pi)
 {
-	jps_id target = jps_id(pi->target_);
+	jps_id target   = jps_id(pi->target_);
 	uint32_t max_id = map_->width() * map_->height();
 
 	if(target.id >= max_id) { return nullptr; }

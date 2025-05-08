@@ -27,7 +27,7 @@ offline_jump_point_locator::preproc()
 	if(load(map_->filename())) { return; }
 
 	dbsize_ = 8 * map_->padded_mapsize();
-	db_ = new uint16_t[dbsize_];
+	db_     = new uint16_t[dbsize_];
 	for(uint32_t i = 0; i < dbsize_; i++)
 		db_[i] = 0;
 
@@ -171,8 +171,8 @@ void
 offline_jump_point_locator::jump_northwest(
     jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
-	uint32_t mapw = map_->width();
-	uint16_t label = db_[8 * node_id.id + 5];
+	uint32_t mapw      = map_->width();
+	uint16_t label     = db_[8 * node_id.id + 5];
 	uint16_t num_steps = label & 32767;
 
 	// goal test (so many div ops! and branches! how ugly!)
@@ -193,7 +193,7 @@ offline_jump_point_locator::jump_northwest(
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
 				steps_to_nid = ydelta;
-				nid = node_id.id - (mapw + 1) * steps_to_nid;
+				nid          = node_id.id - (mapw + 1) * steps_to_nid;
 				jump_west(jps_id{nid}, goal_id, jumpnode_id, jumpcost);
 				if(jumpnode_id == goal_id)
 				{
@@ -205,7 +205,7 @@ offline_jump_point_locator::jump_northwest(
 			else if(xdelta <= num_steps)
 			{
 				steps_to_nid = xdelta;
-				nid = node_id.id - (mapw + 1) * steps_to_nid;
+				nid          = node_id.id - (mapw + 1) * steps_to_nid;
 				jump_north(jps_id{nid}, goal_id, jumpnode_id, jumpcost);
 				if(jumpnode_id == goal_id)
 				{
@@ -219,7 +219,7 @@ offline_jump_point_locator::jump_northwest(
 
 	// return the jump point; but only if it isn't sterile
 	jumpnode_id = jps_id(node_id.id - id_delta);
-	jumpcost = num_steps * warthog::DBL_ROOT_TWO;
+	jumpcost    = num_steps * warthog::DBL_ROOT_TWO;
 	if(label & 32768) { jumpnode_id = jps_id::none(); }
 }
 
@@ -227,9 +227,9 @@ void
 offline_jump_point_locator::jump_northeast(
     jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
-	uint16_t label = db_[8 * node_id.id + 4];
+	uint16_t label     = db_[8 * node_id.id + 4];
 	uint16_t num_steps = label & 32767;
-	uint32_t mapw = map_->width();
+	uint32_t mapw      = map_->width();
 
 	// goal test (so many div ops! and branches! how ugly!)
 	uint32_t id_delta = (mapw - 1) * num_steps;
@@ -248,7 +248,7 @@ offline_jump_point_locator::jump_northeast(
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
 				steps_to_nid = ydelta;
-				nid = node_id.id - (mapw - 1) * steps_to_nid;
+				nid          = node_id.id - (mapw - 1) * steps_to_nid;
 				jump_east(jps_id(nid), goal_id, jumpnode_id, jumpcost);
 				if(jumpnode_id == goal_id)
 				{
@@ -260,7 +260,7 @@ offline_jump_point_locator::jump_northeast(
 			else if(xdelta <= num_steps)
 			{
 				steps_to_nid = xdelta;
-				nid = node_id.id - (mapw - 1) * steps_to_nid;
+				nid          = node_id.id - (mapw - 1) * steps_to_nid;
 				jump_north(jps_id(nid), goal_id, jumpnode_id, jumpcost);
 				if(jumpnode_id == goal_id)
 				{
@@ -274,7 +274,7 @@ offline_jump_point_locator::jump_northeast(
 
 	// return the jump point; but only if it isn't sterile
 	jumpnode_id = jps_id(node_id.id - id_delta);
-	jumpcost = num_steps * warthog::DBL_ROOT_TWO;
+	jumpcost    = num_steps * warthog::DBL_ROOT_TWO;
 	if(label & 32768) { jumpnode_id = jps_id::none(); }
 }
 
@@ -282,9 +282,9 @@ void
 offline_jump_point_locator::jump_southwest(
     jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
-	uint16_t label = db_[8 * node_id.id + 7];
+	uint16_t label     = db_[8 * node_id.id + 7];
 	uint16_t num_steps = label & 32767;
-	uint32_t mapw = map_->width();
+	uint32_t mapw      = map_->width();
 
 	// goal test (so many div ops! and branches! how ugly!)
 	if((goal_id.id - node_id.id) < map_->padded_mapsize())
@@ -302,7 +302,7 @@ offline_jump_point_locator::jump_southwest(
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
 				steps_to_nid = ydelta;
-				nid = node_id.id + (mapw - 1) * steps_to_nid;
+				nid          = node_id.id + (mapw - 1) * steps_to_nid;
 				jump_west(jps_id(nid), goal_id, jumpnode_id, jumpcost);
 				if(jumpnode_id == goal_id)
 				{
@@ -314,7 +314,7 @@ offline_jump_point_locator::jump_southwest(
 			else if(xdelta <= num_steps)
 			{
 				steps_to_nid = xdelta;
-				nid = node_id.id + (mapw - 1) * steps_to_nid;
+				nid          = node_id.id + (mapw - 1) * steps_to_nid;
 				jump_south(jps_id(nid), goal_id, jumpnode_id, jumpcost);
 				if(jumpnode_id == goal_id)
 				{
@@ -328,7 +328,7 @@ offline_jump_point_locator::jump_southwest(
 
 	// return the jump point; but only if it isn't sterile
 	jumpnode_id = jps_id(node_id.id + (mapw - 1) * num_steps);
-	jumpcost = num_steps * warthog::DBL_ROOT_TWO;
+	jumpcost    = num_steps * warthog::DBL_ROOT_TWO;
 	if(label & 32768) { jumpnode_id = jps_id::none(); }
 }
 
@@ -336,9 +336,9 @@ void
 offline_jump_point_locator::jump_southeast(
     jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
-	uint16_t label = db_[8 * node_id.id + 6];
+	uint16_t label     = db_[8 * node_id.id + 6];
 	uint16_t num_steps = label & 32767;
-	uint32_t mapw = map_->width();
+	uint32_t mapw      = map_->width();
 
 	// goal test (so many div ops! and branches! how ugly!)
 	if((goal_id.id - node_id.id) < map_->padded_mapsize())
@@ -356,7 +356,7 @@ offline_jump_point_locator::jump_southeast(
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
 				steps_to_nid = ydelta;
-				nid = node_id.id + (mapw + 1) * steps_to_nid;
+				nid          = node_id.id + (mapw + 1) * steps_to_nid;
 				jump_east(jps_id(nid), goal_id, jumpnode_id, jumpcost);
 				if(jumpnode_id == goal_id)
 				{
@@ -368,7 +368,7 @@ offline_jump_point_locator::jump_southeast(
 			else if(xdelta <= num_steps)
 			{
 				steps_to_nid = xdelta;
-				nid = node_id.id + (mapw + 1) * steps_to_nid;
+				nid          = node_id.id + (mapw + 1) * steps_to_nid;
 				jump_south(jps_id(nid), goal_id, jumpnode_id, jumpcost);
 				if(jumpnode_id == goal_id)
 				{
@@ -381,7 +381,7 @@ offline_jump_point_locator::jump_southeast(
 	}
 
 	jumpnode_id = jps_id(node_id.id + (mapw + 1) * num_steps);
-	jumpcost = num_steps * warthog::DBL_ROOT_TWO;
+	jumpcost    = num_steps * warthog::DBL_ROOT_TWO;
 	if(label & 32768) { jumpnode_id = jps_id::none(); }
 }
 
@@ -389,11 +389,11 @@ void
 offline_jump_point_locator::jump_north(
     jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
-	uint16_t label = db_[8 * node_id.id];
+	uint16_t label     = db_[8 * node_id.id];
 	uint16_t num_steps = label & 32767;
 
 	// do not jump over the goal
-	uint32_t id_delta = num_steps * map_->width();
+	uint32_t id_delta   = num_steps * map_->width();
 	uint32_t goal_delta = node_id.id - goal_id.id;
 	if(id_delta >= goal_delta)
 	{
@@ -402,14 +402,14 @@ offline_jump_point_locator::jump_north(
 		if(nx == gx)
 		{
 			jumpnode_id = goal_id;
-			jumpcost = (goal_delta / map_->width());
+			jumpcost    = (goal_delta / map_->width());
 			return;
 		}
 	}
 
 	// return the jump point at hand
 	jumpnode_id = jps_id(node_id.id - id_delta);
-	jumpcost = num_steps;
+	jumpcost    = num_steps;
 	if(label & 32768) { jumpnode_id = jps_id::none(); }
 }
 
@@ -417,11 +417,11 @@ void
 offline_jump_point_locator::jump_south(
     jps_id node_id, jps_id goal_id, jps_id& jumpnode_id, double& jumpcost)
 {
-	uint16_t label = db_[8 * node_id.id + 1];
+	uint16_t label     = db_[8 * node_id.id + 1];
 	uint16_t num_steps = label & 32767;
 
 	// do not jump over the goal
-	uint32_t id_delta = num_steps * map_->width();
+	uint32_t id_delta   = num_steps * map_->width();
 	uint32_t goal_delta = goal_id.id - node_id.id;
 	if(id_delta >= goal_delta)
 	{
@@ -430,14 +430,14 @@ offline_jump_point_locator::jump_south(
 		if(nx == gx)
 		{
 			jumpnode_id = goal_id;
-			jumpcost = goal_delta / map_->width();
+			jumpcost    = goal_delta / map_->width();
 			return;
 		}
 	}
 
 	// return the jump point at hand
 	jumpnode_id = jps_id(node_id.id + id_delta);
-	jumpcost = num_steps;
+	jumpcost    = num_steps;
 	if(label & 32768) { jumpnode_id = jps_id::none(); }
 }
 
@@ -448,18 +448,18 @@ offline_jump_point_locator::jump_east(
 	uint16_t label = db_[8 * node_id.id + 2];
 
 	// do not jump over the goal
-	uint32_t id_delta = label & 32767;
+	uint32_t id_delta   = label & 32767;
 	uint32_t goal_delta = goal_id.id - node_id.id;
 	if(id_delta >= goal_delta)
 	{
 		jumpnode_id = goal_id;
-		jumpcost = goal_delta;
+		jumpcost    = goal_delta;
 		return;
 	}
 
 	// return the jump point at hand
 	jumpnode_id = jps_id(node_id.id + id_delta);
-	jumpcost = id_delta;
+	jumpcost    = id_delta;
 	if(label & 32768) { jumpnode_id = jps_id::none(); }
 }
 
@@ -470,18 +470,18 @@ offline_jump_point_locator::jump_west(
 	uint16_t label = db_[8 * node_id.id + 3];
 
 	// do not jump over the goal
-	uint32_t id_delta = label & 32767;
+	uint32_t id_delta   = label & 32767;
 	uint32_t goal_delta = node_id.id - goal_id.id;
 	if(id_delta >= goal_delta)
 	{
 		jumpnode_id = goal_id;
-		jumpcost = goal_delta;
+		jumpcost    = goal_delta;
 		return;
 	}
 
 	// return the jump point at hand
 	jumpnode_id = jps_id(node_id.id - id_delta);
-	jumpcost = id_delta;
+	jumpcost    = id_delta;
 	if(label & 32768) { jumpnode_id = jps_id::none(); }
 }
 
