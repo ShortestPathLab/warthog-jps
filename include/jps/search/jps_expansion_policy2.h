@@ -91,7 +91,7 @@ jps_expansion_policy2<JpsJump>::expand(
 	reset();
 
 	// compute the direction of travel used to reach the current node.
-	const jps_id current_id = jps_id(current->get_id());
+	const jps_id current_id   = jps_id(current->get_id());
 	const jps_rid current_rid = jpl_.id_to_rid(current_id);
 	// const cost_t current_cost = current->get_g();
 	const direction dir_c = from_direction(

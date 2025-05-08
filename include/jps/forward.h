@@ -20,7 +20,7 @@ using warthog::cost_t;
 
 using namespace warthog::grid;
 
-using vec_jps_id = std::vector<jps_id>;
+using vec_jps_id   = std::vector<jps_id>;
 using vec_jps_cost = std::vector<cost_t>;
 
 struct alignas(uint32_t) point
@@ -31,7 +31,7 @@ struct alignas(uint32_t) point
 
 enum class JpsFeature : uint8_t
 {
-	DEFAULT = 0, // uses block-based jumping
+	DEFAULT             = 0, // uses block-based jumping
 	PRUNE_INTERCARDINAL = 1 << 0,
 	STORE_CARDINAL_JUMP = 1 << 1, // if not PRUNE_INTERCARDINAL, then store
 	                              // cardinal results in intercandial jump

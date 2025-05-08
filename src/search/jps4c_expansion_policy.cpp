@@ -23,8 +23,8 @@ jps4c_expansion_policy::expand(
 	reset();
 
 	jps_id current_id = jps_id(current->get_id());
-	jps_id parent_id = jps_id(current->get_parent());
-	jps_id goal_id = jps_id(problem->target_);
+	jps_id parent_id  = jps_id(current->get_parent());
+	jps_id goal_id    = jps_id(problem->target_);
 
 	// compute the direction of travel used to reach the current node.
 	direction dir_c = from_direction_4c(parent_id, current_id, map_->width());

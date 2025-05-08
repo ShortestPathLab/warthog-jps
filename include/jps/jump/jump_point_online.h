@@ -410,7 +410,7 @@ template<JpsFeature Feature = JpsFeature::DEFAULT>
 class jump_point_online
 {
 public:
-	using gridmap = warthog::domain::gridmap;
+	using gridmap  = warthog::domain::gridmap;
 	using map_type = gridmap::bittable;
 	jump_point_online();
 	jump_point_online(gridmap* map)
@@ -638,13 +638,13 @@ protected:
 
 protected:
 	std::unique_ptr<gridmap> rmap_data_;
-	map_type map_ = {};
+	map_type map_  = {};
 	map_type rmap_ = {};
 	// uint32_t map_width_ = 0;
 	// uint32_t rmap_width_ = 0;
 	uint32_t map_unpad_height_m1_ = 0;
-	jps_id goal_ = {};
-	jps_rid rgoal_ = {};
+	jps_id goal_                  = {};
+	jps_rid rgoal_                = {};
 };
 
 template<JpsFeature Feature>
@@ -659,14 +659,14 @@ template<JpsFeature Feature>
 void
 jump_point_online<Feature>::set_goal(jps_id p) noexcept
 {
-	goal_ = p;
+	goal_  = p;
 	rgoal_ = id_to_rid(p);
 }
 template<JpsFeature Feature>
 void
 jump_point_online<Feature>::set_goal(point p) noexcept
 {
-	goal_ = point_to_id(p);
+	goal_  = point_to_id(p);
 	rgoal_ = rpoint_to_rid(point_to_rpoint(p));
 }
 
@@ -676,7 +676,7 @@ jump_point_online<Feature>::create_rotate_(const gridmap& orig)
 {
 	const uint32_t maph = orig.header_height();
 	const uint32_t mapw = orig.header_width();
-	auto tmap = std::make_unique<gridmap>(mapw, maph);
+	auto tmap           = std::make_unique<gridmap>(mapw, maph);
 
 	for(uint32_t y = 0; y < maph; y++)
 	{
@@ -691,7 +691,7 @@ jump_point_online<Feature>::create_rotate_(const gridmap& orig)
 
 	// set values
 	rmap_data_ = std::move(tmap);
-	rmap_ = *rmap_data_;
+	rmap_      = *rmap_data_;
 	// map_.width() = map_->width();
 	// rmap_.width() = rmap_->width();
 	map_unpad_height_m1_ = maph - 1;
@@ -706,19 +706,19 @@ jump_point_online<Feature>::jump_cardinal(
 	switch(d)
 	{
 	case NORTH:
-		node.first = jump_north(rnode_id);
+		node.first     = jump_north(rnode_id);
 		node.second.id = node_id.id - map_.width() * node.first;
 		break;
 	case SOUTH:
-		node.first = jump_south(rnode_id);
+		node.first     = jump_south(rnode_id);
 		node.second.id = node_id.id + map_.width() * node.first;
 		break;
 	case EAST:
-		node.first = jump_east(node_id);
+		node.first     = jump_east(node_id);
 		node.second.id = node_id.id + node.first;
 		break;
 	case WEST:
-		node.first = jump_west(node_id);
+		node.first     = jump_west(node_id);
 		node.second.id = node_id.id - node.first;
 		break;
 	default:
@@ -842,8 +842,8 @@ jump_point_online<Feature>::jump_intercardinal(
 	walker.rmap_width(rmap_.width());
 	walker.node_at[0] = static_cast<uint32_t>(node);
 	walker.node_at[1] = static_cast<uint32_t>(rnode);
-	walker.goal[0] = goal_.id;
-	walker.goal[1] = rgoal_.id;
+	walker.goal[0]    = goal_.id;
+	walker.goal[1]    = rgoal_.id;
 
 	// pre-set cardinal results to none, in case no successors are found
 	if constexpr(feature_store_cardinal())
@@ -866,9 +866,9 @@ jump_point_online<Feature>::jump_intercardinal(
 			{
 				// reached goal
 				intercardinal_jump_result result;
-				result.node = jps_id{walker.node_at[0]};
+				result.node  = jps_id{walker.node_at[0]};
 				result.rnode = jps_rid::none(); // walker.get_last_rrow();
-				result.dist = walk_count;
+				result.dist  = walk_count;
 				return result;
 			}
 			//
@@ -882,9 +882,9 @@ jump_point_online<Feature>::jump_intercardinal(
 				{
 					// do not store cardinal results, just return the
 					// intercardinal point
-					result.node = jps_id{walker.node_at[0]};
+					result.node  = jps_id{walker.node_at[0]};
 					result.rnode = jps_rid::none(); // walker.get_last_rrow();
-					result.dist = walk_count;
+					result.dist  = walk_count;
 				}
 				else
 				{
@@ -909,9 +909,9 @@ jump_point_online<Feature>::jump_intercardinal(
 					// store next row location as we do not need to keep the
 					// current intercardinal
 					walker.next_row();
-					result.node = jps_id{walker.node_at[0]};
+					result.node  = jps_id{walker.node_at[0]};
 					result.rnode = jps_rid::none(); // walker.get_last_rrow();
-					result.dist = walker.valid_row() ? walk_count + 1 : 0;
+					result.dist  = walker.valid_row() ? walk_count + 1 : 0;
 				}
 				// found jump point, return
 				return result;
@@ -925,7 +925,7 @@ jump_point_online<Feature>::jump_intercardinal(
 		assert(result_size > 2);
 		result_size
 		    -= 1; // ensure there is always space for at least 2 results
-		uint32_t walk_count = 1;
+		uint32_t walk_count   = 1;
 		uint32_t result_count = 0;
 		walker.first_row();
 		// only continue if there is room to store results
@@ -937,12 +937,12 @@ jump_point_online<Feature>::jump_intercardinal(
 			if(walker.node_at[0] == walker.goal[0]) [[unlikely]]
 			{
 				// reached goal
-				result_count += 1;
+				result_count    += 1;
 				*(result_node++) = jps_id{walker.node_at[0]};
 				*(result_cost++) = walk_count * warthog::DBL_ROOT_TWO;
 				break;
 			}
-			auto res = walker.long_jump();
+			auto res            = walker.long_jump();
 			cost_t current_cost = walk_count * warthog::DBL_ROOT_TWO;
 			if(res.dist[0] != 0)
 			{ // east/west
