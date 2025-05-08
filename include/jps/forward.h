@@ -33,7 +33,7 @@ enum class JpsFeature : uint8_t
 {
 	DEFAULT = 0, // uses block-based jumping
 	PRUNE_INTERCARDINAL = 1 << 0,
-	STORE_CARDIANL_JUMP = 1 << 1, // if not PRUNE_INTERCARDINAL, then store
+	STORE_CARDINAL_JUMP = 1 << 1, // if not PRUNE_INTERCARDINAL, then store
 	                              // cardinal results in intercandial jump
 };
 inline JpsFeature

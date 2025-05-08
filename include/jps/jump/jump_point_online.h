@@ -430,7 +430,7 @@ public:
 	feature_store_cardinal() noexcept
 	{
 		return (static_cast<uint32_t>(Feature)
-		        & static_cast<uint32_t>(JpsFeature::STORE_CARDIANL_JUMP))
+		        & static_cast<uint32_t>(JpsFeature::STORE_CARDINAL_JUMP))
 		    != 0;
 	}
 
@@ -593,11 +593,11 @@ protected:
 	 * The result_* variables store the cardinal jump results (if enabled)
 	 * result_count only used for PRUNE_INTERCARDINAL.
 	 * result_* must be big enough to store:
-	 * !PRUNE_INTERCARDINAL & !STORE_CARDIANL_JUMP => 0 (should be nullptr)
-	 * !PRUNE_INTERCARDINAL & STORE_CARDIANL_JUMP => 2
+	 * !PRUNE_INTERCARDINAL & !STORE_CARDINAL_JUMP => 0 (should be nullptr)
+	 * !PRUNE_INTERCARDINAL & STORE_CARDINAL_JUMP => 2
 	 * PRUNE_INTERCARDINAL => result_cost (min 4)
 	 *
-	 * if !PRUNE_INTERCARDINAL & STORE_CARDIANL_JUMP:
+	 * if !PRUNE_INTERCARDINAL & STORE_CARDINAL_JUMP:
 	 *   results[0] = east/west result or jps_id::none() if none
 	 *   results[1] = north/south result or jps_id::none() if none
 	 *
