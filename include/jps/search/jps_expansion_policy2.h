@@ -112,7 +112,7 @@ jps_expansion_policy2<JpsJump>::expand(
 		if(succ_dirs & d)
 		{
 			auto jump_result = jpl_.jump_cardinal(d, current_id, current_rid);
-			if(jump_result.first != 0)
+			if(jump_result.first > 0) // jump point
 			{
 				// successful jump
 				warthog::search::search_node* jp_succ
