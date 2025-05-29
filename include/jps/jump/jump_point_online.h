@@ -88,8 +88,8 @@ jump_point_online_hori(
 			//  v is blocker location, prune unless target is present
 			// 10111111
 			// dead end takes president as jump point can't pass a blocker
-			jump_count
-			    += static_cast<int32_t>(stop_pos) - static_cast<int32_t>(nei_slider.width8_bits);
+			jump_count += static_cast<int32_t>(stop_pos)
+			    - static_cast<int32_t>(nei_slider.width8_bits);
 			uint32_t goal_jump = East ? goal - node : node - goal;
 			// if blocked: pos + jump_count = first block
 			//  otherwise: jump_count = trav cell after turn (jump point
@@ -116,7 +116,7 @@ jump_point_online_hori(
 			{
 				// deadend, return negative jump
 				assert(jump_count > 0);
-				jump_count = -(jump_count-1);
+				jump_count = -(jump_count - 1);
 			}
 			return jump_count;
 		}
@@ -716,19 +716,25 @@ jump_point_online<Feature>::jump_cardinal(
 	{
 	case NORTH:
 		node.first     = jump_north(rnode_id);
-		node.second.id = node_id.id - map_.width() * static_cast<jps_id::id_type>(std::abs(node.first));
+		node.second.id = node_id.id
+		    - map_.width()
+		        * static_cast<jps_id::id_type>(std::abs(node.first));
 		break;
 	case SOUTH:
 		node.first     = jump_south(rnode_id);
-		node.second.id = node_id.id + map_.width() * static_cast<jps_id::id_type>(std::abs(node.first));
+		node.second.id = node_id.id
+		    + map_.width()
+		        * static_cast<jps_id::id_type>(std::abs(node.first));
 		break;
 	case EAST:
-		node.first     = jump_east(node_id);
-		node.second.id = node_id.id + static_cast<jps_id::id_type>(std::abs(node.first));
+		node.first = jump_east(node_id);
+		node.second.id
+		    = node_id.id + static_cast<jps_id::id_type>(std::abs(node.first));
 		break;
 	case WEST:
-		node.first     = jump_west(node_id);
-		node.second.id = node_id.id - static_cast<jps_id::id_type>(std::abs(node.first));
+		node.first = jump_west(node_id);
+		node.second.id
+		    = node_id.id - static_cast<jps_id::id_type>(std::abs(node.first));
 		break;
 	default:
 		assert(false);
