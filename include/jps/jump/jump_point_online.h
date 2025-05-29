@@ -27,7 +27,7 @@ namespace details
 /// @param goal the goal location
 /// @return
 template<bool East>
-uint32_t
+int32_t
 jump_point_online_hori(
     ::warthog::domain::gridmap::bittable map, uint32_t node, uint32_t goal)
 {
@@ -47,7 +47,7 @@ jump_point_online_hori(
 	nei_slider.width8_bits
 	    = East ? nei_slider.width8_bits + 8 : 15 - nei_slider.width8_bits;
 	// 15 - width8_bits == 63 - (width8_bits + 6 * 8)
-	uint32_t jump_count = 0;
+	int32_t jump_count = 0;
 
 	// order going east is stored as least significant bit to most significant
 	// bit
@@ -59,14 +59,11 @@ jump_point_online_hori(
 		uint64_t tmp = East ? ~(~0ull << nei_slider.width8_bits)
 		                    : ~(~0ull >> nei_slider.width8_bits);
 		// shift above and below 2 points east
-		// mask out to trav(1) before node
+		// mask out to trav(1) before node location
 		neis[0] |= tmp;
 		neis[1] |= tmp;
 		neis[2] |= tmp;
-		//   v  & will make this the least sig bit, and is where the jump point
-		//   is located
-		// 10100011 : 0
-		// 10111000 : <<1~
+		// find first jump point, is +1 location past blocker above or below
 		if constexpr(East)
 		{
 			tmp = ((~neis[1] << 1)
@@ -81,6 +78,7 @@ jump_point_online_hori(
 			    | ((~neis[2] >> 1)
 			       & neis[2]); // below row: block(zero) trailing trav(one)
 		}
+		// append for dead-end check
 		tmp = tmp | ~neis[0];
 		if(tmp)
 		{
@@ -90,8 +88,8 @@ jump_point_online_hori(
 			//  v is blocker location, prune unless target is present
 			// 10111111
 			// dead end takes president as jump point can't pass a blocker
-			jump_count
-			    += static_cast<uint32_t>(stop_pos) - nei_slider.width8_bits;
+			jump_count += static_cast<int32_t>(stop_pos)
+			    - static_cast<int32_t>(nei_slider.width8_bits);
 			uint32_t goal_jump = East ? goal - node : node - goal;
 			// if blocked: pos + jump_count = first block
 			//  otherwise: jump_count = trav cell after turn (jump point
@@ -100,10 +98,14 @@ jump_point_online_hori(
 			// goal is reachable, if equal then trav pos is the goal if
 			// greater, than goal is further or another row or behind (as
 			// unsigned)
-			if(goal_jump <= jump_count)
+			assert(jump_count >= 0);
+			// must be checked as unsigned for:
+			// 1. goal.is_none(): will not fit int32_t
+			// 2. underflow means goal is in opposite direction, desirable
+			if(goal_jump <= static_cast<uint32_t>(jump_count))
 			{
 				// goal reached
-				jump_count = goal_jump;
+				jump_count = static_cast<int32_t>(goal_jump);
 			}
 			else if(
 			    East ? !(neis[0] & (static_cast<uint64_t>(1) << stop_pos))
@@ -112,7 +114,9 @@ jump_point_online_hori(
 			                    std::numeric_limits<int64_t>::min())
 			                >> stop_pos))) // deadend
 			{
-				jump_count = 0;
+				// deadend, return negative jump
+				assert(jump_count > 0);
+				jump_count = -(jump_count - 1);
 			}
 			return jump_count;
 		}
@@ -261,14 +265,18 @@ struct IntercardinalWalker
 	static uint32_t
 	jump_east(map_type map, uint32_t width, uint32_t node, uint32_t goal)
 	{
-		return details::jump_point_online_hori<true>(
+		int32_t d = details::jump_point_online_hori<true>(
 		    ::warthog::domain::gridmap::bittable(map, width, 0), node, goal);
+		// for LongJumpRes, must return 0 for deadend
+		return d >= 0 ? static_cast<uint32_t>(d) : 0;
 	}
 	static uint32_t
 	jump_west(map_type map, uint32_t width, uint32_t node, uint32_t goal)
 	{
-		return details::jump_point_online_hori<false>(
+		int32_t d = details::jump_point_online_hori<false>(
 		    ::warthog::domain::gridmap::bittable(map, width, 0), node, goal);
+		// for LongJumpRes, must return 0 for deadend
+		return d >= 0 ? static_cast<uint32_t>(d) : 0;
 	}
 	uint32_t
 	jump_hori()
@@ -455,32 +463,33 @@ public:
 	}
 
 	/**
-	 * @returns pair first: steps to reach node (or 0 if no node), second: id
-	 * of jump point (or node_id if none)
+	 * @returns pair first: steps to reach jump point, second: id
+	 * of jump point. deadend returns negative steps
+	 * (include 0) to reach before blocker.
 	 */
-	std::pair<uint32_t, jps_id>
+	std::pair<int32_t, jps_id>
 	jump_cardinal(direction d, jps_id node_id, jps_rid rnode_id);
 	intercardinal_jump_result
 	jump_intercardinal(
 	    direction d, jps_id node_id, jps_rid rnode_id, jps_id* result_node,
 	    cost_t* result_cost, uint32_t result_size = 0);
 
-	uint32_t
+	int32_t
 	jump_north(jps_rid rnode)
 	{
 		return jump_east(rmap_, rnode.id, rgoal_.id);
 	}
-	uint32_t
+	int32_t
 	jump_east(jps_id node)
 	{
 		return jump_east(map_, node.id, goal_.id);
 	}
-	uint32_t
+	int32_t
 	jump_south(jps_rid rnode)
 	{
 		return jump_west(rmap_, rnode.id, rgoal_.id);
 	}
-	uint32_t
+	int32_t
 	jump_west(jps_id node)
 	{
 		return jump_west(map_, node.id, goal_.id);
@@ -583,9 +592,9 @@ public:
 	}
 
 protected:
-	static uint32_t
+	static int32_t
 	jump_east(map_type map, uint32_t node, uint32_t goal);
-	static uint32_t
+	static int32_t
 	jump_west(map_type map, uint32_t node, uint32_t goal);
 
 	/**
@@ -698,28 +707,34 @@ jump_point_online<Feature>::create_rotate_(const gridmap& orig)
 }
 
 template<JpsFeature Feature>
-std::pair<uint32_t, jps_id>
+std::pair<int32_t, jps_id>
 jump_point_online<Feature>::jump_cardinal(
     direction d, jps_id node_id, jps_rid rnode_id)
 {
-	std::pair<uint32_t, jps_id> node;
+	std::pair<int32_t, jps_id> node;
 	switch(d)
 	{
 	case NORTH:
 		node.first     = jump_north(rnode_id);
-		node.second.id = node_id.id - map_.width() * node.first;
+		node.second.id = node_id.id
+		    - map_.width()
+		        * static_cast<jps_id::id_type>(std::abs(node.first));
 		break;
 	case SOUTH:
 		node.first     = jump_south(rnode_id);
-		node.second.id = node_id.id + map_.width() * node.first;
+		node.second.id = node_id.id
+		    + map_.width()
+		        * static_cast<jps_id::id_type>(std::abs(node.first));
 		break;
 	case EAST:
-		node.first     = jump_east(node_id);
-		node.second.id = node_id.id + node.first;
+		node.first = jump_east(node_id);
+		node.second.id
+		    = node_id.id + static_cast<jps_id::id_type>(std::abs(node.first));
 		break;
 	case WEST:
-		node.first     = jump_west(node_id);
-		node.second.id = node_id.id - node.first;
+		node.first = jump_west(node_id);
+		node.second.id
+		    = node_id.id - static_cast<jps_id::id_type>(std::abs(node.first));
 		break;
 	default:
 		assert(false);
@@ -760,7 +775,7 @@ jump_point_online<Feature>::jump_intercardinal(
 }
 
 template<JpsFeature Feature>
-uint32_t
+int32_t
 jump_point_online<Feature>::jump_east(
     map_type map, uint32_t node, uint32_t goal)
 {
@@ -768,7 +783,7 @@ jump_point_online<Feature>::jump_east(
 }
 
 template<JpsFeature Feature>
-uint32_t
+int32_t
 jump_point_online<Feature>::jump_west(
     map_type map, uint32_t node, uint32_t goal)
 {
