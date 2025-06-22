@@ -10,24 +10,16 @@
 namespace jps
 {
 
-using warthog::pack_id;
-using warthog::pad_id;
-using jps_id = warthog::pad32_id;
+using namespace warthog::grid;
+using ::warthog::pad_id;
+using jps_id = grid_id;
 struct rmap_id_tag
 { };
-using jps_rid = warthog::identity_base<rmap_id_tag, jps_id::id_type>;
+using rgrid_id = warthog::identity_base<rmap_id_tag, jps_id::id_type>;
 using warthog::cost_t;
-
-using namespace warthog::grid;
 
 using vec_jps_id   = std::vector<jps_id>;
 using vec_jps_cost = std::vector<cost_t>;
-
-struct alignas(uint32_t) point
-{
-	uint16_t x;
-	uint16_t y;
-};
 
 enum class JpsFeature : uint8_t
 {
