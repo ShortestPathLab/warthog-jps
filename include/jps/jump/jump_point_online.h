@@ -144,7 +144,11 @@ struct IntercardinalWalker
 	union LongJumpRes
 	{
 		jump_distance dist[2]; /// distance hori/vert of D a jump is valid to
-		uint32_t joint;
+
+		operator bool() const noexcept
+		{
+			return dist[0] > 0 || dist[1] > 0;
+		}
 	};
 	using map_type = ::warthog::domain::gridmap::bitarray;
 	/// @brief map and rmap (as bit array for small memory size)
@@ -555,9 +559,9 @@ public:
     /// until either reaching a deadend or some algorithmic specific stopping criteria.
 	template <direction_id D>
 		requires InterCardinalId<D>
-	std::pair<int, point>
+	std::pair<uint16_t, jump_distance>
 	jump_intercardinal_many(
-	    point loc, int result_size, intercardinal_jump_result* result, jump_distance max_distance = std::numeric_limits<jump_distance>::max());
+	    point loc, intercardinal_jump_result* result, uint16_t result_size, jump_distance max_distance = std::numeric_limits<jump_distance>::max());
 
 	size_t
 	mem()
@@ -613,14 +617,49 @@ jump_point_online::jump_cardinal_next(domain::direction_grid_id_t<D> node_id)
 	}
 }
 
+
 template <direction_id D>
 	requires InterCardinalId<D>
-std::pair<int, point>
-jump_point_online::jump_intercardinal_many(
-	point loc, int result_size, intercardinal_jump_result* result, jump_distance max_distance)
+intercardinal_jump_result
+jump_point_online::jump_intercardinal_next(
+	point loc)
 {
-	assert(!node.is_none() && !rnode.is_none());
+	IntercardinalWalker<D> walker; // class to walk
+	// setup the walker members
+	// 0 = map, 1 = rmap
+	walker.map = map_;
+	walker.map_width(map_[0].width());
+	walker.rmap_width(map_[1].width());
+	walker.node_at[0] = static_cast<uint32_t>(map_.point_to_id(loc));
+	walker.node_at[1] = static_cast<uint32_t>(map_.rpoint_to_rid(map_.point_to_rpoint(loc)));
 
+	// JPS, stop at the first intercardinal turning point
+	jump_distance walk_count = 0;
+	walker.first_row();
+	while(true)
+	{
+		walker.next_row();      // walk_count adjusted at end of loop
+		if(!walker.valid_row()) // no successors
+			return {static_cast<jump_distance>(-walk_count), 0, 0};
+		walk_count += 1;
+		//
+		// handle hori/vert long jump
+		//
+		auto res = walker.long_jump();
+		if(res)
+		{ // at least one jump has a turning point
+			return {walk_count, res.dist[0], res.dist[1]};
+		}
+	}
+}
+
+template <direction_id D>
+	requires InterCardinalId<D>
+std::pair<uint16_t, jump_distance>
+jump_point_online::jump_intercardinal_many(
+	point loc, intercardinal_jump_result* result, uint16_t result_size, jump_distance max_distance)
+{
+	assert(result_size > 0);
 	/*
 	map:
 	NW N NE
@@ -661,138 +700,35 @@ jump_point_online::jump_intercardinal_many(
 	// setup the walker members
 	// 0 = map, 1 = rmap
 	walker.map = map_;
-	walker.map[1] = map_[1];
-	walker.map_width(map_.width());
-	walker.rmap_width(rmap_.width());
-	walker.node_at[0] = static_cast<uint32_t>(node);
-	walker.node_at[1] = static_cast<uint32_t>(rnode);
-	walker.goal[0]    = goal_.id;
-	walker.goal[1]    = rgoal_.id;
-
-	// pre-set cardinal results to none, in case no successors are found
-	if constexpr(feature_store_cardinal())
-	{
-		result_node[0] = result_node[1] = jps_id::none();
-	}
+	walker.map_width(map_[0].width());
+	walker.rmap_width(map_[1].width());
+	walker.node_at[0] = static_cast<uint32_t>(map_.point_to_id(loc));
+	walker.node_at[1] = static_cast<uint32_t>(map_.rpoint_to_rid(map_.point_to_rpoint(loc)));
 
 	// JPS, stop at the first intercardinal turning point
-	if constexpr(!feature_prune_intercardinal())
+	uint16_t results_count = 0;
+	jump_distance walk_count = 0;
+	walker.first_row();
+	while(walk_count < max_distance) // if equal, max distance is reached
 	{
-		uint32_t walk_count = 1;
-		walker.first_row();
-		while(true)
-		{
-			walker.next_row();      // walk_count adjusted at end of loop
-			if(!walker.valid_row()) // no successors
-				return {jps_id::none(), jps_rid::none(), 0};
-			// check if intercardinal is passing over goal
-			if(walker.node_at[0] == walker.goal[0]) [[unlikely]]
-			{
-				// reached goal
-				intercardinal_jump_result result;
-				result.node  = jps_id{walker.node_at[0]};
-				result.rnode = jps_rid::none(); // walker.get_last_rrow();
-				result.dist  = walk_count;
-				return result;
-			}
-			//
-			// handle hori/vert long jump
-			//
-			auto res = walker.long_jump();
-			if(res.joint != 0)
-			{ // at least one jump has a turning point
-				intercardinal_jump_result result;
-				if(!feature_store_cardinal())
-				{
-					// do not store cardinal results, just return the
-					// intercardinal point
-					result.node  = jps_id{walker.node_at[0]};
-					result.rnode = jps_rid::none(); // walker.get_last_rrow();
-					result.dist  = walk_count;
-				}
-				else
-				{
-					cost_t current_cost = walk_count * warthog::DBL_ROOT_TWO;
-					// check hori/vert jump result and store their values
-					if(res.dist[0] != 0)
-					{
-						result_node[0]
-						    = walker.adj_hori(walker.node_at[0], res.dist[0]);
-						result_cost[0]
-						    = current_cost + res.dist[0] * warthog::DBL_ONE;
-					}
-					else { result_node[0] = jps_id::none(); }
-					if(res.dist[1] != 0)
-					{
-						result_node[1]
-						    = walker.adj_vert(walker.node_at[0], res.dist[1]);
-						result_cost[1]
-						    = current_cost + res.dist[1] * warthog::DBL_ONE;
-					}
-					else { result_node[1] = jps_id::none(); }
-					// store next row location as we do not need to keep the
-					// current intercardinal
-					walker.next_row();
-					result.node  = jps_id{walker.node_at[0]};
-					result.rnode = jps_rid::none(); // walker.get_last_rrow();
-					result.dist  = walker.valid_row() ? walk_count + 1 : 0;
-				}
-				// found jump point, return
-				return result;
-			}
-			walk_count += 1;
-		}
-	}
-	else
-	{
-		// prunes intercardinal, progress and add successors to count
-		assert(result_size > 2);
-		result_size
-		    -= 1; // ensure there is always space for at least 2 results
-		uint32_t walk_count   = 1;
-		uint32_t result_count = 0;
-		walker.first_row();
-		// only continue if there is room to store results
-		while(result_count < result_size)
-		{
-			walker.next_row();
-			if(!walker.valid_row())
-				return {jps_id::none(), jps_rid::none(), result_count};
-			if(walker.node_at[0] == walker.goal[0]) [[unlikely]]
-			{
-				// reached goal
-				result_count    += 1;
-				*(result_node++) = jps_id{walker.node_at[0]};
-				*(result_cost++) = walk_count * warthog::DBL_ROOT_TWO;
+		walker.next_row();      // walk_count adjusted at end of loop
+		if(!walker.valid_row())[[unlikely]] // no successors
+			return {results_count, static_cast<jump_distance>(-walk_count)};
+		walk_count += 1;
+		//
+		// handle hori/vert long jump
+		//
+		auto res = walker.long_jump();
+		if(res)
+		{ // at least one jump has a turning point
+			assert(results_count < result_size);
+			*(result++) = {walk_count, res.dist[0], res.dist[1]};
+			if (++results_count == result_size)
 				break;
-			}
-			auto res            = walker.long_jump();
-			cost_t current_cost = walk_count * warthog::DBL_ROOT_TWO;
-			if(res.dist[0] != 0)
-			{ // east/west
-				result_count += 1;
-				*(result_node++)
-				    = walker.adj_hori(walker.node_at[0], res.dist[0]);
-				*(result_cost++)
-				    = current_cost + res.dist[0] * warthog::DBL_ONE;
-			}
-			if(res.dist[1] != 0)
-			{ // north/south
-				result_count += 1;
-				// NORTH/SOUTH handles the correct sing, adjust for EAST/WEST
-				// diff
-				*(result_node++)
-				    = walker.adj_vert(walker.node_at[0], res.dist[1]);
-				*(result_cost++)
-				    = current_cost + res.dist[1] * warthog::DBL_ONE;
-			}
-			walk_count += 1;
 		}
-		// not enough buffer, return result and start again
-		return {
-		    jps_id{walker.node_at[0]}, jps_rid{walker.node_at[1]},
-		    result_count};
 	}
+
+	return {results_count, walk_count};
 }
 
 }
