@@ -20,37 +20,37 @@
 
 #include "jps.h"
 #include <warthog/search/gridmap_expansion_policy.h>
+#include <jps/domain/rotate_gridmap.h>
+#include <warthog/util/template.h>
 
 namespace jps::search
 {
 
+/// @brief 
+/// @tparam JpsJump 
+///
+/// JPS expansion policy that pushes the first cardinal and intercardinal
+/// jump point, block-based jumping is the standard jump used by jump_point_online.
+/// jps_2011_expansion_policy<jump_point_online> gives JPS (B).
+/// jps_2011_expansion_policy<jump_point_offline> gives JPS+.
 template<typename JpsJump>
 class jps_expansion_policy2
     : public warthog::search::gridmap_expansion_policy_base
 {
 public:
-	jps_expansion_policy2(warthog::domain::gridmap* map, bool setup_map = true)
-	    : gridmap_expansion_policy_base(map), jpl_(setup_map ? map : nullptr)
-	{ }
+	jps_expansion_policy2(warthog::domain::gridmap* map)
+	    : gridmap_expansion_policy_base(map), rmap_(map)
+	{
+		jpl_.set_map(*map);
+	}
 	virtual ~jps_expansion_policy2() = default;
 
 	using jump_point = JpsJump;
 
-	static consteval bool
-	feature_prune_intercardinal() noexcept
-	{
-		return jump_point::feature_prune_intercardinal();
-	}
-	static consteval bool
-	feature_store_cardinal() noexcept
-	{
-		return jump_point::feature_store_cardinal();
-	}
-
 	void
 	expand(
-	    warthog::search::search_node*,
-	    warthog::search::search_problem_instance*) override;
+	    warthog::search::search_node* current,
+	    warthog::search::search_problem_instance* pi) override;
 
 	warthog::search::search_node*
 	generate_start_node(warthog::search::search_problem_instance* pi) override;
@@ -78,6 +78,7 @@ public:
 	}
 
 private:
+	domain::rotate_gridmap rmap_;
 	JpsJump jpl_;
 };
 
@@ -90,8 +91,9 @@ jps_expansion_policy2<JpsJump>::expand(
 	reset();
 
 	// compute the direction of travel used to reach the current node.
-	const jps_id current_id   = jps_id(current->get_id());
-	const jps_rid current_rid = jpl_.id_to_rid(current_id);
+	const grid_id current_id = jps_id(current->get_id());
+	const point loc = rmap_.id_to_point(current_id);
+	// const jps_rid current_rid = jpl_.id_to_rid(current_id);
 	// const cost_t current_cost = current->get_g();
 	const direction dir_c = from_direction(
 	    jps_id(current->get_parent()), current_id, map_->width());
@@ -105,6 +107,23 @@ jps_expansion_policy2<JpsJump>::expand(
 	uint32_t succ_dirs = compute_successors(dir_c, c_tiles);
 
 	// cardinal directions
+	::warthog::util::for_each_integer_sequence<
+		std::integer_sequence<direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID>
+	>([&]<direction_id di> {
+		if(succ_dirs & warthog::grid::to_dir(di))
+		{
+			jump_distance jump_result = jpl_.jump_cardinal_next(loc);
+			if(jump_result > 0) // jump point
+			{
+				// successful jump
+				warthog::search::search_node* jp_succ
+				    = this->generate(jump_result.second);
+				// if(jp_succ->get_searchid() != search_id) {
+				// jp_succ->reset(search_id); }
+				add_neighbour(jp_succ, jump_result.first * warthog::DBL_ONE);
+			}
+		}
+	});
 	for(uint32_t i = 0; i < 4; i++)
 	{
 		direction d = (direction)(1 << i);

@@ -12,13 +12,13 @@ namespace jps
 
 using namespace warthog::grid;
 using ::warthog::pad_id;
-using jps_id = grid_id;
+// using jps_id = grid_id;
 struct rmap_id_tag
 { };
-using rgrid_id = warthog::identity_base<rmap_id_tag, jps_id::id_type>;
+using rgrid_id = warthog::identity_base<rmap_id_tag, grid_id::id_type>;
 using warthog::cost_t;
 
-using vec_jps_id   = std::vector<jps_id>;
+using vec_jps_id   = std::vector<grid_id>;
 using vec_jps_cost = std::vector<cost_t>;
 
 enum class JpsFeature : uint8_t
