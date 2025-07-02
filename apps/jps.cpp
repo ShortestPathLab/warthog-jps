@@ -8,11 +8,6 @@
 //
 
 #include <jps/search/jps.h>
-#include <jps/search/jps2_expansion_policy.h>
-#include <jps/search/jps2plus_expansion_policy.h>
-#include <jps/search/jps4c_expansion_policy.h>
-#include <jps/search/jps_expansion_policy.h>
-#include <jps/search/jpsplus_expansion_policy.h>
 #include <jps/jump/jump_point_online.h>
 #include <jps/jump/jump_point_offline.h>
 #include <warthog/constants.h>

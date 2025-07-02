@@ -532,17 +532,6 @@ public:
 	jump_distance
 	jump_cardinal_next(domain::direction_grid_id_t<D> node_id);
 
-	/// @brief returns the next jump point intercardinal from loc,
-	///        where one of hori or vertical jump_cardinal_next has a jump point
-	/// @tparam D intercardinal direction_id (NORTHEAST_ID,NORTHWEST_ID,SOUTHEAST_ID,SOUTHWEST_ID)
-	/// @param loc current location on the grid to start the jump from
-	/// @return >0: jump point n steps away, <=0: blocker -n steps away
-	template <direction_id D>
-		requires InterCardinalId<D>
-	intercardinal_jump_result
-	jump_intercardinal_next(
-	    point loc);
-
     /// @brief returns all intercardinal jump points up to max_distance (default inf)
     ///        and max of results_size
     /// @tparam D intercardinal direction_id (NORTHEAST_ID,NORTHWEST_ID,SOUTHEAST_ID,SOUTHWEST_ID)
@@ -562,6 +551,12 @@ public:
 	std::pair<uint16_t, jump_distance>
 	jump_intercardinal_many(
 	    point loc, intercardinal_jump_result* result, uint16_t result_size, jump_distance max_distance = std::numeric_limits<jump_distance>::max());
+	
+	template <uint8_t D = 255>
+		requires requires (D == 255) || InterCardinalId<static_cast<direction_id>(D)>
+	std::pair<jump_distance, jump_distance>
+	jump_target(
+	    point loc, point target);
 
 	size_t
 	mem()
@@ -729,6 +724,16 @@ jump_point_online::jump_intercardinal_many(
 	}
 
 	return {results_count, walk_count};
+}
+
+
+template <uint8_t D = 255>
+	requires requires (D == 255) || InterCardinalId<static_cast<direction_id>(D)>
+std::pair<jump_distance, jump_distance>
+jump_point_online::jump_target(
+	point loc, point target)
+{
+	
 }
 
 }
