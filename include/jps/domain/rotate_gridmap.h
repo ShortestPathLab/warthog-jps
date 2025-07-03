@@ -27,24 +27,28 @@ struct direction_grid_id<NORTH_ID>
 {
 	using type = rgrid_id;
 	static constexpr int map_id = 1;
+	static constexpr bool east = true;
 };
 template <>
 struct direction_grid_id<EAST_ID>
 {
 	using type = grid_id;
 	static constexpr int map_id = 0;
+	static constexpr bool east = true;
 };
 template <>
 struct direction_grid_id<SOUTH_ID>
 {
 	using type = rgrid_id;
 	static constexpr int map_id = 1;
+	static constexpr bool east = false;
 };
 template <>
 struct direction_grid_id<WEST_ID>
 {
 	using type = grid_id;
 	static constexpr int map_id = 0;
+	static constexpr bool east = false;
 };
 template <>
 struct direction_grid_id<NORTH>
@@ -76,10 +80,12 @@ struct direction_grid_id<WEST>
 /// @brief returns id type for cardinal direction, {EAST,EAST_ID,WEST,WEST_ID} = grid_id; {NORTH,NORTH_ID,SOUTH,SOUTH_ID} = rgrid_id;
 /// @tparam D value in direction or direction_id
 template <auto D>
-using direction_grid_id_t = typename details::direction_grid_id<D>::type;
+using rgrid_id_t = typename details::direction_grid_id<D>::type;
 
 template <auto D>
-inline constexpr int direction_grid_index = details::direction_grid_id<D>::map_id;
+constexpr inline int rgrid_index = details::direction_grid_id<D>::map_id;
+template <auto D>
+constexpr inline bool rgrid_east = details::direction_grid_id<D>::east;
 
 using ::warthog::domain::gridmap;
 
@@ -106,10 +112,10 @@ struct rgridmap_point_conversions
 	grid_id
 	point_to_id(point p) const noexcept
 	{
-		return jps_id{
-			static_cast<jps_id::id_type>(p.y + domain::gridmap::PADDED_ROWS)
+		return grid_id{
+			static_cast<grid_id::id_type>(p.y + domain::gridmap::PADDED_ROWS)
 				* map_pad_width_
-			+ static_cast<jps_id::id_type>(p.x)};
+			+ static_cast<grid_id::id_type>(p.x)};
 	}
 	rgrid_id
 	rpoint_to_rid(point p) const noexcept
@@ -149,9 +155,9 @@ struct rgridmap_point_conversions
 
 	template <auto D, ::warthog::Identity GridId>
 		requires std::same_as<GridId, grid_id> || std::same_as<GridId, rgrid_id>
-	direction_grid_id_t<D> to_id_d(GridId id) const noexcept
+	rgrid_id_t<D> to_id_d(GridId id) const noexcept
 	{
-		using res_type = direction_grid_id_t<D>;
+		using res_type = rgrid_id_t<D>;
 		if constexpr (std::same_as<GridId, res_type>) {
 			return id; // is same as output, do nothing
 		} else if constexpr (std::same_as<res_type, grid_id>) {
@@ -162,9 +168,9 @@ struct rgridmap_point_conversions
 	}
 
 	template <auto D>
-	direction_grid_id_t<D> point_to_id_d(point id) const noexcept
+	rgrid_id_t<D> point_to_id_d(point id) const noexcept
 	{
-		using res_type = direction_grid_id_t<D>;
+		using res_type = rgrid_id_t<D>;
 		if constexpr (std::same_as<res_type, grid_id>) {
 			return point_to_id(id);
 		} else {
@@ -173,9 +179,9 @@ struct rgridmap_point_conversions
 	}
 
 	template <auto D>
-	direction_grid_id_t<D> rpoint_to_id_d(point id) const noexcept
+	rgrid_id_t<D> rpoint_to_id_d(point id) const noexcept
 	{
-		using res_type = direction_grid_id_t<D>;
+		using res_type = rgrid_id_t<D>;
 		if constexpr (std::same_as<res_type, grid_id>) {
 			return point_to_id(rpoint_to_point(id));
 		} else {

@@ -8,8 +8,6 @@
 //
 
 #include <jps/search/jps.h>
-#include <jps/jump/jump_point_online.h>
-#include <jps/jump/jump_point_offline.h>
 #include <warthog/constants.h>
 #include <warthog/domain/gridmap.h>
 #include <warthog/heuristic/octile_heuristic.h>
@@ -18,7 +16,9 @@
 #include <warthog/util/scenario_manager.h>
 #include <warthog/util/timer.h>
 
-#include <jps/search/jps_expansion_policy2.h>
+#include <jps/jump/jump_point_online.h>
+// #include <jps/jump/jump_point_offline.h>
+#include <jps/search/jps_expansion_policy.h>
 
 #include "cfg.h"
 #include <getopt.h>
@@ -250,39 +250,8 @@ main(int argc, char** argv)
 	using namespace jps::search;
 	if(alg == "jps")
 	{
-		return run_jps<jps_expansion_policy>(scenmgr, mapfile, alg);
-	}
-	else if(alg == "jps+")
-	{
-		return run_jps<jpsplus_expansion_policy>(scenmgr, mapfile, alg);
-	}
-	else if(alg == "jps2")
-	{
-		return run_jps<jps2_expansion_policy>(scenmgr, mapfile, alg);
-	}
-	else if(alg == "jps2+")
-	{
-		return run_jps<jps2plus_expansion_policy>(scenmgr, mapfile, alg);
-	}
-	else if(alg == "jpsV2")
-	{
-		using jump_point
-		    = jps::jump::jump_point_online<jps::JpsFeature::DEFAULT>;
-		return run_jps<jps_expansion_policy2<jump_point>>(
-		    scenmgr, mapfile, alg);
-	}
-	else if(alg == "jpsV2-cardinal")
-	{
-		using jump_point = jps::jump::jump_point_online<
-		    jps::JpsFeature::STORE_CARDINAL_JUMP>;
-		return run_jps<jps_expansion_policy2<jump_point>>(
-		    scenmgr, mapfile, alg);
-	}
-	else if(alg == "jpsV2-prune")
-	{
-		using jump_point = jps::jump::jump_point_online<
-		    jps::JpsFeature::PRUNE_INTERCARDINAL>;
-		return run_jps<jps_expansion_policy2<jump_point>>(
+		using jump_point = jps::jump::jump_point_online;
+		return run_jps<jps_expansion_policy<jump_point>>(
 		    scenmgr, mapfile, alg);
 	}
 	else

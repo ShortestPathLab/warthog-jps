@@ -62,44 +62,6 @@ from_direction(grid_id n1_id_p, grid_id n2_id_p, uint32_t map_width_p)
 	return NORTH;
 }
 
-constexpr inline direction_id
-from_direction(point p1, point p2)
-{
-	union {
-		struct {
-			int32_t x;
-			int32_t y;
-		} p;
-		uint64_t xy;
-	} c;
-	c.p.x = static_cast<int32_t>(p2.x) - static_cast<int32_t>(p1.x);
-	c.p.y = static_cast<int32_t>(p2.y) - static_cast<int32_t>(p1.y);
-
-	if (c.p.x == 0) {
-		return c.p.y >= 0 ? NORTH_ID : SOUTH_ID;
-	} else if (c.p.y == 0) {
-		return c.p.x >= 0 ? EAST_ID : WEST_ID;
-	} else {
-		// shift>> to mulitple of 4 (0b100)
-		// (x < 0) = 0b0100
-		// (y < 0) = 0b1000
-		int shift = ( (static_cast<uint32_t>(c.p.x) >> (31-2)) & 0b0100 ) |
-			( (static_cast<uint32_t>(c.p.y) >> (31-3)) & 0b1000 );
-		assert((c.p.x > 0 && c.p.y > 0 && shift == 0)
-			|| (c.p.x < 0 && c.p.y > 0 && shift == 4)
-			|| (c.p.x > 0 && c.p.y < 0 && shift == 8)
-			|| (c.p.x < 0 && c.p.y < 0 && shift == 12));
-		return static_cast<direction_id>(
-			static_cast<uint16_t>(
-				(static_cast<uint16_t>(NORTHEAST_ID) << 0) |
-				(static_cast<uint16_t>(NORTHWEST_ID) << 4) |
-				(static_cast<uint16_t>(SOUTHEAST_ID) << 8) |
-				(static_cast<uint16_t>(SOUTHWEST_ID) << 12)
-			) >> shift
-		);
-	}
-}
-
 // compute the 4-connected canonical last move on the
 // path from (px, py) to (x, y)
 // inline direction

@@ -18,22 +18,21 @@
 namespace jps::jump
 {
 
-namespace details
-{
-
-/// @brief
+/// @brief find first jump-point horizontal east (if East) or west on map.
+///        Will land of target if Target is true.
 /// @tparam East Jump east (true) or west (false)
+/// @tparam Target if true, consider target as a jump-point as well.
 /// @param map a map of the grid, only the width parameter is required
 /// @param node the starting location
-/// @param goal the goal location
-/// @return
-template<bool East, bool Goal = true>
+/// @param target the target location, only used if Target == true
+/// @return positive distance to jump-point or target, otherwise negated distance to wall blocker
+template<bool East, bool Target = true>
 jump_distance
 jump_point_online_hori(
-    ::warthog::domain::gridmap::bittable map, uint32_t node, uint32_t goal[[maybe_unused]] = std::numeric_limits<uint32_t>::max())
+    ::warthog::domain::gridmap::bittable map, uint32_t node, uint32_t target[[maybe_unused]] = std::numeric_limits<uint32_t>::max())
 {
 	assert(map.data() != nullptr);
-	assert(Goal != (goal == std::numeric_limits<uint32_t>::max()));
+	assert(Target != (target == std::numeric_limits<uint32_t>::max()));
 	// read tiles from the grid:
 	// - along the row of node_id
 	// - from the row above node_id
@@ -93,22 +92,22 @@ jump_point_online_hori(
 			// dead end takes president as jump point can't pass a blocker
 			jump_count += static_cast<jump_distance>(stop_pos)
 			    - static_cast<jump_distance>(nei_slider.width8_bits);
-			uint32_t goal_jump[[maybe_unused]] = Goal ? (East ? goal - node : node - goal) : 0;
+			uint32_t target_jump[[maybe_unused]] = Target ? (East ? target - node : node - target) : 0;
 			// if blocked: pos + jump_count = first block
 			//  otherwise: jump_count = trav cell after turn (jump point
 			//  location)
-			// check for goal with goal_jump (dist) <= jump_count, as if < than
-			// goal is reachable, if equal then trav pos is the goal if
-			// greater, than goal is further or another row or behind (as
+			// check for target with target_jump (dist) <= jump_count, as if < than
+			// target is reachable, if equal then trav pos is the target if
+			// greater, than target is further or another row or behind (as
 			// unsigned)
 			assert(jump_count >= 0);
 			// must be checked as unsigned for:
-			// 1. goal.is_none(): will not fit int32_t
-			// 2. underflow means goal is in opposite direction, desirable
-			if(Goal && (goal_jump <= static_cast<uint32_t>(jump_count)))
+			// 1. target.is_none(): will not fit int32_t
+			// 2. underflow means target is in opposite direction, desirable
+			if(Target && (target_jump <= static_cast<uint32_t>(jump_count)))
 			{
-				// goal reached
-				jump_count = static_cast<jump_distance>(goal_jump);
+				// target reached
+				jump_count = static_cast<jump_distance>(target_jump);
 			}
 			else if(
 			    East ? !(neis[0] & (static_cast<uint64_t>(1) << stop_pos))
@@ -131,7 +130,203 @@ jump_point_online_hori(
 	}
 }
 
-} // namespace details
+/// @brief find first jump-point horizontal east (if East) or west on map.
+///        Will land of target if Target is true.
+/// @tparam East Jump east (true) or west (false)
+/// @tparam Target if true, consider target as a jump-point as well.
+/// @param map a map of the grid, only the width parameter is required
+/// @param node the starting location
+/// @param target the target location, only used if Target == true
+/// @return positive distance to jump-point or target, otherwise negated distance to wall blocker
+template<bool East>
+jump_distance
+jump_point_online_hori_target(
+    ::warthog::domain::gridmap::bittable map, uint32_t node, uint32_t target)
+{
+	assert(map.data() != nullptr);
+	// read tiles from the grid:
+	// - along the row of node_id
+	// - from the row above node_id
+	// - from the row below node_id
+	// NB: the jump direction corresponds to moving from the
+	// low bit of the tileset and towards the high bit (EAST)
+	// or high bit to low bit (WEST)
+	auto nei_slider
+	    = ::warthog::domain::gridmap_slider::from_bittable(map, pad_id{node});
+	if constexpr (!East) { // adjust to last byte for west
+		nei_slider.adj_bytes(-7);
+		nei_slider.width8_bits = 7 - nei_slider.width8_bits;
+	}
+
+	// order going east is stored as least significant bit to most significant
+	// bit
+
+	const uint32_t target_jump = East ? target - node : node - target;
+	assert(nei_slider.width8_bits < 8);
+	jump_distance jump_count = -static_cast<jump_distance>(nei_slider.width8_bits);
+	// setup jump block, negate so trav is 0, mask out points before start
+	// just mask
+	uint64_t jump_block = East ? (~0ull << nei_slider.width8_bits)
+						: (~0ull >> nei_slider.width8_bits);
+	// negate and mask
+	jump_block = ~nei_slider.get_block_64bit_le() & jump_block;
+
+	while(true)
+	{
+		if(jump_block)
+		{
+			int stop_pos = East
+			    ? std::countr_zero(jump_block)
+			    : std::countl_zero(jump_block); // the location to stop at
+			//  v is blocker location, prune unless target is present
+			// 10111111
+			// dead end takes president as jump point can't pass a blocker
+			jump_count += static_cast<jump_distance>(stop_pos);
+			// if blocked: pos + jump_count = first block
+			//  otherwise: jump_count = trav cell after turn (jump point
+			//  location)
+			// check for target with target_jump (dist) <= jump_count, as if < than
+			// target is reachable, if equal then trav pos is the target if
+			// greater, than target is further or another row or behind (as
+			// unsigned)
+			assert(jump_count >= 0);
+			if (static_cast<uint32_t>(jump_count) >= target_jump)
+				return target_jump; // found target
+			else
+				return static_cast<jump_distance>(-(jump_count+1)); // no target
+		}
+
+		// no blockers, check for target
+		jump_count += static_cast<jump_distance>(64);
+		if (static_cast<uint32_t>(jump_count) >= target_jump)
+			return target_jump; // found target
+		nei_slider.adj_bytes(East ? 8 : -8);
+		jump_block = ~nei_slider.get_block_64bit_le();
+	}
+}
+
+struct BasicIntercardinalWalker
+{
+	using map_type = ::warthog::domain::gridmap::bitarray;
+	/// @brief map and rmap (as bit array for small memory size)
+	map_type map;
+	/// @brief location of current node on map and rmap
+	uint32_t node_at;
+	/// @brief map and rmap value to adjust node_at for each row
+	int32_t adj_width;
+	/// @brief row scan
+	union
+	{
+		uint8_t row_[2]; ///< stores 3 bits at node_at[0]+-1, 0=prev,
+		                 ///< 1=current; high order bits 3..7 are not zero'd
+		uint16_t row_i_;
+	};
+	uint16_t row_mask_;
+
+	template <direction_id D>
+		requires InterCardinalId<D>
+	void set_map(map_type map, uint32_t width) noexcept
+	{
+		this->map = map;
+		if constexpr (D == NORTHEAST_ID || D == SOUTHEAST_ID) {
+			if constexpr (D == NORTHEAST_ID) {
+				this->adj_width = -static_cast<int32_t>(width) + 1;
+			} else {
+				this->adj_width = static_cast<int32_t>(width) + 1;
+			}
+			row_mask_ = std::endian::native == std::endian::little
+			    ? 0b0000'0011'0000'0110
+			    : 0b0000'0110'0000'0011;
+		} else { // NORTHWEST_ID and SOUTHWEST_ID
+			if constexpr (D == NORTHWEST_ID) {
+				this->adj_width = -static_cast<int32_t>(width) - 1;
+			} else {
+				this->adj_width = static_cast<int32_t>(width) - 1;
+			}
+			row_mask_ = std::endian::native == std::endian::little
+			    ? 0b0000'0110'0000'0011
+			    : 0b0000'0011'0000'0110;
+		}
+	}
+
+	void
+	next_index() noexcept
+	{
+		node_at = static_cast<uint32_t>(
+		    static_cast<int32_t>(node_at) + adj_width);
+	}
+	/// @brief call for first row, then call next_row
+	void
+	first_row() noexcept
+	{
+		row_[1] = get_row();
+	}
+	/// @brief update index to next row and update
+	void
+	next_row() noexcept
+	{
+		next_index();
+		row_[0] = row_[1];
+		row_[1] = get_row();
+	}
+
+	/// @brief return get node_at-1..node_at+1 bits. CAUTION return
+	/// bits 3..7 may not all be 0.
+	uint8_t
+	get_row() const noexcept
+	{
+		return static_cast<uint8_t>(
+		    map.get_span<3>(pad_id{node_at - 1}));
+	}
+	/// @brief get node id for location node + dist * adj_width
+	grid_id
+	adj_id(uint32_t node, int32_t dist) const noexcept
+	{
+		return grid_id(static_cast<uint32_t>(
+		    static_cast<int32_t>(node) + dist * adj_width));
+	}
+
+	
+	/// @brief the current locations row is a valid intercardinal move (i.e.
+	/// 2x2 is free)
+	bool
+	valid_row() const noexcept
+	{
+		return (row_i_ & row_mask_) == row_mask_;
+	}
+	template <direction_id D>
+		requires InterCardinalId<D>
+	bool
+	valid_row() const noexcept
+	{
+		// east | west differernce
+		// north/south does not make a difference
+		if constexpr(D == NORTHEAST_ID || D == SOUTHEAST_ID)
+		{
+			// we want from grid
+			// .xx  == row[0] = 0bxx.
+			//  xx. == row[1] = 0b.xx
+			// all[x] = 1
+			constexpr uint16_t mask
+			    = std::endian::native == std::endian::little
+			    ? 0b0000'0011'0000'0110
+			    : 0b0000'0110'0000'0011;
+			return (row_i_ & mask) == mask;
+		}
+		else
+		{
+			// we want from grid
+			//  xx. == row[0] = 0b.xx
+			// .xx  == row[1] = 0bxx.
+			// all[x] = 1
+			constexpr uint16_t mask
+			    = std::endian::native == std::endian::little
+			    ? 0b0000'0110'0000'0011
+			    : 0b0000'0011'0000'0110;
+			return (row_i_ & mask) == mask;
+		}
+	}
+};
 
 
 template<direction_id D>
@@ -157,8 +352,8 @@ struct IntercardinalWalker
 	uint32_t node_at[2];
 	/// @brief map and rmap value to adjust node_at for each row
 	int32_t adj_width[2];
-	// /// @brief map and rmap goal locations
-	// uint32_t goal[2];
+	// /// @brief map and rmap target locations
+	// uint32_t target[2];
 	/// @brief row scan
 	union
 	{
@@ -272,32 +467,32 @@ struct IntercardinalWalker
 	static jump_distance
 	jump_east(map_type map, uint32_t width, uint32_t node)
 	{
-		jump_distance d = details::jump_point_online_hori<true, false>(
+		jump_distance d = jump_point_online_hori<true, false>(
 		    ::warthog::domain::gridmap::bittable(map, width, 0), node);
 		// for LongJumpRes, must return 0 for deadend
 		return d;
 	}
 	static jump_distance
-	jump_east(map_type map, uint32_t width, uint32_t node, uint32_t goal)
+	jump_east(map_type map, uint32_t width, uint32_t node, uint32_t target)
 	{
-		jump_distance d = details::jump_point_online_hori<true, true>(
-		    ::warthog::domain::gridmap::bittable(map, width, 0), node, goal);
+		jump_distance d = jump_point_online_hori<true, true>(
+		    ::warthog::domain::gridmap::bittable(map, width, 0), node, target);
 		// for LongJumpRes, must return 0 for deadend
 		return d;
 	}
 	static jump_distance
 	jump_west(map_type map, uint32_t width, uint32_t node)
 	{
-		jump_distance d = details::jump_point_online_hori<false, false>(
+		jump_distance d = jump_point_online_hori<false, false>(
 		    ::warthog::domain::gridmap::bittable(map, width, 0), node);
 		// for LongJumpRes, must return 0 for deadend
 		return d;
 	}
 	static jump_distance
-	jump_west(map_type map, uint32_t width, uint32_t node, uint32_t goal)
+	jump_west(map_type map, uint32_t width, uint32_t node, uint32_t target)
 	{
-		jump_distance d = details::jump_point_online_hori<false, true>(
-		    ::warthog::domain::gridmap::bittable(map, width, 0), node, goal);
+		jump_distance d = jump_point_online_hori<false, true>(
+		    ::warthog::domain::gridmap::bittable(map, width, 0), node, target);
 		// for LongJumpRes, must return 0 for deadend
 		return d;
 	}
@@ -322,23 +517,23 @@ struct IntercardinalWalker
 		}
 	}
 	jump_distance
-	jump_hori(grid_id goal)
+	jump_hori(grid_id target)
 	{
 		if constexpr(D == NORTHEAST_ID)
 		{
-			return jump_east(map[0], map_width(), node_at[0], static_cast<uint32_t>(goal)); // east
+			return jump_east(map[0], map_width(), node_at[0], static_cast<uint32_t>(target)); // east
 		}
 		else if constexpr(D == SOUTHEAST_ID)
 		{
-			return jump_east(map[0], map_width(), node_at[0], static_cast<uint32_t>(goal)); // east
+			return jump_east(map[0], map_width(), node_at[0], static_cast<uint32_t>(target)); // east
 		}
 		else if constexpr(D == SOUTHWEST_ID)
 		{
-			return jump_west(map[0], map_width(), node_at[0], static_cast<uint32_t>(goal)); // west
+			return jump_west(map[0], map_width(), node_at[0], static_cast<uint32_t>(target)); // west
 		}
 		else if constexpr(D == NORTHWEST_ID)
 		{
-			return jump_west(map[0], map_width(), node_at[0], static_cast<uint32_t>(goal)); // west
+			return jump_west(map[0], map_width(), node_at[0], static_cast<uint32_t>(target)); // west
 		}
 	}
 	jump_distance
@@ -366,27 +561,27 @@ struct IntercardinalWalker
 		}
 	}
 	jump_distance
-	jump_vert(rgrid_id goal)
+	jump_vert(rgrid_id target)
 	{
 		if constexpr(D == NORTHEAST_ID)
 		{
 			return jump_east(
-			    map[1], rmap_width(), node_at[1], static_cast<uint32_t>(goal)); // north
+			    map[1], rmap_width(), node_at[1], static_cast<uint32_t>(target)); // north
 		}
 		else if constexpr(D == SOUTHEAST_ID)
 		{
 			return jump_west(
-			    map[1], rmap_width(), node_at[1], static_cast<uint32_t>(goal)); // south
+			    map[1], rmap_width(), node_at[1], static_cast<uint32_t>(target)); // south
 		}
 		else if constexpr(D == SOUTHWEST_ID)
 		{
 			return jump_west(
-			    map[1], rmap_width(), node_at[1], static_cast<uint32_t>(goal)); // south
+			    map[1], rmap_width(), node_at[1], static_cast<uint32_t>(target)); // south
 		}
 		else if constexpr(D == NORTHWEST_ID)
 		{
 			return jump_east(
-			    map[1], rmap_width(), node_at[1], static_cast<uint32_t>(goal)); // north
+			    map[1], rmap_width(), node_at[1], static_cast<uint32_t>(target)); // north
 		}
 	}
 
@@ -498,9 +693,9 @@ public:
 	void
 	set_map(const rgridmap& map);
 	// void
-	// set_goal(jps_id goal_id) noexcept;
+	// set_target(jps_id target_id) noexcept;
 	// void
-	// set_goal(point goal_id) noexcept;
+	// set_target(point target_id) noexcept;
 
 	// /// @brief avoid modifying these grids accidentally
 	// bittable
@@ -530,7 +725,7 @@ public:
 	template <direction_id D>
 		requires CardinalId<D>
 	jump_distance
-	jump_cardinal_next(domain::direction_grid_id_t<D> node_id);
+	jump_cardinal_next(domain::rgrid_id_t<D> node_id);
 
     /// @brief returns all intercardinal jump points up to max_distance (default inf)
     ///        and max of results_size
@@ -552,8 +747,13 @@ public:
 	jump_intercardinal_many(
 	    point loc, intercardinal_jump_result* result, uint16_t result_size, jump_distance max_distance = std::numeric_limits<jump_distance>::max());
 	
-	template <uint8_t D = 255>
-		requires requires (D == 255) || InterCardinalId<static_cast<direction_id>(D)>
+	/// @brief shoot ray to target point
+	/// @param loc shoot from loc
+	/// @param target shoot to target
+	/// @return pair <intercardinal-distance, cardinal-distance>, if both >= 0 than target is visible,
+	///         first<0 means intercardinal reaches blocker at -first distance (second will be -1)
+	///         first>=0 second<0 means cardinal blocker at -second distance away
+	///         second<0 mean target is blocked in general
 	std::pair<jump_distance, jump_distance>
 	jump_target(
 	    point loc, point target);
@@ -568,12 +768,12 @@ protected:
 	static int32_t
 	jump_east(bittable map, uint32_t node)
 	{
-		return details::jump_point_online_hori<true>(map, node);
+		return jump_point_online_hori<true>(map, node);
 	}
 	static int32_t
 	jump_west(bittable map, uint32_t node)
 	{
-		return details::jump_point_online_hori<false>(map, node);
+		return jump_point_online_hori<false>(map, node);
 	}
 
 protected:
@@ -597,54 +797,18 @@ jump_point_online::jump_cardinal_next(point loc)
 template <direction_id D>
 	requires CardinalId<D>
 jump_distance
-jump_point_online::jump_cardinal_next(domain::direction_grid_id_t<D> node_id)
+jump_point_online::jump_cardinal_next(domain::rgrid_id_t<D> node_id)
 {
 	if constexpr (D == NORTH_ID || D == EAST_ID)
 	{
-		return jump_east(map_[domain::direction_grid_index<D>], node_id);
+		return jump_east(map_[domain::rgrid_index<D>], node_id);
 	}
 	else if constexpr (D == SOUTH_ID || D == WEST_ID)
 	{
-		return jump_west(map_[domain::direction_grid_index<D>], node_id);
+		return jump_west(map_[domain::rgrid_index<D>], node_id);
 	} else {
 		assert(false);
 		return 0;
-	}
-}
-
-
-template <direction_id D>
-	requires InterCardinalId<D>
-intercardinal_jump_result
-jump_point_online::jump_intercardinal_next(
-	point loc)
-{
-	IntercardinalWalker<D> walker; // class to walk
-	// setup the walker members
-	// 0 = map, 1 = rmap
-	walker.map = map_;
-	walker.map_width(map_[0].width());
-	walker.rmap_width(map_[1].width());
-	walker.node_at[0] = static_cast<uint32_t>(map_.point_to_id(loc));
-	walker.node_at[1] = static_cast<uint32_t>(map_.rpoint_to_rid(map_.point_to_rpoint(loc)));
-
-	// JPS, stop at the first intercardinal turning point
-	jump_distance walk_count = 0;
-	walker.first_row();
-	while(true)
-	{
-		walker.next_row();      // walk_count adjusted at end of loop
-		if(!walker.valid_row()) // no successors
-			return {static_cast<jump_distance>(-walk_count), 0, 0};
-		walk_count += 1;
-		//
-		// handle hori/vert long jump
-		//
-		auto res = walker.long_jump();
-		if(res)
-		{ // at least one jump has a turning point
-			return {walk_count, res.dist[0], res.dist[1]};
-		}
 	}
 }
 
@@ -727,13 +891,87 @@ jump_point_online::jump_intercardinal_many(
 }
 
 
-template <uint8_t D = 255>
-	requires requires (D == 255) || InterCardinalId<static_cast<direction_id>(D)>
 std::pair<jump_distance, jump_distance>
 jump_point_online::jump_target(
 	point loc, point target)
 {
-	
+	// direction_id real_d = d != 255 ? static_cast<direction_id>(d) : warthog::grid::point_to_direction_id(loc, target);
+	auto [xd, yd] = warthog::grid::point_signed_diff(loc, target);
+	jump_distance inter_len;
+	jump_distance cardinal_len;
+	direction_id d;
+	if (xd != 0 && yd != 0) {
+		// diagonal
+		BasicIntercardinalWalker walker;
+		if (xd > 0) { // east
+			if (yd > 0) { // south
+				d = SOUTHEAST_ID;
+				walker.set_map<SOUTHEAST_ID>(map_[0], map_[0].width());
+			} else {
+				d = NORTHEAST_ID;
+				walker.set_map<NORTHEAST_ID>(map_[0], map_[0].width());
+			}
+		} else { // west
+			if (yd > 0) { // south
+				d = SOUTHWEST_ID;
+				walker.set_map<SOUTHWEST_ID>(map_[0], map_[0].width());
+			} else {
+				d = NORTHWEST_ID;
+				walker.set_map<NORTHWEST_ID>(map_[0], map_[0].width());
+			}
+		}
+		walker.node_at = static_cast<uint32_t>(map_.point_to_id(loc));
+		inter_len = static_cast<jump_distance>(std::min(std::abs(xd), std::abs(yd)));
+		walker.first_row();
+		for (jump_distance i = 0; i < inter_len; ++i) {
+			walker.next_row();
+			if (!walker.valid_row()) {
+				// diagonal blocked before reaching turn, report
+				return {static_cast<jump_distance>(-i), -1};
+			}
+		}
+		// update loc
+		spoint dia_unit = dir_unit_point(d);
+		dia_unit.x *= inter_len; dia_unit.y *= inter_len;
+		loc = loc + dia_unit;
+		xd += dia_unit.x; yd += dia_unit.y;
+	} else {
+		// no diagonal
+		inter_len = 0;
+	}
+	assert(xd == 0 || yd == 0);
+	if (yd == 0) {
+		// horizontal ray
+		if (xd == 0) [[unlikely]] {
+			// at target
+			cardinal_len = 0;
+		} else if (xd > 0) {
+			// east
+			cardinal_len = jump_point_online_hori_target<domain::rgrid_east<EAST_ID>>(
+				map_[domain::rgrid_index<EAST_ID>],
+				static_cast<uint32_t>(map_.point_to_id_d<EAST_ID>(loc)),
+				static_cast<uint32_t>(map_.point_to_id_d<EAST_ID>(target)));
+		} else {
+			// west
+			cardinal_len = jump_point_online_hori_target<domain::rgrid_east<WEST_ID>>(
+				map_[domain::rgrid_index<WEST_ID>],
+				static_cast<uint32_t>(map_.point_to_id_d<WEST_ID>(loc)),
+				static_cast<uint32_t>(map_.point_to_id_d<WEST_ID>(target)));
+		}
+	} else if (yd > 0) {
+		// south
+		cardinal_len = jump_point_online_hori_target<domain::rgrid_east<SOUTH_ID>>(
+			map_[domain::rgrid_index<SOUTH_ID>],
+				static_cast<uint32_t>(map_.point_to_id_d<SOUTH_ID>(loc)),
+				static_cast<uint32_t>(map_.point_to_id_d<SOUTH_ID>(target)));
+	} else {
+		// north
+		cardinal_len = jump_point_online_hori_target<domain::rgrid_east<NORTH_ID>>(
+			map_[domain::rgrid_index<NORTH_ID>],
+				static_cast<uint32_t>(map_.point_to_id_d<NORTH_ID>(loc)),
+				static_cast<uint32_t>(map_.point_to_id_d<NORTH_ID>(target)));
+	}
+	return {inter_len, cardinal_len};
 }
 
 }
