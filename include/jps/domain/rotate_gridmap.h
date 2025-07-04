@@ -95,6 +95,13 @@ struct rgridmap_point_conversions
 	uint16_t map_pad_width_ = 0;
 	uint16_t rmap_pad_width_ = 0;
 
+	void conv_assign(const gridmap& map, const gridmap& rmap) noexcept
+	{
+		map_unpad_height_m1_ = static_cast<uint16_t>(map.header_height() - 1);
+		map_pad_width_ = static_cast<uint16_t>(map.width());
+		rmap_pad_width_ = static_cast<uint16_t>(rmap.width());
+	}
+
 	point
 	point_to_rpoint(point p) const noexcept
 	{
@@ -168,24 +175,24 @@ struct rgridmap_point_conversions
 	}
 
 	template <auto D>
-	rgrid_id_t<D> point_to_id_d(point id) const noexcept
+	rgrid_id_t<D> point_to_id_d(point loc) const noexcept
 	{
 		using res_type = rgrid_id_t<D>;
 		if constexpr (std::same_as<res_type, grid_id>) {
-			return point_to_id(id);
+			return point_to_id(loc);
 		} else {
-			return rpoint_to_rid(point_to_rpoint(id));
+			return rpoint_to_rid(point_to_rpoint(loc));
 		}
 	}
 
 	template <auto D>
-	rgrid_id_t<D> rpoint_to_id_d(point id) const noexcept
+	rgrid_id_t<D> rpoint_to_id_d(point loc) const noexcept
 	{
 		using res_type = rgrid_id_t<D>;
 		if constexpr (std::same_as<res_type, grid_id>) {
-			return point_to_id(rpoint_to_point(id));
+			return point_to_id(rpoint_to_point(loc));
 		} else {
-			return rpoint_to_rid(id);
+			return rpoint_to_rid(loc);
 		}
 	}
 };
@@ -201,6 +208,7 @@ struct gridmap_rotate_ptr : std::array<domain::gridmap*, 2>
 	const domain::gridmap& map() const noexcept { return *(*this)[0]; }
 	domain::gridmap& rmap() noexcept { return *(*this)[1]; }
 	const domain::gridmap& rmap() const noexcept { return *(*this)[1]; }
+	operator bool() const noexcept { return (*this)[0]; }
 };
 struct gridmap_rotate_ptr_convs : gridmap_rotate_ptr, rgridmap_point_conversions
 {
@@ -208,9 +216,13 @@ struct gridmap_rotate_ptr_convs : gridmap_rotate_ptr, rgridmap_point_conversions
 	gridmap_rotate_ptr_convs(domain::gridmap& l_map, domain::gridmap& l_rmap) noexcept
 		: gridmap_rotate_ptr(l_map, l_rmap), rgridmap_point_conversions{static_cast<uint16_t>(l_map.header_height()-1), static_cast<uint16_t>(l_map.width()), static_cast<uint16_t>(l_rmap.width())}
 	{ }
-	gridmap_rotate_ptr_convs(gridmap_rotate_ptr maps, uint16_t map_unpad_height_m1) noexcept
-		: gridmap_rotate_ptr(maps), rgridmap_point_conversions{static_cast<uint16_t>(maps[0]->header_height()-1), static_cast<uint16_t>(maps[0]->width()), static_cast<uint16_t>(maps[1]->width())}
-	{ }
+	gridmap_rotate_ptr_convs(gridmap_rotate_ptr maps) noexcept
+		: gridmap_rotate_ptr(maps), rgridmap_point_conversions{}
+	{
+		if (*this) {
+			conv_assign(map(), rmap());
+		}
+	}
 };
 struct gridmap_rotate_table : std::array<domain::gridmap::bittable, 2>
 {
@@ -226,6 +238,7 @@ struct gridmap_rotate_table : std::array<domain::gridmap::bittable, 2>
 	const domain::gridmap::bittable& map() const noexcept { return (*this)[0]; }
 	domain::gridmap::bittable& rmap() noexcept { return (*this)[1]; }
 	const domain::gridmap::bittable& rmap() const noexcept { return (*this)[1]; }
+	operator bool() const noexcept { return (*this)[0].data(); }
 };
 struct gridmap_rotate_table_convs : gridmap_rotate_table, rgridmap_point_conversions
 {
@@ -243,7 +256,6 @@ class rotate_gridmap : public rgridmap_point_conversions
 private:
 	std::unique_ptr<domain::gridmap> rmap_obj;
 	gridmap_rotate_ptr maps = {};
-	uint32_t map_unpad_height_m1_ = 0;
 
 public:
 	rotate_gridmap() = default;
@@ -252,12 +264,28 @@ public:
 		if (rmap != nullptr) {
 			maps[0] = &map;
 			maps[1] = rmap;
-			map_unpad_height_m1_ = map.header_width() - 1;
+			conv_assign(map, *rmap);
 		} else {
 			create_rmap(map);
 		}
 	}
 
+	void link(gridmap_rotate_ptr rmap)
+	{
+		rmap_obj = nullptr;
+		if (rmap) {
+			maps = rmap;
+			conv_assign(*maps[0], *maps[1]);
+		} else {
+			clear();
+		}
+	}
+	void clear()
+	{
+		rmap_obj = nullptr;
+		maps = {};
+		static_cast<rgridmap_point_conversions&>(*this) = {};
+	}
 	void create_rmap(domain::gridmap& map)
 	{
 		maps[0] = &map;
@@ -280,7 +308,7 @@ public:
 		// set values
 		rmap_obj = std::move(tmap);
 		maps[1] = rmap_obj.get();
-		map_unpad_height_m1_ = maph - 1;
+		conv_assign(*maps[0], *maps[1]);
 	}
 
 	domain::gridmap& map() noexcept
@@ -304,6 +332,10 @@ public:
 		return *maps[1];
 	}
 
+	operator bool() const noexcept
+	{
+		return maps[0] != nullptr;
+	}
 	operator gridmap_rotate_ptr() const noexcept
 	{
 		assert(maps[0] != nullptr && maps[1] != nullptr);
@@ -312,7 +344,7 @@ public:
 	operator gridmap_rotate_ptr_convs() const noexcept
 	{
 		assert(maps[0] != nullptr && maps[1] != nullptr);
-		return gridmap_rotate_ptr_convs(maps, map_unpad_height_m1_);
+		return gridmap_rotate_ptr_convs(maps);
 	}
 	operator gridmap_rotate_table() const noexcept
 	{

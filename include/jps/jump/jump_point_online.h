@@ -347,11 +347,11 @@ struct IntercardinalWalker
 	};
 	using map_type = ::warthog::domain::gridmap::bitarray;
 	/// @brief map and rmap (as bit array for small memory size)
-	map_type map[2];
+	std::array<map_type, 2> map;
 	/// @brief location of current node on map and rmap
-	uint32_t node_at[2];
+	std::array<uint32_t, 2> node_at;
 	/// @brief map and rmap value to adjust node_at for each row
-	int32_t adj_width[2];
+	std::array<int32_t, 2> adj_width;
 	// /// @brief map and rmap target locations
 	// uint32_t target[2];
 	/// @brief row scan
@@ -364,79 +364,32 @@ struct IntercardinalWalker
 
 	/// @brief convert map width to a map adj_width variable suited to
 	/// intercardinal D2
-	template<direction_id D2 = D>
-		requires InterCardinalId<D>
 	static constexpr int32_t
 	to_map_adj_width(uint32_t width) noexcept
 	{
-		static_assert(
-		    D2 == NORTHEAST_ID || D2 == NORTHWEST_ID || D2 == SOUTHEAST_ID
-		        || D2 == SOUTHWEST_ID,
-		    "Must be intercardinal direction");
-		assert(width > 0);
-		if constexpr(D2 == NORTHEAST_ID)
-		{
-			return -static_cast<int32_t>(width - 1); // - (mapW-1)
-		}
-		else if constexpr(D2 == SOUTHEAST_ID)
-		{
-			return static_cast<int32_t>(width + 1); // + (mapW+1)
-		}
-		else if constexpr(D2 == SOUTHWEST_ID)
-		{
-			return static_cast<int32_t>(width - 1); // + (mapW-1)
-		}
-		else
-		{                                            // NORTHWEST_ID
-			return -static_cast<int32_t>(width + 1); // - (mapW+1)
-		}
+		return dir_id_adj(D, width);
 	}
 	/// @brief convert rmap width to a rmap adj_width variable suited to
 	/// intercardinal D2
-	template<direction_id D2 = D>
-		requires InterCardinalId<D>
 	static constexpr int32_t
 	to_rmap_adj_width(uint32_t width) noexcept
 	{
-		return to_map_adj_width<dir_id_cw(D2)>(width);
+		return dir_id_adj(dir_id_cw(D), width);
 	}
 
 	/// @brief convert map adj_width to map width, reciprocal to
 	/// to_map_adj_width
-	template<direction_id D2 = D>
-		requires InterCardinalId<D>
 	static constexpr uint32_t
 	from_map_adj_width(int32_t adj_width) noexcept
 	{
-		static_assert(
-		    D2 == NORTHEAST_ID || D2 == NORTHWEST_ID || D2 == SOUTHEAST_ID
-		        || D2 == SOUTHWEST_ID,
-		    "Must be intercardinal direction");
-		if constexpr(D2 == NORTHEAST_ID)
-		{
-			return static_cast<uint32_t>(-adj_width + 1);
-		}
-		else if constexpr(D2 == SOUTHEAST_ID)
-		{
-			return static_cast<uint32_t>(adj_width - 1);
-		}
-		else if constexpr(D2 == SOUTHWEST_ID)
-		{
-			return static_cast<uint32_t>(adj_width + 1);
-		}
-		else
-		{ // NORTHWEST_ID
-			return static_cast<uint32_t>(-adj_width - 1);
-		}
+		return dir_id_adj_inv_intercardinal(D, adj_width);
 	}
 	/// @brief convert rmap adj_width to rmap width, reciprocal to
 	/// to_rmap_adj_width
-	template<direction_id D2 = D>
-		requires InterCardinalId<D>
 	static constexpr uint32_t
 	from_rmap_adj_width(int32_t adj_width) noexcept
 	{
-		return from_map_adj_width<dir_id_cw(D2)>(adj_width);
+		return dir_id_adj_inv_intercardinal(dir_id_cw(D), adj_width);
 	}
 
 	/// @brief set map width
@@ -679,19 +632,18 @@ struct IntercardinalWalker
 class jump_point_online
 {
 public:
-	using rgridmap = domain::rotate_gridmap;
 	using bittable = ::warthog::domain::gridmap::bittable;
 	using rotate_grid = domain::gridmap_rotate_table_convs;
 
-	jump_point_online();
-	jump_point_online(const rgridmap& map)
+	jump_point_online() = default;
+	jump_point_online(const rotate_grid& map)
 	{
 		set_map(map);
 	}
 	~jump_point_online() = default;
 
 	void
-	set_map(const rgridmap& map);
+	set_map(const rotate_grid& map);
 	// void
 	// set_target(jps_id target_id) noexcept;
 	// void
@@ -768,12 +720,12 @@ protected:
 	static int32_t
 	jump_east(bittable map, uint32_t node)
 	{
-		return jump_point_online_hori<true>(map, node);
+		return jump_point_online_hori<true, false>(map, node);
 	}
 	static int32_t
 	jump_west(bittable map, uint32_t node)
 	{
-		return jump_point_online_hori<false>(map, node);
+		return jump_point_online_hori<false, false>(map, node);
 	}
 
 protected:
@@ -781,7 +733,7 @@ protected:
 };
 
 void
-jump_point_online::set_map(const rgridmap& orig)
+jump_point_online::set_map(const rotate_grid& orig)
 {
 	map_ = orig;
 }
@@ -801,11 +753,11 @@ jump_point_online::jump_cardinal_next(domain::rgrid_id_t<D> node_id)
 {
 	if constexpr (D == NORTH_ID || D == EAST_ID)
 	{
-		return jump_east(map_[domain::rgrid_index<D>], node_id);
+		return jump_east(map_[domain::rgrid_index<D>], static_cast<uint32_t>(node_id));
 	}
 	else if constexpr (D == SOUTH_ID || D == WEST_ID)
 	{
-		return jump_west(map_[domain::rgrid_index<D>], node_id);
+		return jump_west(map_[domain::rgrid_index<D>], static_cast<uint32_t>(node_id));
 	} else {
 		assert(false);
 		return 0;
@@ -858,7 +810,7 @@ jump_point_online::jump_intercardinal_many(
 	IntercardinalWalker<D> walker; // class to walk
 	// setup the walker members
 	// 0 = map, 1 = rmap
-	walker.map = map_;
+	walker.map = {map_[0], map_[1]};
 	walker.map_width(map_[0].width());
 	walker.rmap_width(map_[1].width());
 	walker.node_at[0] = static_cast<uint32_t>(map_.point_to_id(loc));
@@ -934,7 +886,7 @@ jump_point_online::jump_target(
 		spoint dia_unit = dir_unit_point(d);
 		dia_unit.x *= inter_len; dia_unit.y *= inter_len;
 		loc = loc + dia_unit;
-		xd += dia_unit.x; yd += dia_unit.y;
+		xd -= dia_unit.x; yd -= dia_unit.y;
 	} else {
 		// no diagonal
 		inter_len = 0;

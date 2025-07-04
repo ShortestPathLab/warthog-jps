@@ -39,9 +39,11 @@ class jps_expansion_policy
 {
 public:
 	jps_expansion_policy(warthog::domain::gridmap* map)
-	    : gridmap_expansion_policy_base(map), rmap_(map)
+	    : gridmap_expansion_policy_base(map)
 	{
-		jpl_.set_map(*map);
+		if (map != nullptr) {
+			set_map(*map);
+		}
 	}
 	virtual ~jps_expansion_policy() = default;
 
@@ -77,11 +79,29 @@ public:
 		return jpl_;
 	}
 
+	void set_map(warthog::domain::gridmap& map)
+	{
+		rmap_.create_rmap(map);
+		jpl_.set_map(rmap_);
+		map_width_ = rmap_.map().width();
+		// std::ofstream map1("map1.txt");
+		// std::ofstream map2("map2.txt");
+		// rmap_.map().print(map1);
+		// rmap_.rmap().print(map2);
+	}
+	void set_map(domain::gridmap_rotate_ptr rmap)
+	{
+		rmap_.link(rmap);
+		jpl_.set_map(rmap_);
+		map_width_ = rmap_.map().width();
+	}
+
 private:
 	domain::rotate_gridmap rmap_;
 	JpsJump jpl_;
-	point target_loc_;
-	grid_id target_id_;
+	point target_loc_ = {};
+	grid_id target_id_ = {};
+	uint32_t map_width_ = 0;
 };
 
 template<typename JpsJump>
@@ -93,12 +113,14 @@ jps_expansion_policy<JpsJump>::expand(
 	reset();
 
 	// compute the direction of travel used to reach the current node.
-	const grid_id current_id = jps_id(current->get_id());
+	const grid_id current_id = grid_id(current->get_id());
 	const point loc = rmap_.id_to_point(current_id);
+	assert(rmap_.map().get_label(current_id) && rmap_.map().get_label(rmap_.point_to_id_d<EAST_ID>(loc))); // loc must be trav on map
+	assert(rmap_.rmap().get_label(pad_id(rmap_.point_to_id_d<NORTH_ID>(loc).id))); // loc must be trav on rmap
 	// const jps_rid current_rid = jpl_.id_to_rid(current_id);
 	// const cost_t current_cost = current->get_g();
 	const direction dir_c = from_direction(
-	    jps_id(current->get_parent()), current_id, map_->width());
+	    grid_id(current->get_parent()), current_id, rmap_.map().width());
 	const direction_id target_d = warthog::grid::point_to_direction_id(loc, target_loc_);
 
 	// get the tiles around the current node c
@@ -122,15 +144,17 @@ jps_expansion_policy<JpsJump>::expand(
 	// cardinal directions
 	::warthog::util::for_each_integer_sequence<
 		std::integer_sequence<direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID>
-	>([&]<direction_id di> {
+	>([&](auto iv) {
+		constexpr direction_id di = decltype(iv)::value;
 		if(succ_dirs & warthog::grid::to_dir(di))
 		{
 			auto jump_result = jpl_.template jump_cardinal_next<di>(loc);
 			if(jump_result > 0) // jump point
 			{
 				// successful jump
-				warthog::search::search_node* jp_succ
-				    = this->generate(pad_id(static_cast<int32_t>(current_id.id + warthog::grid::dir_id_adj(di) * jump_result)));
+				pad_id node{static_cast<uint32_t>(current_id.id + warthog::grid::dir_id_adj(di, map_width_) * jump_result)};
+				assert(rmap_.map().get(node)); // successor must be traversable
+				warthog::search::search_node* jp_succ = this->generate(node);
 				add_neighbour(jp_succ, jump_result * warthog::DBL_ONE);
 			}
 		}
@@ -138,7 +162,8 @@ jps_expansion_policy<JpsJump>::expand(
 	// intercardinal directions
 	::warthog::util::for_each_integer_sequence<
 		std::integer_sequence<direction_id, NORTHEAST_ID, NORTHWEST_ID, SOUTHEAST_ID, SOUTHWEST_ID>
-	>([&]<direction_id di> {
+	>([&](auto iv) {
+		constexpr direction_id di = decltype(iv)::value;
 		if(succ_dirs & warthog::grid::to_dir(di))
 		{
 			jump::intercardinal_jump_result res;
@@ -146,9 +171,10 @@ jps_expansion_policy<JpsJump>::expand(
 			if(jump_result.first > 0) // jump point
 			{
 				// successful jump
-				warthog::search::search_node* jp_succ
-				    = this->generate(pad_id(static_cast<int32_t>(current_id.id + warthog::grid::dir_id_adj(di) * jump_result.first)));
-				add_neighbour(jp_succ, jump_result * warthog::DBL_ROOT_TWO);
+				pad_id node{pad_id(static_cast<int32_t>(current_id.id + warthog::grid::dir_id_adj(di, map_width_) * res.inter))};
+				assert(rmap_.map().get(node)); // successor must be traversable
+				warthog::search::search_node* jp_succ = this->generate(node);
+				add_neighbour(jp_succ, res.inter * warthog::DBL_ROOT_TWO);
 			}
 		}
 	});
@@ -164,7 +190,10 @@ jps_expansion_policy<JpsJump>::generate_start_node(
 	pad_id padded_id = pad_id(pi->start_);
 	if(map_->get_label(padded_id) == 0) { return nullptr; }
 	target_id_ = grid_id(pi->target_);
-	target_loc_ = rmap_.map().to_unpadded_xy(target_id_);
+	uint32_t x, y;
+	rmap_.map().to_unpadded_xy(target_id_, x, y);
+	target_loc_.x = static_cast<uint16_t>(x);
+	target_loc_.y = static_cast<uint16_t>(y);
 	return generate(padded_id);
 }
 
