@@ -1,5 +1,5 @@
-#ifndef JPS_SEARCH_JPS_EXPANSION_POLICY_H
-#define JPS_SEARCH_JPS_EXPANSION_POLICY_H
+#ifndef JPS_SEARCH_JPS_PRUNE_EXPANSION_POLICY_H
+#define JPS_SEARCH_JPS_PRUNE_EXPANSION_POLICY_H
 
 // jps_expansion_policy.h
 //
@@ -28,15 +28,19 @@ namespace jps::search
 
 /// @brief 
 /// @tparam JpsJump 
+/// @tparam InterLimit max length the intercardinal can expand to, =0 for run-time set, -1 to prune all intercardinal points
+/// @tparam InterSize size of intercardinal successor array, is stored on the stack.
+///                   If this successor count is reached withing InterLimit, then end successor unless InterLimit<0
 ///
 /// JPS expansion policy that pushes the first cardinal and intercardinal
 /// jump point, block-based jumping is the standard jump used by jump_point_online.
 /// jps_2011_expansion_policy<jump_point_online> gives JPS (B).
 /// jps_2011_expansion_policy<jump_point_offline> gives JPS+.
-template<typename JpsJump>
-class jps_expansion_policy
+template<typename JpsJump, int16_t InterLimit = -1, size_t InterSize = 1024>
+class jps_prune_expansion_policy
     : public warthog::search::gridmap_expansion_policy_base
 {
+	static_assert(InterSize >= 1, "InterSize must be at least 2.");
 public:
 	jps_expansion_policy(warthog::domain::gridmap* map)
 	    : gridmap_expansion_policy_base(map)
@@ -104,9 +108,9 @@ private:
 	uint32_t map_width_ = 0;
 };
 
-template<typename JpsJump>
+template<typename JpsJump, int16_t InterLimit, size_t InterSize>
 void
-jps_expansion_policy<JpsJump>::expand(
+jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
     warthog::search::search_node* current,
     warthog::search::search_problem_instance* instance)
 {
@@ -180,9 +184,9 @@ jps_expansion_policy<JpsJump>::expand(
 	});
 }
 
-template<typename JpsJump>
+template<typename JpsJump, int16_t InterLimit, size_t InterSize>
 warthog::search::search_node*
-jps_expansion_policy<JpsJump>::generate_start_node(
+jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::generate_start_node(
     warthog::search::search_problem_instance* pi)
 {
 	uint32_t max_id = map_->width() * map_->height();
@@ -197,9 +201,9 @@ jps_expansion_policy<JpsJump>::generate_start_node(
 	return generate(padded_id);
 }
 
-template<typename JpsJump>
+template<typename JpsJump, int16_t InterLimit, size_t InterSize>
 warthog::search::search_node*
-jps_expansion_policy<JpsJump>::generate_target_node(
+jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::generate_target_node(
     warthog::search::search_problem_instance* pi)
 {
 	uint32_t max_id = map_->width() * map_->height();
@@ -211,4 +215,4 @@ jps_expansion_policy<JpsJump>::generate_target_node(
 
 }
 
-#endif // JPS_SEARCH_JPS_EXPANSION_POLICY_H
+#endif // JPS_SEARCH_JPS_PRUNE_EXPANSION_POLICY_H
