@@ -686,7 +686,7 @@ public:
     /// @param result_size maximum number of results that can fit in result
     /// @param result pointer to results storage of at least size result_size
     /// @param max_distance the maximum intercardinal distance to scan to
-    /// @return pair first: number of results returned. second: the end point
+    /// @return pair first: number of results returned. second: the end distance
     ///
     /// This function is designed to efficiently find all jump points intercardinally.
     /// The returned point is either on the final result, the max_distance location (loc + max_distance)

@@ -37,4 +37,7 @@ operator|(JpsFeature a, JpsFeature b) noexcept
 
 } // namespace jps
 
+#include <jps/jump/jump.h>
+#include <jps/search/jps.h>
+
 #endif // JPS_SEARCH_FORWARD_H

@@ -28,7 +28,7 @@ namespace jps::search
 
 /// @brief 
 /// @tparam JpsJump 
-/// @tparam InterLimit max length the intercardinal can expand to, =0 for run-time set, -1 to prune all intercardinal points
+/// @tparam InterLimit max length the intercardinal can expand to, =c for run-time set, -1 to prune all intercardinal points
 /// @tparam InterSize size of intercardinal successor array, is stored on the stack.
 ///                   If this successor count is reached withing InterLimit, then end successor unless InterLimit<0
 ///
@@ -100,12 +100,28 @@ public:
 		map_width_ = rmap_.map().width();
 	}
 
+	bool set_jump_limit(jump::jump_distance limit = std::numeric_limits<jump::jump_distance>::max()) noexcept requires(InterLimit == 0)
+	{
+		if (limit < 1)
+			return false;
+		jump_limit_ = limit;
+	}
+	jump::jump_distance get_jump_limit() const noexcept requires(InterLimit == 0)
+	{
+		return jump_limit_;
+	}
+	static constexpr jump::jump_distance get_jump_limit() noexcept requires(InterLimit != 0)
+	{
+		return InterLimit < 0 ? std::numeric_limits<jump::jump_distance>::max() : static_cast<jump::jump_distance>(InterLimit);
+	}
+
 private:
 	domain::rotate_gridmap rmap_;
 	JpsJump jpl_;
 	point target_loc_ = {};
 	grid_id target_id_ = {};
 	uint32_t map_width_ = 0;
+	jump::jump_distance jump_limit_ = std::numeric_limits<jump::jump_distance>::max();
 };
 
 template<typename JpsJump, int16_t InterLimit, size_t InterSize>
@@ -170,15 +186,45 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 		constexpr direction_id di = decltype(iv)::value;
 		if(succ_dirs & warthog::grid::to_dir(di))
 		{
-			jump::intercardinal_jump_result res;
-			auto jump_result = jpl_.template jump_intercardinal_many<di>(loc, &res, 1);
-			if(jump_result.first > 0) // jump point
-			{
-				// successful jump
-				pad_id node{pad_id(static_cast<int32_t>(current_id.id + warthog::grid::dir_id_adj(di, map_width_) * res.inter))};
-				assert(rmap_.map().get(node)); // successor must be traversable
-				warthog::search::search_node* jp_succ = this->generate(node);
-				add_neighbour(jp_succ, res.inter * warthog::DBL_ROOT_TWO);
+			const int32_t node_adj_ic = warthog::grid::dir_id_adj(di, map_width_);
+			const int32_t node_adj_vert = warthog::grid::dir_id_adj_vert(di, map_width_);
+			constexpr int32_t node_adj_hori = warthog::grid::dir_id_adj_hori(di);
+			jump::intercardinal_jump_result res[InterSize];
+			jump::jump_distance inter_total = 0;
+			while (true) { // InterSize == -1 will loop InterSize results until all are found
+				auto [result_n, dist] = jpl_.template jump_intercardinal_many<di>(loc, res, InterSize, get_jump_limit());
+				for(decltype(result_n) result_i = 0; result_i < result_n; ++result_i) // jump point
+				{
+					// successful jump
+					const jump::intercardinal_jump_result res_i = res[result_i];
+					assert(res_i.inter > 0);
+					int32_t node = static_cast<int32_t>(current_id.id) + node_adj_ic * (inter_total + res_i.inter);
+					const auto cost = warthog::DBL_ROOT_TWO * (inter_total + res_i.inter);
+					assert(rmap_.map().get(node)); // successor must be traversable
+					if (res_i.hori > 0) {
+						// horizontal
+						const int32_t node_j = node + node_adj_hori * res_i.hori;
+						const auto cost_j = cost + warthog::DBL_ONE * res_i.hori;
+						assert(rmap_.map().get(node_j)); // successor must be traversable
+						warthog::search::search_node* jp_succ = this->generate(node_j);
+						add_neighbour(node_j, cost_j);
+					}
+					if (res_i.vert > 0) {
+						// horizontal
+						const int32_t node_j = node + node_adj_vert * res_i.vert;
+						const auto cost_j = cost + warthog::DBL_ONE * res_i.vert;
+						assert(rmap_.map().get(node_j)); // successor must be traversable
+						warthog::search::search_node* jp_succ = this->generate(node_j);
+						add_neighbour(node_j, cost_j);
+					}
+				}
+				if (dist <= 0) // hit wall, break
+					break;
+				if constexpr (InterLimit < 0) {
+					// repeat until all jump points are discovered
+					inter_total += dist;
+					loc = loc + dist * dir_unit_point(di);
+				}
 			}
 		}
 	});
