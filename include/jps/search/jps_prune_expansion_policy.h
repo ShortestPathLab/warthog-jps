@@ -28,7 +28,7 @@ namespace jps::search
 
 /// @brief 
 /// @tparam JpsJump 
-/// @tparam InterLimit max length the intercardinal can expand to, =c for run-time set, -1 to prune all intercardinal points
+/// @tparam InterLimit max length the intercardinal can expand to, =0 for run-time set, -1 to prune all intercardinal points
 /// @tparam InterSize size of intercardinal successor array, is stored on the stack.
 ///                   If this successor count is reached withing InterLimit, then end successor unless InterLimit<0
 ///
@@ -42,14 +42,14 @@ class jps_prune_expansion_policy
 {
 	static_assert(InterSize >= 1, "InterSize must be at least 2.");
 public:
-	jps_expansion_policy(warthog::domain::gridmap* map)
+	jps_prune_expansion_policy(warthog::domain::gridmap* map)
 	    : gridmap_expansion_policy_base(map)
 	{
 		if (map != nullptr) {
 			set_map(*map);
 		}
 	}
-	virtual ~jps_expansion_policy() = default;
+	virtual ~jps_prune_expansion_policy() = default;
 
 	using jump_point = JpsJump;
 
@@ -134,7 +134,7 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 
 	// compute the direction of travel used to reach the current node.
 	const grid_id current_id = grid_id(current->get_id());
-	const point loc = rmap_.id_to_point(current_id);
+	point loc = rmap_.id_to_point(current_id);
 	assert(rmap_.map().get_label(current_id) && rmap_.map().get_label(rmap_.point_to_id_d<EAST_ID>(loc))); // loc must be trav on map
 	assert(rmap_.rmap().get_label(pad_id(rmap_.point_to_id_d<NORTH_ID>(loc).id))); // loc must be trav on rmap
 	// const jps_rid current_rid = jpl_.id_to_rid(current_id);
@@ -198,24 +198,24 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 					// successful jump
 					const jump::intercardinal_jump_result res_i = res[result_i];
 					assert(res_i.inter > 0);
-					int32_t node = static_cast<int32_t>(current_id.id) + node_adj_ic * (inter_total + res_i.inter);
+					const uint32_t node = current_id.id + static_cast<uint32_t>(node_adj_ic * (inter_total + res_i.inter));
 					const auto cost = warthog::DBL_ROOT_TWO * (inter_total + res_i.inter);
-					assert(rmap_.map().get(node)); // successor must be traversable
+					assert(rmap_.map().get(pad_id{node})); // successor must be traversable
 					if (res_i.hori > 0) {
 						// horizontal
-						const int32_t node_j = node + node_adj_hori * res_i.hori;
+						const uint32_t node_j = node + static_cast<uint32_t>(node_adj_hori * res_i.hori);
 						const auto cost_j = cost + warthog::DBL_ONE * res_i.hori;
-						assert(rmap_.map().get(node_j)); // successor must be traversable
-						warthog::search::search_node* jp_succ = this->generate(node_j);
-						add_neighbour(node_j, cost_j);
+						assert(rmap_.map().get(pad_id{node_j})); // successor must be traversable
+						warthog::search::search_node* jp_succ = this->generate(pad_id{node_j});
+						add_neighbour(jp_succ, cost_j);
 					}
 					if (res_i.vert > 0) {
 						// horizontal
-						const int32_t node_j = node + node_adj_vert * res_i.vert;
+						const uint32_t node_j = node + static_cast<uint32_t>(node_adj_vert * res_i.vert);
 						const auto cost_j = cost + warthog::DBL_ONE * res_i.vert;
-						assert(rmap_.map().get(node_j)); // successor must be traversable
-						warthog::search::search_node* jp_succ = this->generate(node_j);
-						add_neighbour(node_j, cost_j);
+						assert(rmap_.map().get(pad_id{node_j})); // successor must be traversable
+						warthog::search::search_node* jp_succ = this->generate(pad_id{node_j});
+						add_neighbour(jp_succ, cost_j);
 					}
 				}
 				if (dist <= 0) // hit wall, break
@@ -224,6 +224,14 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 					// repeat until all jump points are discovered
 					inter_total += dist;
 					loc = loc + dist * dir_unit_point(di);
+				} else {
+					// reach limit, push dia onto queue
+					const uint32_t node = current_id.id + static_cast<uint32_t>(node_adj_ic * dist);
+					const auto cost = warthog::DBL_ROOT_TWO * dist;
+					assert(rmap_.map().get(pad_id{node})); // successor must be traversable
+					warthog::search::search_node* jp_succ = this->generate(pad_id{node});
+					add_neighbour(jp_succ, cost);
+					break;
 				}
 			}
 		}
