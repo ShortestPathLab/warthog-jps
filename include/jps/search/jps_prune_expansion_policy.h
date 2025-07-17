@@ -42,9 +42,16 @@ class jps_prune_expansion_policy
 {
 	static_assert(InterSize >= 1, "InterSize must be at least 2.");
 public:
-	
+	jps_prune_expansion_policy(warthog::domain::gridmap* map)
+	    : jps_gridmap_expansion_policy(map)
+	{
+		if (map != nullptr) {
+			jpl_.set_map(rmap_);
+			map_width_ = rmap_.map().width();
+		}
+	}
 	using jps_gridmap_expansion_policy::jps_gridmap_expansion_policy;
-	virtual ~jps_prune_expansion_policy() = default;
+	~jps_prune_expansion_policy() = default;
 
 	using jump_point = JpsJump;
 

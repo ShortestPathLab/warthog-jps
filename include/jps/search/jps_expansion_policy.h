@@ -38,8 +38,15 @@ class jps_expansion_policy
     : public jps_gridmap_expansion_policy
 {
 public:
-	using jps_gridmap_expansion_policy::jps_gridmap_expansion_policy;
-	virtual ~jps_expansion_policy() = default;
+	jps_expansion_policy(warthog::domain::gridmap* map)
+	    : jps_gridmap_expansion_policy(map)
+	{
+		if (map != nullptr) {
+			jpl_.set_map(rmap_);
+			map_width_ = rmap_.map().width();
+		}
+	}
+	~jps_expansion_policy() = default;
 
 	using jump_point = JpsJump;
 

@@ -18,10 +18,10 @@ class jps_gridmap_expansion_policy
 {
 public:
 	jps_gridmap_expansion_policy(warthog::domain::gridmap* map)
-	    : gridmap_expansion_policy_base(nullptr)
+	    : gridmap_expansion_policy_base(map)
 	{
 		if (map != nullptr) {
-			set_map(*map);
+			rmap_.create_rmap(*map);
 		}
 	}
 
