@@ -18,7 +18,7 @@
 // @author: dharabor
 // @created: 06/01/2010
 
-#include "jps.h"
+#include "jps_gridmap_expansion_policy.h"
 #include <warthog/search/gridmap_expansion_policy.h>
 #include <jps/domain/rotate_gridmap.h>
 #include <warthog/util/template.h>
@@ -38,17 +38,12 @@ namespace jps::search
 /// jps_2011_expansion_policy<jump_point_offline> gives JPS+.
 template<typename JpsJump, int16_t InterLimit = -1, size_t InterSize = 1024>
 class jps_prune_expansion_policy
-    : public warthog::search::gridmap_expansion_policy_base
+    : public jps_gridmap_expansion_policy
 {
 	static_assert(InterSize >= 1, "InterSize must be at least 2.");
 public:
-	jps_prune_expansion_policy(warthog::domain::gridmap* map)
-	    : gridmap_expansion_policy_base(map)
-	{
-		if (map != nullptr) {
-			set_map(*map);
-		}
-	}
+	
+	using jps_gridmap_expansion_policy::jps_gridmap_expansion_policy;
 	virtual ~jps_prune_expansion_policy() = default;
 
 	using jump_point = JpsJump;
@@ -68,8 +63,8 @@ public:
 	size_t
 	mem() override
 	{
-		return expansion_policy::mem() + sizeof(*this) + map_->mem()
-		    + jpl_.mem();
+		return jps_gridmap_expansion_policy::mem()
+			+ (sizeof(jps_prune_expansion_policy) - sizeof(jps_gridmap_expansion_policy));
 	}
 
 	jump_point&
@@ -81,23 +76,6 @@ public:
 	get_jump_point() const noexcept
 	{
 		return jpl_;
-	}
-
-	void set_map(warthog::domain::gridmap& map)
-	{
-		rmap_.create_rmap(map);
-		jpl_.set_map(rmap_);
-		map_width_ = rmap_.map().width();
-		// std::ofstream map1("map1.txt");
-		// std::ofstream map2("map2.txt");
-		// rmap_.map().print(map1);
-		// rmap_.rmap().print(map2);
-	}
-	void set_map(domain::gridmap_rotate_ptr rmap)
-	{
-		rmap_.link(rmap);
-		jpl_.set_map(rmap_);
-		map_width_ = rmap_.map().width();
 	}
 
 	bool set_jump_limit(jump::jump_distance limit = std::numeric_limits<jump::jump_distance>::max()) noexcept requires(InterLimit == 0)
@@ -115,8 +93,15 @@ public:
 		return InterLimit < 0 ? std::numeric_limits<jump::jump_distance>::max() : static_cast<jump::jump_distance>(InterLimit);
 	}
 
+protected:
+	void set_rmap_(domain::rotate_gridmap& rmap) override
+	{
+		jps_gridmap_expansion_policy::set_rmap_(rmap);
+		jpl_.set_map(rmap);
+		map_width_ = rmap.map().width();
+	}
+
 private:
-	domain::rotate_gridmap rmap_;
 	JpsJump jpl_;
 	point target_loc_ = {};
 	grid_id target_id_ = {};
@@ -267,6 +252,6 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::generate_target_node
 	return generate(padded_id);
 }
 
-}
+} // namespace jps::search
 
 #endif // JPS_SEARCH_JPS_PRUNE_EXPANSION_POLICY_H
