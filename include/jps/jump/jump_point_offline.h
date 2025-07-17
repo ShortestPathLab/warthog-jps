@@ -17,7 +17,7 @@ namespace jps::jump
 /// @brief Store, set and access offline jump-point results
 /// @tparam ChainJump if true: store 1-byte jumps that chain; false: 2-byte full jump
 /// @tparam DeadEnd if true: track deadend as negative, false: only jump-points
-template <bool ChainJump = false, bool DeadEnd = false>
+template <bool ChainJump = false, bool DeadEnd = true>
 struct jump_point_table
 {
 	using direction_id = warthog::grid::direction_id;
@@ -160,10 +160,33 @@ struct jump_point_table
 	}
 };
 
-template <typename JumpTable = jump_point_table<>>
-class jump_point_offline
+template <typename JumpTable = jump_point_table<>, typename OnlinePoint = jump_point_online>
+class jump_point_offline : public OnlinePoint
 {
+public:
+	using jump_point_online::jump_point_online;
 
+	template <direction_id D>
+		requires CardinalId<D>
+	jump_distance
+	jump_cardinal_next(point loc)
+	{
+		if constexpr (domain::rgrid_index<D> == 0) {
+			return jump_cardinal_next(this->map_.point_to_id(loc));
+		} else {
+			return jump_cardinal_next(this->map_.rpoint_to_rid(this->map_.point_to_rpoint(loc)));
+		}
+	}
+	template <direction_id D>
+		requires CardinalId<D>
+	jump_distance
+	jump_cardinal_next(domain::rgrid_id_t<D> node_id)
+	{
+
+	}
+
+protected:
+	JumpTable jump_table_;
 };
 
 } // namespace jps::jump
