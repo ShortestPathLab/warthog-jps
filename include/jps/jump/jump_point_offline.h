@@ -245,14 +245,23 @@ public:
 			{WEST_ID,  height, width, this->map_.point_to_id(point(width-1,0)), dir_id_adj_vert(SOUTH_ID, width)}
 		};
 
+		using jump_cardinal_type = jump_distance(OnlinePoint*, uint32_t);
 		for (auto s : scans) {
 			uint32_t col_adj = dir_id_adj(s.d, width);
 			uint32_t node = s.start;
+			jump_cardinal_type* jfn = warthog::util::choose_integer_sequence<jump_cardinal_type*,
+				std::integer_sequence<direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID>
+			>(s.d, [](auto iv) {
+				// constexpr direction_id di = decltype(iv)::value;
+				return [](OnlinePoint* this_, uint32_t node_id) {
+					return this->template jump_cardinal_next<decltype(iv)::value>({node_id});
+				};
+			});
 			for (uint32_t i = 0; i < s.rows; ++i) {
 				uint32_t row_node = node;
 				for (uint32_t j = 0; j < s.cols; ++j) {
 					if (this->map_.get(row_node)) {
-						jump_distance d = OnlinePoint::jump_cardinal_next<
+						jump_distance d = std::invoke(jfn, this, node);
 					}
 				}
 			}
