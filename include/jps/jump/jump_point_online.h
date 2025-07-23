@@ -213,7 +213,7 @@ struct BasicIntercardinalWalker
 	/// @brief location of current node on map and rmap
 	uint32_t node_at;
 	/// @brief map and rmap value to adjust node_at for each row
-	int32_t adj_width;
+	uint32_t adj_width;
 	/// @brief row scan
 	union
 	{
@@ -228,21 +228,12 @@ struct BasicIntercardinalWalker
 	void set_map(map_type map, uint32_t width) noexcept
 	{
 		this->map = map;
+		this->adj_width = dir_id_adj(D, width);
 		if constexpr (D == NORTHEAST_ID || D == SOUTHEAST_ID) {
-			if constexpr (D == NORTHEAST_ID) {
-				this->adj_width = -static_cast<int32_t>(width) + 1;
-			} else {
-				this->adj_width = static_cast<int32_t>(width) + 1;
-			}
 			row_mask_ = std::endian::native == std::endian::little
 			    ? 0b0000'0011'0000'0110
 			    : 0b0000'0110'0000'0011;
 		} else { // NORTHWEST_ID and SOUTHWEST_ID
-			if constexpr (D == NORTHWEST_ID) {
-				this->adj_width = -static_cast<int32_t>(width) - 1;
-			} else {
-				this->adj_width = static_cast<int32_t>(width) - 1;
-			}
 			row_mask_ = std::endian::native == std::endian::little
 			    ? 0b0000'0110'0000'0011
 			    : 0b0000'0011'0000'0110;
@@ -252,8 +243,7 @@ struct BasicIntercardinalWalker
 	void
 	next_index() noexcept
 	{
-		node_at = static_cast<uint32_t>(
-		    static_cast<int32_t>(node_at) + adj_width);
+		node_at += adj_width;
 	}
 	/// @brief call for first row, then call next_row
 	void
@@ -282,8 +272,7 @@ struct BasicIntercardinalWalker
 	grid_id
 	adj_id(uint32_t node, int32_t dist) const noexcept
 	{
-		return grid_id(static_cast<uint32_t>(
-		    static_cast<int32_t>(node) + dist * adj_width));
+		return grid_id{static_cast<uint32_t>(node + static_cast<uint32_t>(dist) * adj_width)};
 	}
 
 	
@@ -351,7 +340,7 @@ struct IntercardinalWalker
 	/// @brief location of current node on map and rmap
 	std::array<uint32_t, 2> node_at;
 	/// @brief map and rmap value to adjust node_at for each row
-	std::array<int32_t, 2> adj_width;
+	std::array<uint32_t, 2> adj_width;
 	// /// @brief map and rmap target locations
 	// uint32_t target[2];
 	/// @brief row scan
@@ -364,32 +353,32 @@ struct IntercardinalWalker
 
 	/// @brief convert map width to a map adj_width variable suited to
 	/// intercardinal D2
-	static constexpr int32_t
+	static constexpr uint32_t
 	to_map_adj_width(uint32_t width) noexcept
 	{
 		return dir_id_adj(D, width);
 	}
 	/// @brief convert rmap width to a rmap adj_width variable suited to
 	/// intercardinal D2
-	static constexpr int32_t
+	static constexpr uint32_t
 	to_rmap_adj_width(uint32_t width) noexcept
 	{
-		return dir_id_adj(dir_id_cw(D), width);
+		return dir_id_adj(dir_id_cw90(D), width);
 	}
 
 	/// @brief convert map adj_width to map width, reciprocal to
 	/// to_map_adj_width
 	static constexpr uint32_t
-	from_map_adj_width(int32_t adj_width) noexcept
+	from_map_adj_width(uint32_t adj_width) noexcept
 	{
 		return dir_id_adj_inv_intercardinal(D, adj_width);
 	}
 	/// @brief convert rmap adj_width to rmap width, reciprocal to
 	/// to_rmap_adj_width
 	static constexpr uint32_t
-	from_rmap_adj_width(int32_t adj_width) noexcept
+	from_rmap_adj_width(uint32_t adj_width) noexcept
 	{
-		return dir_id_adj_inv_intercardinal(dir_id_cw(D), adj_width);
+		return dir_id_adj_inv_intercardinal(dir_id_cw90(D), adj_width);
 	}
 
 	/// @brief set map width
@@ -541,10 +530,8 @@ struct IntercardinalWalker
 	void
 	next_index() noexcept
 	{
-		node_at[0] = static_cast<uint32_t>(
-		    static_cast<int32_t>(node_at[0]) + adj_width[0]);
-		node_at[1] = static_cast<uint32_t>(
-		    static_cast<int32_t>(node_at[1]) + adj_width[1]);
+		node_at[0] += adj_width[0];
+		node_at[1] += adj_width[1];
 	}
 
 	/// @brief return get node_at[0]-1..node_at[0]+1 bits. CAUTION return
