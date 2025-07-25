@@ -802,6 +802,7 @@ jump_point_online::jump_intercardinal_many(
 	walker.rmap_width(map_[1].width());
 	walker.node_at[0] = static_cast<uint32_t>(map_.point_to_id(loc));
 	walker.node_at[1] = static_cast<uint32_t>(map_.rpoint_to_rid(map_.point_to_rpoint(loc)));
+	assert(map_.map().get(grid_id(walker.node_at[0])) && map_.rmap().get(grid_id(walker.node_at[1])));
 
 	// JPS, stop at the first intercardinal turning point
 	uint16_t results_count = 0;

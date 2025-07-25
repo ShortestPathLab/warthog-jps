@@ -86,27 +86,35 @@ template <auto D>
 constexpr inline int rgrid_index = details::direction_grid_id<D>::map_id;
 template <auto D>
 constexpr inline bool rgrid_east = details::direction_grid_id<D>::east;
+template <auto D>
+constexpr inline int rgrid_hori = rgrid_index<D> == 0;
 
 using ::warthog::domain::gridmap;
 
 struct rgridmap_point_conversions
 {
-	uint16_t map_unpad_height_m1_ = 0;
-	uint16_t map_pad_width_ = 0;
-	uint16_t rmap_pad_width_ = 0;
+	static constexpr uint16_t M1P = gridmap::PADDED_ROWS - 1; // height adjustment to rotate
+	uint16_t map_height_m1p_ = 0;
+	uint16_t map_width_ = 0;
+	uint16_t rmap_width_ = 0;
 
 	void conv_assign(const gridmap& map, const gridmap& rmap) noexcept
 	{
-		map_unpad_height_m1_ = static_cast<uint16_t>(map.header_height() - 1);
-		map_pad_width_ = static_cast<uint16_t>(map.width());
-		rmap_pad_width_ = static_cast<uint16_t>(rmap.width());
+		map_height_m1p_ = static_cast<uint16_t>(map.height() + M1P);
+		map_width_ = static_cast<uint16_t>(map.width());
+		rmap_width_ = static_cast<uint16_t>(rmap.width());
 	}
+
+	/// @return returns the padded width of map
+	uint16_t width() const noexcept { return map_width_; }
+	/// @return returns the padded height of map
+	uint16_t height() const noexcept { return map_height_m1p_ - M1P; }
 
 	point
 	point_to_rpoint(point p) const noexcept
 	{
 		return {
-			static_cast<uint16_t>(map_unpad_height_m1_ - p.y),
+			static_cast<uint16_t>(map_height_m1p_ - p.y),
 			static_cast<uint16_t>(p.x)};
 	}
 	point
@@ -114,38 +122,38 @@ struct rgridmap_point_conversions
 	{
 		return {
 			static_cast<uint16_t>(p.y),
-			static_cast<uint16_t>(map_unpad_height_m1_ - p.x)};
+			static_cast<uint16_t>(map_height_m1p_ - (p.x))};
 	}
 	grid_id
 	point_to_id(point p) const noexcept
 	{
 		return grid_id{
-			static_cast<grid_id::id_type>(p.y + domain::gridmap::PADDED_ROWS)
-				* map_pad_width_
+			static_cast<grid_id::id_type>(p.y)
+				* map_width_
 			+ static_cast<grid_id::id_type>(p.x)};
 	}
 	rgrid_id
 	rpoint_to_rid(point p) const noexcept
 	{
 		return rgrid_id{
-			static_cast<rgrid_id::id_type>(p.y + domain::gridmap::PADDED_ROWS)
-				* rmap_pad_width_
+			static_cast<rgrid_id::id_type>(p.y)
+				* rmap_width_
 			+ static_cast<rgrid_id::id_type>(p.x)};
 	}
 	point
 	id_to_point(grid_id p) const noexcept
 	{
 		return {
-			static_cast<uint16_t>(p.id % map_pad_width_),
-			static_cast<uint16_t>(p.id / map_pad_width_ - domain::gridmap::PADDED_ROWS)};
+			static_cast<uint16_t>(p.id % map_width_),
+			static_cast<uint16_t>(p.id / map_width_)};
 	}
 	point
 	rid_to_rpoint(rgrid_id p) const noexcept
 	{
 		return {
-			static_cast<uint16_t>(p.id % rmap_pad_width_),
+			static_cast<uint16_t>(p.id % rmap_width_),
 			static_cast<uint16_t>(
-				p.id / rmap_pad_width_ - domain::gridmap::PADDED_ROWS)};
+				p.id / rmap_width_)};
 	}
 	rgrid_id
 	id_to_rid(grid_id mapid) const noexcept
@@ -214,7 +222,7 @@ struct gridmap_rotate_ptr_convs : gridmap_rotate_ptr, rgridmap_point_conversions
 {
 	gridmap_rotate_ptr_convs() = default;
 	gridmap_rotate_ptr_convs(domain::gridmap& l_map, domain::gridmap& l_rmap) noexcept
-		: gridmap_rotate_ptr(l_map, l_rmap), rgridmap_point_conversions{static_cast<uint16_t>(l_map.header_height()-1), static_cast<uint16_t>(l_map.width()), static_cast<uint16_t>(l_rmap.width())}
+		: gridmap_rotate_ptr(l_map, l_rmap), rgridmap_point_conversions{static_cast<uint16_t>(l_map.height()+M1P), static_cast<uint16_t>(l_map.width()), static_cast<uint16_t>(l_rmap.width())}
 	{ }
 	gridmap_rotate_ptr_convs(gridmap_rotate_ptr maps) noexcept
 		: gridmap_rotate_ptr(maps), rgridmap_point_conversions{}
@@ -244,10 +252,12 @@ struct gridmap_rotate_table_convs : gridmap_rotate_table, rgridmap_point_convers
 {
 	gridmap_rotate_table_convs() = default;
 	gridmap_rotate_table_convs(domain::gridmap& l_map, domain::gridmap& l_rmap) noexcept
-		: gridmap_rotate_table(l_map, l_rmap), rgridmap_point_conversions(l_map.header_height() - 1)
-	{ }
-	gridmap_rotate_table_convs(gridmap_rotate_table maps, uint16_t map_unpad_height_m1) noexcept
-		: gridmap_rotate_table(maps), rgridmap_point_conversions{map_unpad_height_m1, static_cast<uint16_t>(maps[0].width()), static_cast<uint16_t>(maps[1].width())}
+		: gridmap_rotate_table(l_map, l_rmap), rgridmap_point_conversions{}
+	{
+		conv_assign(l_map, l_rmap);
+	}
+	gridmap_rotate_table_convs(gridmap_rotate_table maps, rgridmap_point_conversions conv) noexcept
+		: gridmap_rotate_table(maps), rgridmap_point_conversions{conv}
 	{ }
 };
 
@@ -290,18 +300,19 @@ public:
 	{
 		maps[0] = &map;
 		
-		const uint32_t maph = map.header_height();
-		const uint32_t mapw = map.header_width();
+		const uint32_t maph = map.height();
+		const uint32_t maphmp1 = maph + M1P;
+		const uint32_t mapw = map.width();
 		auto tmap           = std::make_unique<domain::gridmap>(mapw, maph);
 
 		for(uint32_t y = 0; y < maph; y++)
 		{
 			for(uint32_t x = 0; x < mapw; x++)
 			{
-				bool label = map.get_label(map.to_padded_id_from_unpadded(x, y));
-				uint32_t rx = (maph - 1) - y;
+				bool label = map.get_label(map.to_padded_id_from_padded(x, y));
+				uint32_t rx = maphmp1 - y;
 				uint32_t ry = x;
-				tmap->set_label(tmap->to_padded_id_from_unpadded(rx, ry), label);
+				tmap->set_label(tmap->to_padded_id_from_padded(rx, ry), label);
 			}
 		}
 
@@ -309,6 +320,17 @@ public:
 		rmap_obj = std::move(tmap);
 		maps[1] = rmap_obj.get();
 		conv_assign(*maps[0], *maps[1]);
+
+	#ifndef NDEBUG
+		for(uint32_t y = 0; y < maph; y++)
+		{
+			for(uint32_t x = 0; x < mapw; x++)
+			{
+				auto p = this->point_to_rpoint(point(x,y));
+				assert(maps[0]->get_label(this->point_to_id(point(x,y))) == maps[1]->get_label(static_cast<grid_id>(this->rpoint_to_rid(this->point_to_rpoint(point(x,y))))));
+			}
+		}
+	#endif // NDEBUG
 	}
 
 	domain::gridmap& map() noexcept
@@ -354,7 +376,7 @@ public:
 	operator gridmap_rotate_table_convs() const noexcept
 	{
 		assert(maps[0] != nullptr && maps[1] != nullptr);
-		return gridmap_rotate_table_convs(*this, map_unpad_height_m1_);
+		return gridmap_rotate_table_convs(*this, static_cast<rgridmap_point_conversions>(*this));
 	}
 };
 

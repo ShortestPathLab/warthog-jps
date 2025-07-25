@@ -17,7 +17,7 @@
 #include <warthog/util/timer.h>
 
 #include <jps/jump/jump_point_online.h>
-// #include <jps/jump/jump_point_offline.h>
+#include <jps/jump/jump_point_offline.h>
 #include <jps/search/jps_expansion_policy.h>
 #include <jps/search/jps_prune_expansion_policy.h>
 
@@ -266,6 +266,12 @@ main(int argc, char** argv)
 	{
 		using jump_point = jps::jump::jump_point_online;
 		return run_jps<jps_prune_expansion_policy<jump_point, 32, 64>>(
+		    scenmgr, mapfile, alg);
+	}
+	else if(alg == "jps+")
+	{
+		using jump_point = jps::jump::jump_point_offline<>;
+		return run_jps<jps_expansion_policy<jump_point>>(
 		    scenmgr, mapfile, alg);
 	}
 	else

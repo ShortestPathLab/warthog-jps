@@ -10,6 +10,10 @@
 //
 
 #include "jump_point_online.h"
+#include <warthog/util/template.h>
+#include <array>
+#include <ostream>
+#include <charconv>
 
 namespace jps::jump
 {
@@ -29,16 +33,14 @@ struct jump_point_table
 
 	std::unique_ptr<cell[]> db;
 	uint32_t width = 0;
-#ifndef NDEBUG
-	uint32_t d_cells = 0;
-#endif
+	uint32_t cells = 0;
 	static constexpr uint32_t node_count(uint32_t width, uint32_t height) noexcept
 	{
 		return static_cast<size_t>(width) * static_cast<size_t>(height);
 	}
-	static constexpr size_t mem(uint32_t width, uint32_t height) noexcept
+	constexpr size_t mem() noexcept
 	{
-		return node_count(width, height) * sizeof(jump_res);
+		return cells * sizeof(jump_res);
 	}
 
 	static consteval length chain_length() noexcept
@@ -56,11 +58,9 @@ struct jump_point_table
 	/// @brief setup db, init to zero
 	void init(uint32_t width, uint32_t height)
 	{
-		db = std::make_unique<jump_res[]>(node_count(width, height));
+		this->cells = node_count(width, height);
 		this->width = width;
-#ifndef NDEBUG
-		this->d_cells = node_count(width, height);
-#endif
+		this->db = std::make_unique<cell[]>(cells);
 	}
 	/// @brief sets precomputed jump-point along line [loc...loc+len)
 	///        when len reaches 0, final cell is not set
@@ -72,7 +72,7 @@ struct jump_point_table
 		// no negative for deadend
 		assert(d < 8);
 		assert(db != nullptr);
-		assert(loc.id < d_cells);
+		assert(loc.id < cells);
 		assert(DeadEnd || len >= 0);
 		assert(std::abs(len) < std::numeric_limits<int16_t>::max());
 		int32_t id = static_cast<int32_t>(loc.id);
@@ -93,6 +93,7 @@ struct jump_point_table
 				}
 			}
 			db[id][d] = value;
+			if constexpr (!ChainJump) break;
 			id += id_adj;
 			len += len_adj;
 		}
@@ -106,7 +107,7 @@ struct jump_point_table
 		// no negative for deadend
 		assert(d < 8);
 		assert(db != nullptr);
-		assert(loc.id < d_cells);
+		assert(loc.id < cells);
 		if constexpr (!ChainJump) {
 			return static_cast<length>(db[loc.id][d]);
 		} else {
@@ -118,6 +119,24 @@ struct jump_point_table
 			}
 		}
 	}
+	/// @brief get mutable cell
+	/// @param loc location
+	/// @return cell entry for loc
+	cell& get(grid_id loc) noexcept
+	{
+		assert(db != nullptr);
+		assert(loc.id < cells);
+		return db[loc.id];
+	}
+	/// @brief get immutable cell
+	/// @param loc location
+	/// @return cell entry for loc
+	cell get(grid_id loc) const noexcept
+	{
+		assert(db != nullptr);
+		assert(loc.id < cells);
+		return db[loc.id];
+	}
 	/// @brief perform a chain jump, assumes loc is chain value
 	///        assumes user manually checked db value at loc and value was chain_value()
 	/// @param d direction of jump
@@ -127,7 +146,7 @@ struct jump_point_table
 	length chain_jump(direction_id d, grid_id loc) noexcept requires(ChainJump)
 	{
 		assert(db != nullptr);
-		assert(loc.id < d_cells);
+		assert(loc.id < cells);
 		assert(db[loc.id][d] == chain_value());
 		int32_t id = loc.id;
 		const int32_t id_adj = warthog::grid::dir_id_adj(d, width);
@@ -155,8 +174,35 @@ struct jump_point_table
 	cell operator[](grid_id loc) const noexcept
 	{
 		assert(db != nullptr);
-		assert(loc.id < d_cells);
+		assert(loc.id < cells);
 		return db[loc.id];
+	}
+
+	std::ostream& print(std::ostream& out)
+	{
+		std::array<char, 8*8> buffer;
+		for (uint32_t i = 0; i < cells; ) {
+			for (uint32_t j = 0; j < width; ++j, ++i) {
+				// fill buffer with cell
+				char *at = buffer.begin(), *end = buffer.end();
+				for (int k = 0; k < 8; ++k) {
+					jump_distance dist = get_jump(static_cast<direction_id>(k), grid_id{i});
+					auto res = std::to_chars(at, end, dist);
+					if (res.ec != std::errc{}) {
+						// error, exit
+						out.setstate(std::ios::failbit);
+						return out;
+					}
+					if (at == end) {
+						// out of space, should not happen
+						out.setstate(std::ios::failbit);
+						return out;
+					}
+					*at++ = k+1 < 8 ? ',' : '\n';
+				}
+				out << buffer.data() << (j+1 < width ? '\t' : '\n');
+			}
+		}
 	}
 };
 
@@ -164,6 +210,8 @@ template <typename JumpTable = jump_point_table<>, typename OnlinePoint = jump_p
 class jump_point_offline : public OnlinePoint
 {
 public:
+	using typename OnlinePoint::bittable;
+	using typename OnlinePoint::rotate_grid;
 	using jump_point_online::jump_point_online;
 
 	template <direction_id D>
@@ -191,10 +239,10 @@ public:
 	jump_intercardinal_many(
 	    point loc, intercardinal_jump_result* result, uint16_t result_size, jump_distance max_distance = std::numeric_limits<jump_distance>::max())
 	{
-		constexpr direction_id Dhori = get_intercardinal_hori(D);
-		constexpr direction_id Dvert = get_intercardinal_vert(D);
+		constexpr direction_id Dhori = dir_intercardinal_hori(D);
+		constexpr direction_id Dvert = dir_intercardinal_vert(D);
 		grid_id node_id = this->map_.point_to_id(loc);
-		const auto node_adj = static_cast<uint32_t>(dir_id_adj(D, this->map_.width_));
+		const uint32_t node_adj = dir_id_adj(D, this->map_.width());
 		std::pair<uint16_t, jump_distance> res{0,0};
 		for (/*res.first*/; res.first < result_size; ) {
 			jump_distance dist = static_cast<jump_distance>(jump_table_.get_jump(D, node_id));
@@ -221,47 +269,130 @@ public:
 	set_map(const rotate_grid& map)
 	{
 		OnlinePoint::set_map(map);
-
 		// compute offline jump-point table
+		compute_jump_table();
 	}
 	void compute_jump_table()
 	{
-		uint32_t width = this->map_.width();
-		uint32_t height = this->map_.height();
+		const uint32_t width = this->map_.width();
+		const uint32_t height = this->map_.height();
+		const uint32_t rwidth = this->map_.rmap().width();
 		jump_table_.init(width, height);
+		auto&& point_in_range = [=](point p) noexcept { return p.x < width && p.y < height; };
 
 		// handle cardinal scans
+
 		struct CardinalScan
 		{
 			direction_id d;
-			uint32_t rows;
-			uint32_t cols;
-			uint32_t start;
-			uint32_t row_adj;
+			point start;
+			spoint row_adj;
 		};
-		const scans[4] = {{NORTH_ID, width, height, this->map_.point_to_id(point(0,0)), dir_id_adj_hori(EAST_ID)},
-			{SOUTH_ID, width, height, this->map_.point_to_id(point(0,height-1)), dir_id_adj_hori(EAST_ID)},
-			{EAST_ID, height, width, this->map_.point_to_id(point(0,0)), dir_id_adj_vert(SOUTH_ID, width)},
-			{WEST_ID,  height, width, this->map_.point_to_id(point(width-1,0)), dir_id_adj_vert(SOUTH_ID, width)}
-		};
+		const std::array<CardinalScan, 4> scans{{
+			{NORTH_ID, point(0,height-1), spoint(1,0)},
+			{SOUTH_ID, point(0,0), spoint(1,0)},
+			{EAST_ID, point(0,0), spoint(0,1)},
+			{WEST_ID, point(width-1,0), spoint(0,1)}
+		}};
 
 		using jump_cardinal_type = jump_distance(OnlinePoint*, uint32_t);
-		for (auto s : scans) {
-			uint32_t col_adj = dir_id_adj(s.d, width);
-			uint32_t node = s.start;
-			jump_cardinal_type* jfn = warthog::util::choose_integer_sequence<jump_cardinal_type*,
-				std::integer_sequence<direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID>
-			>(s.d, [](auto iv) {
-				// constexpr direction_id di = decltype(iv)::value;
-				return [](OnlinePoint* this_, uint32_t node_id) {
-					return this->template jump_cardinal_next<decltype(iv)::value>({node_id});
-				};
-			});
-			for (uint32_t i = 0; i < s.rows; ++i) {
-				uint32_t row_node = node;
-				for (uint32_t j = 0; j < s.cols; ++j) {
-					if (this->map_.get(row_node)) {
-						jump_distance d = std::invoke(jfn, this, node);
+		warthog::util::for_each_integer_sequence< std::integer_sequence<direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID> >(
+			[&](auto iv) {
+				constexpr direction_id di = decltype(iv)::value;
+				const auto map = this->map_[domain::rgrid_index<di>];
+				CardinalScan s = *std::find_if(scans.begin(), scans.end(), [di](auto& s) { return s.d == di; });
+				// start scan
+				point node = s.start;
+				const spoint adj = dir_unit_point(s.d);
+				for (point node = s.start; point_in_range(node); node = node + adj) {
+					point current_node = node;
+					while (point_in_range(current_node)) {
+						auto current_id = this->map_.template point_to_id_d<di>(current_node);
+						if (map.get(static_cast<grid_id>(current_id))) {
+							jump_distance d = OnlinePoint::template jump_cardinal_next<di>(current_id);
+							if (d == 0)[[unlikely]] {
+								// immediently blocked
+								// jump_table_.get(row_node)[di] = 0;
+								current_node = current_node + adj; // we know the next cell is a blocker
+								// assert(!this->map_.map().get(grid_id{node.id + col_adj}));
+							} else {
+								// store result
+								jump_table_.set_line(di, this->map_.point_to_id(current_node), d);
+								current_node = current_node + std::abs(d) * adj; // next cell is the reached cell
+								assert(point_in_range(current_node)); // j should never jump past edge
+								// assert(this->map_.map().get(grid_id{node.id + j * col_adj}));
+							}
+						} else {
+							current_node = current_node + adj; // is invalid cell, check the next
+						}
+					}
+				}
+			}
+		);
+
+		//
+		// InterCardinal scans
+		//
+		struct ICardinalScan
+		{
+			direction_id d;
+			point start; // start location
+		};
+		const std::array<ICardinalScan, 4> Iscans{{
+			{NORTHEAST_ID, point(0,height-1)},
+			{NORTHWEST_ID, point(width-1,height-1)},
+			{SOUTHEAST_ID, point(0,0)},
+			{SOUTHWEST_ID, point(width-1,0)}
+		}};
+
+		for (auto s : Iscans) {
+			const direction_id dh = dir_intercardinal_hori(s.d);
+			const direction_id dv = dir_intercardinal_hori(s.d);
+			const spoint adj = dir_unit_point(s.d);
+			for (int axis = 0; axis < 2; ++axis) {
+				// 0 = follow hori, then follow vert
+				point start = s.start;
+				while (true) { // start location
+					if (axis == 0) start.x += static_cast<uint32_t>(adj.x);
+					else start.y += static_cast<uint32_t>(adj.y);
+					if (!point_in_range(start))
+						break; // out of bounds, do nothing
+					// now scan along the diagonal
+					point loc = start;
+					while (true) {
+						if (!point_in_range(loc))
+							break; // out of bounds, end
+						if (this->map_.map().get(this->map_.point_to_id(loc))) {
+							// block cell
+							// this->jump_table_.get(this->map_.point_to_id(loc))[s.d] = 0;
+							loc = loc + adj;
+							continue;
+						}
+						// calc distance
+						point currentloc = loc;
+						jump_distance dist = 0;
+						while (true) {
+							point nextloc = currentloc + adj;
+							if (point_in_range(nextloc) && this->map_.map().get(this->map_.point_to_id(nextloc))) {
+								// traversable tile
+								dist += 1;
+								auto cell = jump_table_[this->map_.point_to_id(nextloc)];
+								if (cell[dh] > 0 || cell[dv] > 0) {
+									// end point here
+									jump_table_.set_line(s.d, this->map_.point_to_id(currentloc), dist);
+									loc = nextloc;
+									break; // done with this line
+								}
+							} else {
+								// reached blocker or edge of map
+								if (dist != 0) {
+									jump_table_.set_line(s.d, this->map_.point_to_id(currentloc), -dist);
+								}
+								loc = nextloc + adj; // skip nextloc as this is a blocker
+								break; // done with this line
+							}
+							currentloc = nextloc;
+						}
 					}
 				}
 			}

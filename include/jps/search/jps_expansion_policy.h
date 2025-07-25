@@ -106,8 +106,8 @@ jps_expansion_policy<JpsJump>::expand(
 	// compute the direction of travel used to reach the current node.
 	const grid_id current_id = grid_id(current->get_id());
 	const point loc = rmap_.id_to_point(current_id);
-	assert(rmap_.map().get_label(current_id) && rmap_.map().get_label(rmap_.point_to_id_d<EAST_ID>(loc))); // loc must be trav on map
-	assert(rmap_.rmap().get_label(pad_id(rmap_.point_to_id_d<NORTH_ID>(loc).id))); // loc must be trav on rmap
+	assert(rmap_.map().get_label(current_id) && rmap_.map().get_label(rmap_.point_to_id(loc))); // loc must be trav on map
+	assert(rmap_.rmap().get_label(static_cast<grid_id>(rmap_.rpoint_to_rid(rmap_.point_to_rpoint(loc))))); // loc must be trav on rmap
 	// const jps_rid current_rid = jpl_.id_to_rid(current_id);
 	// const cost_t current_cost = current->get_g();
 	const direction dir_c = from_direction(
