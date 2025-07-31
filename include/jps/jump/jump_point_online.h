@@ -32,6 +32,8 @@ jump_point_online_hori(
     ::warthog::domain::gridmap::bittable map, uint32_t node, uint32_t target[[maybe_unused]] = std::numeric_limits<uint32_t>::max())
 {
 	assert(map.data() != nullptr);
+	assert(map.size() == 0 || node < map.size());
+	assert(map.get(grid_id(node)));
 	assert(Target != (target == std::numeric_limits<uint32_t>::max()));
 	// read tiles from the grid:
 	// - along the row of node_id

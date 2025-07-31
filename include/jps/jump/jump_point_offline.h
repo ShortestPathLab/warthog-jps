@@ -76,7 +76,7 @@ struct jump_point_table
 		assert(DeadEnd || len >= 0);
 		assert(std::abs(len) < std::numeric_limits<int16_t>::max());
 		int32_t id = static_cast<int32_t>(loc.id);
-		const int32_t id_adj = warthog::grid::dir_id_adj(d, width);
+		const uint32_t id_adj = warthog::grid::dir_id_adj(d, width);
 		const length len_adj = DeadEnd ? static_cast<length>(len >= 0 ? -1 : 1) : -1;
 		while (len != 0) {
 			jump_res value;
@@ -93,7 +93,6 @@ struct jump_point_table
 				}
 			}
 			db[id][d] = value;
-			if constexpr (!ChainJump) break;
 			id += id_adj;
 			len += len_adj;
 		}
@@ -265,7 +264,6 @@ public:
 	{
 		const uint32_t width = this->map_.width();
 		const uint32_t height = this->map_.height();
-		const uint32_t rwidth = this->map_.rmap().width();
 		jump_table_.init(width, height);
 		auto&& point_in_range = [=](point p) noexcept { return p.x < width && p.y < height; };
 
@@ -288,16 +286,19 @@ public:
 		warthog::util::for_each_integer_sequence< std::integer_sequence<direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID> >(
 			[&](auto iv) {
 				constexpr direction_id di = decltype(iv)::value;
-				const auto map = this->map_[domain::rgrid_index<di>];
+				constexpr int map_id = domain::rgrid_index<di>;
+				const auto map = this->map_[map_id];
 				CardinalScan s = *std::find_if(scans.begin(), scans.end(), [di](auto& s) { return s.d == di; });
 				// start scan
 				point node = s.start;
 				const spoint adj = dir_unit_point(s.d);
-				for (point node = s.start; point_in_range(node); node = node + adj) {
+				// for each directional row
+				for (point node = s.start; point_in_range(node); node = node + s.row_adj) {
 					point current_node = node;
+					// current_node loops column
 					while (point_in_range(current_node)) {
 						auto current_id = this->map_.point_to_pair_id(current_node);
-						if (map.get(get<grid_id>(current_id))) {
+						if (map.get(grid_id(get<map_id>(current_id)))) {
 							jump_distance d = OnlinePoint::template jump_cardinal_next<di>(current_id);
 							if (d == 0)[[unlikely]] {
 								// immediently blocked
@@ -306,7 +307,7 @@ public:
 								// assert(!this->map_.map().get(grid_id{node.id + col_adj}));
 							} else {
 								// store result
-								jump_table_.set_line(di, this->map_.point_to_id(current_node), d);
+								jump_table_.set_line(di, get<grid_id>(current_id), d);
 								current_node = current_node + std::abs(d) * adj; // next cell is the reached cell
 								assert(point_in_range(current_node)); // j should never jump past edge
 								// assert(this->map_.map().get(grid_id{node.id + j * col_adj}));
@@ -336,11 +337,13 @@ public:
 
 		for (auto s : Iscans) {
 			const direction_id dh = dir_intercardinal_hori(s.d);
-			const direction_id dv = dir_intercardinal_hori(s.d);
+			const direction_id dv = dir_intercardinal_vert(s.d);
 			const spoint adj = dir_unit_point(s.d);
 			for (int axis = 0; axis < 2; ++axis) {
-				// 0 = follow hori, then follow vert
+				// 0 = follow hori edge, then follow vert edge
 				point start = s.start;
+				if (axis == 0) // adjust 1 axis to get diagonal along the start
+					start.x -= static_cast<uint32_t>(adj.x);
 				while (true) { // start location
 					if (axis == 0) start.x += static_cast<uint32_t>(adj.x);
 					else start.y += static_cast<uint32_t>(adj.y);
@@ -351,9 +354,8 @@ public:
 					while (true) {
 						if (!point_in_range(loc))
 							break; // out of bounds, end
-						if (this->map_.map().get(this->map_.point_to_id(loc))) {
-							// block cell
-							// this->jump_table_.get(this->map_.point_to_id(loc))[s.d] = 0;
+						if (!this->map_.map().get(this->map_.point_to_id(loc))) {
+							// blocker
 							loc = loc + adj;
 							continue;
 						}
@@ -365,17 +367,17 @@ public:
 							if (point_in_range(nextloc) && this->map_.map().get(this->map_.point_to_id(nextloc))) {
 								// traversable tile
 								dist += 1;
-								auto cell = jump_table_[this->map_.point_to_id(nextloc)];
+								const auto& cell = jump_table_[this->map_.point_to_id(nextloc)];
 								if (cell[dh] > 0 || cell[dv] > 0) {
-									// end point here
-									jump_table_.set_line(s.d, this->map_.point_to_id(currentloc), dist);
+									// turning point here
+									jump_table_.set_line(s.d, this->map_.point_to_id(loc), dist);
 									loc = nextloc;
 									break; // done with this line
 								}
 							} else {
 								// reached blocker or edge of map
 								if (dist != 0) {
-									jump_table_.set_line(s.d, this->map_.point_to_id(currentloc), -dist);
+									jump_table_.set_line(s.d, this->map_.point_to_id(loc), -dist);
 								}
 								loc = nextloc + adj; // skip nextloc as this is a blocker
 								break; // done with this line
