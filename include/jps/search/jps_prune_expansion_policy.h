@@ -127,8 +127,8 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 	// compute the direction of travel used to reach the current node.
 	const grid_id current_id = grid_id(current->get_id());
 	point loc = rmap_.id_to_point(current_id);
-	assert(rmap_.map().get_label(current_id) && rmap_.map().get_label(rmap_.point_to_id_d<EAST_ID>(loc))); // loc must be trav on map
-	assert(rmap_.rmap().get_label(pad_id(rmap_.point_to_id_d<NORTH_ID>(loc).id))); // loc must be trav on rmap
+	domain::grid_pair_id pair_id{current_id, rmap_.rpoint_to_rid(rmap_.point_to_rpoint(loc))};
+	assert(rmap_.map().get_label(get<grid_id>(pair_id)) && rmap_.map().get_label(grid_id(get<rgrid_id>(pair_id)))); // loc must be trav on map
 	// const jps_rid current_rid = jpl_.id_to_rid(current_id);
 	// const cost_t current_cost = current->get_g();
 	const direction dir_c = from_direction(
@@ -144,7 +144,7 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 	uint32_t succ_dirs = compute_successors(dir_c, c_tiles);
 	if (succ_dirs & static_cast<uint32_t>(warthog::grid::to_dir(target_d))) {
 		// target in successor direction, check
-		if (auto target_dist = jpl_.jump_target(loc, target_loc_); target_dist.second >= 0) {
+		if (auto target_dist = jpl_.jump_target(pair_id, loc, target_loc_); target_dist.second >= 0) {
 			// target is visible, push
 			warthog::search::search_node* jp_succ
 				    = this->generate(target_id_);
@@ -160,7 +160,7 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 		constexpr direction_id di = decltype(iv)::value;
 		if(succ_dirs & warthog::grid::to_dir(di))
 		{
-			auto jump_result = jpl_.template jump_cardinal_next<di>(loc);
+			auto jump_result = jpl_.template jump_cardinal_next<di>(pair_id);
 			if(jump_result > 0) // jump point
 			{
 				// successful jump
@@ -184,7 +184,7 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 			jump::intercardinal_jump_result res[InterSize];
 			jump::jump_distance inter_total = 0;
 			while (true) { // InterSize == -1 will loop InterSize results until all are found
-				auto [result_n, dist] = jpl_.template jump_intercardinal_many<di>(loc, res, InterSize, get_jump_limit());
+				auto [result_n, dist] = jpl_.template jump_intercardinal_many<di>(pair_id, res, InterSize, get_jump_limit());
 				for(decltype(result_n) result_i = 0; result_i < result_n; ++result_i) // jump point
 				{
 					// successful jump
@@ -216,6 +216,7 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 					// repeat until all jump points are discovered
 					inter_total += dist;
 					loc = loc + dist * dir_unit_point(di);
+					pair_id = rmap_.point_to_pair_id(loc);
 				} else {
 					// reach limit, push dia onto queue
 					const uint32_t node = current_id.id + static_cast<uint32_t>(node_adj_ic * dist);
@@ -241,7 +242,7 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::generate_start_node(
 	if(map_->get_label(padded_id) == 0) { return nullptr; }
 	target_id_ = grid_id(pi->target_);
 	uint32_t x, y;
-	rmap_.map().to_unpadded_xy(target_id_, x, y);
+	rmap_.map().to_padded_xy(target_id_, x, y);
 	target_loc_.x = static_cast<uint16_t>(x);
 	target_loc_.y = static_cast<uint16_t>(y);
 	return generate(padded_id);

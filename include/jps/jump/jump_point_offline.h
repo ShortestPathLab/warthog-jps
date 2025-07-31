@@ -217,47 +217,36 @@ public:
 	template <direction_id D>
 		requires CardinalId<D>
 	jump_distance
-	jump_cardinal_next(point loc)
+	jump_cardinal_next(domain::grid_pair_id node_id)
 	{
-		return static_cast<jump_distance>(jump_table_.get_jump(D, this->map_.point_to_id(loc)));
-	}
-	template <direction_id D>
-		requires CardinalId<D>
-	jump_distance
-	jump_cardinal_next(domain::rgrid_id_t<D> node_id)
-	{
-		if constexpr (std::same_as<domain::rgrid_id_t<D>, grid_id>) {
-			return static_cast<jump_distance>(jump_table_.get_jump(D, node_id));
-		} else {
-			return static_cast<jump_distance>(jump_table_.get_jump(D, this->map_.rid_to_id(node_id)));
-		}
+		return static_cast<jump_distance>(jump_table_.get_jump(D, get<grid_id>(node_id)));
 	}
 	
 	template <direction_id D>
 		requires InterCardinalId<D>
 	std::pair<uint16_t, jump_distance>
 	jump_intercardinal_many(
-	    point loc, intercardinal_jump_result* result, uint16_t result_size, jump_distance max_distance = std::numeric_limits<jump_distance>::max())
+	    domain::grid_pair_id node_id, intercardinal_jump_result* result, uint16_t result_size, jump_distance max_distance = std::numeric_limits<jump_distance>::max())
 	{
 		constexpr direction_id Dhori = dir_intercardinal_hori(D);
 		constexpr direction_id Dvert = dir_intercardinal_vert(D);
-		grid_id node_id = this->map_.point_to_id(loc);
+		grid_id node = get<grid_id>(node_id);
 		const uint32_t node_adj = dir_id_adj(D, this->map_.width());
 		std::pair<uint16_t, jump_distance> res{0,0};
 		for (/*res.first*/; res.first < result_size; ) {
-			jump_distance dist = static_cast<jump_distance>(jump_table_.get_jump(D, node_id));
+			jump_distance dist = static_cast<jump_distance>(jump_table_.get_jump(D, node));
 			if (dist <= 0) {
 				res.second = static_cast<jump_distance>(-res.second + dist);
 				break;
 			}
 			res.first += 1;
 			res.second += dist;
-			node_id.id += dist * node_adj;
+			node.id += dist * node_adj;
 			// found point
 			intercardinal_jump_result resi;
 			resi.inter = res.second;
-			resi.hori = static_cast<jump_distance>(jump_table_.get_jump(Dhori, node_id));
-			resi.vert = static_cast<jump_distance>(jump_table_.get_jump(Dvert, node_id));
+			resi.hori = static_cast<jump_distance>(jump_table_.get_jump(Dhori, node));
+			resi.vert = static_cast<jump_distance>(jump_table_.get_jump(Dvert, node));
 			*(result++) = resi;
 			if (res.second > max_distance)
 				break;
@@ -307,8 +296,8 @@ public:
 				for (point node = s.start; point_in_range(node); node = node + adj) {
 					point current_node = node;
 					while (point_in_range(current_node)) {
-						auto current_id = this->map_.template point_to_id_d<di>(current_node);
-						if (map.get(static_cast<grid_id>(current_id))) {
+						auto current_id = this->map_.point_to_pair_id(current_node);
+						if (map.get(get<grid_id>(current_id))) {
 							jump_distance d = OnlinePoint::template jump_cardinal_next<di>(current_id);
 							if (d == 0)[[unlikely]] {
 								// immediently blocked

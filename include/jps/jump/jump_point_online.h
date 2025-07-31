@@ -649,14 +649,6 @@ public:
 	// 	return rmap_;
 	// }
 
-	/// @brief returns cardinal jump distance to next jump point
-	/// @tparam D cardinal direction_id (NORTH_ID,SOUTH_ID,EAST_ID,WEST_ID)
-	/// @param loc current location on the grid to start the jump from
-	/// @return >0: jump point n steps away, <=0: blocker -n steps away
-	template <direction_id D>
-		requires CardinalId<D>
-	jump_distance
-	jump_cardinal_next(point loc);
 	/// @brief same as jump_cardinal_next(point) but is given the correct grid_id type
 	/// @tparam D cardinal direction_id (NORTH_ID,SOUTH_ID,EAST_ID,WEST_ID)
 	/// @param loc current location on the grid to start the jump from
@@ -664,7 +656,7 @@ public:
 	template <direction_id D>
 		requires CardinalId<D>
 	jump_distance
-	jump_cardinal_next(domain::rgrid_id_t<D> node_id);
+	jump_cardinal_next(domain::grid_pair_id node_id);
 
     /// @brief returns all intercardinal jump points up to max_distance (default inf)
     ///        and max of results_size
@@ -684,7 +676,7 @@ public:
 		requires InterCardinalId<D>
 	std::pair<uint16_t, jump_distance>
 	jump_intercardinal_many(
-	    point loc, intercardinal_jump_result* result, uint16_t result_size, jump_distance max_distance = std::numeric_limits<jump_distance>::max());
+	    domain::grid_pair_id node_id, intercardinal_jump_result* result, uint16_t result_size, jump_distance max_distance = std::numeric_limits<jump_distance>::max());
 	
 	/// @brief shoot ray to target point
 	/// @param loc shoot from loc
@@ -695,7 +687,7 @@ public:
 	///         second<0 mean target is blocked in general
 	std::pair<jump_distance, jump_distance>
 	jump_target(
-	    point loc, point target);
+	    domain::grid_pair_id node_id, point loc, point target);
 
 	size_t
 	mem()
@@ -728,23 +720,15 @@ jump_point_online::set_map(const rotate_grid& orig)
 template <direction_id D>
 	requires CardinalId<D>
 jump_distance
-jump_point_online::jump_cardinal_next(point loc)
-{
-	return jump_cardinal_next<D>(map_.point_to_id_d<D>(loc));
-}
-
-template <direction_id D>
-	requires CardinalId<D>
-jump_distance
-jump_point_online::jump_cardinal_next(domain::rgrid_id_t<D> node_id)
+jump_point_online::jump_cardinal_next(domain::grid_pair_id node_id)
 {
 	if constexpr (D == NORTH_ID || D == EAST_ID)
 	{
-		return jump_east(map_[domain::rgrid_index<D>], static_cast<uint32_t>(node_id));
+		return jump_east(map_[domain::rgrid_index<D>], static_cast<uint32_t>(get_d<D>(node_id)));
 	}
 	else if constexpr (D == SOUTH_ID || D == WEST_ID)
 	{
-		return jump_west(map_[domain::rgrid_index<D>], static_cast<uint32_t>(node_id));
+		return jump_west(map_[domain::rgrid_index<D>], static_cast<uint32_t>(get_d<D>(node_id)));
 	} else {
 		assert(false);
 		return 0;
@@ -755,7 +739,7 @@ template <direction_id D>
 	requires InterCardinalId<D>
 std::pair<uint16_t, jump_distance>
 jump_point_online::jump_intercardinal_many(
-	point loc, intercardinal_jump_result* result, uint16_t result_size, jump_distance max_distance)
+	domain::grid_pair_id node_id, intercardinal_jump_result* result, uint16_t result_size, jump_distance max_distance)
 {
 	assert(result_size > 0);
 	/*
@@ -800,8 +784,8 @@ jump_point_online::jump_intercardinal_many(
 	walker.map = {map_[0], map_[1]};
 	walker.map_width(map_[0].width());
 	walker.rmap_width(map_[1].width());
-	walker.node_at[0] = static_cast<uint32_t>(map_.point_to_id(loc));
-	walker.node_at[1] = static_cast<uint32_t>(map_.rpoint_to_rid(map_.point_to_rpoint(loc)));
+	walker.node_at[0] = static_cast<uint32_t>(get<grid_id>(node_id));
+	walker.node_at[1] = static_cast<uint32_t>(get<rgrid_id>(node_id));
 	assert(map_.map().get(grid_id(walker.node_at[0])) && map_.rmap().get(grid_id(walker.node_at[1])));
 
 	// JPS, stop at the first intercardinal turning point
@@ -833,7 +817,7 @@ jump_point_online::jump_intercardinal_many(
 
 std::pair<jump_distance, jump_distance>
 jump_point_online::jump_target(
-	point loc, point target)
+	domain::grid_pair_id node_id, point loc, point target)
 {
 	// direction_id real_d = d != 255 ? static_cast<direction_id>(d) : warthog::grid::point_to_direction_id(loc, target);
 	auto [xd, yd] = warthog::grid::point_signed_diff(loc, target);
@@ -860,7 +844,7 @@ jump_point_online::jump_target(
 				walker.set_map<NORTHWEST_ID>(map_[0], map_[0].width());
 			}
 		}
-		walker.node_at = static_cast<uint32_t>(map_.point_to_id(loc));
+		walker.node_at = static_cast<uint32_t>(get<grid_id>(node_id));
 		inter_len = static_cast<jump_distance>(std::min(std::abs(xd), std::abs(yd)));
 		walker.first_row();
 		for (jump_distance i = 0; i < inter_len; ++i) {

@@ -21,20 +21,6 @@ using warthog::cost_t;
 using vec_jps_id   = std::vector<grid_id>;
 using vec_jps_cost = std::vector<cost_t>;
 
-enum class JpsFeature : uint8_t
-{
-	DEFAULT             = 0, // uses block-based jumping
-	PRUNE_INTERCARDINAL = 1 << 0,
-	STORE_CARDINAL_JUMP = 1 << 1, // if not PRUNE_INTERCARDINAL, then store
-	                              // cardinal results in intercandial jump
-};
-inline JpsFeature
-operator|(JpsFeature a, JpsFeature b) noexcept
-{
-	return static_cast<JpsFeature>(
-	    static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
-}
-
 } // namespace jps
 
 #include <jps/jump/jump.h>

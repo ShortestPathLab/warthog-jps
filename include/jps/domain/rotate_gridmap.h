@@ -26,53 +26,72 @@ template <>
 struct direction_grid_id<NORTH_ID>
 {
 	using type = rgrid_id;
-	static constexpr int map_id = 1;
+	static constexpr size_t map_id = 1;
 	static constexpr bool east = true;
 };
 template <>
 struct direction_grid_id<EAST_ID>
 {
 	using type = grid_id;
-	static constexpr int map_id = 0;
+	static constexpr size_t map_id = 0;
 	static constexpr bool east = true;
 };
 template <>
 struct direction_grid_id<SOUTH_ID>
 {
 	using type = rgrid_id;
-	static constexpr int map_id = 1;
+	static constexpr size_t map_id = 1;
 	static constexpr bool east = false;
 };
 template <>
 struct direction_grid_id<WEST_ID>
 {
 	using type = grid_id;
-	static constexpr int map_id = 0;
+	static constexpr size_t map_id = 0;
 	static constexpr bool east = false;
 };
 template <>
 struct direction_grid_id<NORTH>
 {
 	using type = rgrid_id;
-	static constexpr int map_id = 1;
+	static constexpr size_t map_id = 1;
+	static constexpr bool east = true;
 };
 template <>
 struct direction_grid_id<EAST>
 {
 	using type = grid_id;
-	static constexpr int map_id = 0;
+	static constexpr size_t map_id = 0;
+	static constexpr bool east = true;
 };
 template <>
 struct direction_grid_id<SOUTH>
 {
 	using type = rgrid_id;
-	static constexpr int map_id = 1;
+	static constexpr size_t map_id = 1;
+	static constexpr bool east = false;
 };
 template <>
 struct direction_grid_id<WEST>
 {
 	using type = grid_id;
-	static constexpr int map_id = 0;
+	static constexpr size_t map_id = 0;
+	static constexpr bool east = false;
+};
+
+template <warthog::Identity Grid>
+struct grid_identity;
+template <>
+struct grid_identity<grid_id>
+{
+	using type = grid_id;
+	static constexpr size_t index = 0;
+};
+template <>
+struct grid_identity<rgrid_id>
+{
+	using type = rgrid_id;
+	static constexpr size_t index = 1;
 };
 
 } // namespace details
@@ -81,26 +100,86 @@ struct direction_grid_id<WEST>
 /// @tparam D value in direction or direction_id
 template <auto D>
 using rgrid_id_t = typename details::direction_grid_id<D>::type;
+template <warthog::Identity D>
+using grid_identity = details::grid_identity<std::remove_cvref_t<D>>;
 
 template <auto D>
-constexpr inline int rgrid_index = details::direction_grid_id<D>::map_id;
+constexpr inline size_t rgrid_index = details::direction_grid_id<D>::map_id;
 template <auto D>
 constexpr inline bool rgrid_east = details::direction_grid_id<D>::east;
 template <auto D>
-constexpr inline int rgrid_hori = rgrid_index<D> == 0;
+constexpr inline bool rgrid_hori = rgrid_index<D> == 0;
 
 using ::warthog::domain::gridmap;
 
+struct grid_pair_id
+{
+	grid_id g; ///< grid_id for horizontal id
+	rgrid_id r; ///< grid_id for vertical id
+};
+/// @return id.g or id.r depending on template parameter
+template <size_t I>
+constexpr auto get(const grid_pair_id& id) noexcept
+{
+	static_assert(I < 2, "0 = grid_id, 1 = rgird_id");
+	if constexpr (I == 0) {
+		return id.g;
+	} else {
+		return id.r;
+	}
+}
+template <size_t I>
+constexpr auto& get(grid_pair_id& id) noexcept
+{
+	static_assert(I < 2, "0 = grid_id, 1 = rgird_id");
+	if constexpr (I == 0) {
+		return id.g;
+	} else {
+		return id.r;
+	}
+}
+template <warthog::Identity T>
+constexpr T get(const grid_pair_id& id) noexcept
+{
+	return get<grid_identity<T>::index>(id);
+}
+template <warthog::Identity T>
+constexpr T& get(grid_pair_id& id) noexcept
+{
+	return get<grid_identity<T>::index>(id);
+}
+template <direction_id D>
+constexpr rgrid_id_t<D> get_d(const grid_pair_id& id) noexcept
+{
+	return get<rgrid_index<D>>(id);
+}
+template <direction_id D>
+constexpr rgrid_id_t<D>& get_d(grid_pair_id& id) noexcept
+{
+	return get<rgrid_index<D>>(id);
+}
+template <direction D>
+constexpr rgrid_id_t<D> get_d(const grid_pair_id& id) noexcept
+{
+	return get<rgrid_index<D>>(id);
+}
+template <direction D>
+constexpr rgrid_id_t<D>& get_d(grid_pair_id& id) noexcept
+{
+	return get<rgrid_index<D>>(id);
+}
+
 struct rgridmap_point_conversions
 {
-	static constexpr uint16_t M1P = gridmap::PADDED_ROWS - 1; // height adjustment to rotate
+	static constexpr uint16_t XADJ = uint16_t(-1u); // height adjustment to rotate
+	static constexpr uint16_t YADJ = gridmap::PADDED_ROWS; // height adjustment to rotate
 	uint16_t map_height_m1p_ = 0;
 	uint16_t map_width_ = 0;
 	uint16_t rmap_width_ = 0;
 
 	void conv_assign(const gridmap& map, const gridmap& rmap) noexcept
 	{
-		map_height_m1p_ = static_cast<uint16_t>(map.height() + M1P);
+		map_height_m1p_ = static_cast<uint16_t>(map.height() + XADJ);
 		map_width_ = static_cast<uint16_t>(map.width());
 		rmap_width_ = static_cast<uint16_t>(rmap.width());
 	}
@@ -108,21 +187,21 @@ struct rgridmap_point_conversions
 	/// @return returns the padded width of map
 	uint16_t width() const noexcept { return map_width_; }
 	/// @return returns the padded height of map
-	uint16_t height() const noexcept { return map_height_m1p_ - M1P; }
+	uint16_t height() const noexcept { return map_height_m1p_ - XADJ; }
 
 	point
 	point_to_rpoint(point p) const noexcept
 	{
 		return {
 			static_cast<uint16_t>(map_height_m1p_ - p.y),
-			static_cast<uint16_t>(p.x)};
+			static_cast<uint16_t>(p.x + YADJ)};
 	}
 	point
 	rpoint_to_point(point p) const noexcept
 	{
 		return {
-			static_cast<uint16_t>(p.y),
-			static_cast<uint16_t>(map_height_m1p_ - (p.x))};
+			static_cast<uint16_t>(p.y - YADJ),
+			static_cast<uint16_t>(map_height_m1p_ - p.x)};
 	}
 	grid_id
 	point_to_id(point p) const noexcept
@@ -166,6 +245,10 @@ struct rgridmap_point_conversions
 	{
 		assert(!mapid.is_none());
 		return point_to_id(rpoint_to_point(rid_to_rpoint(mapid)));
+	}
+	grid_pair_id point_to_pair_id(point loc) const noexcept
+	{
+		return grid_pair_id{point_to_id(loc), rpoint_to_rid(point_to_rpoint(loc))};
 	}
 
 	template <auto D, ::warthog::Identity GridId>
@@ -222,7 +305,7 @@ struct gridmap_rotate_ptr_convs : gridmap_rotate_ptr, rgridmap_point_conversions
 {
 	gridmap_rotate_ptr_convs() = default;
 	gridmap_rotate_ptr_convs(domain::gridmap& l_map, domain::gridmap& l_rmap) noexcept
-		: gridmap_rotate_ptr(l_map, l_rmap), rgridmap_point_conversions{static_cast<uint16_t>(l_map.height()+M1P), static_cast<uint16_t>(l_map.width()), static_cast<uint16_t>(l_rmap.width())}
+		: gridmap_rotate_ptr(l_map, l_rmap), rgridmap_point_conversions{static_cast<uint16_t>(l_map.height()+XADJ), static_cast<uint16_t>(l_map.width()), static_cast<uint16_t>(l_rmap.width())}
 	{ }
 	gridmap_rotate_ptr_convs(gridmap_rotate_ptr maps) noexcept
 		: gridmap_rotate_ptr(maps), rgridmap_point_conversions{}
@@ -301,7 +384,7 @@ public:
 		maps[0] = &map;
 		
 		const uint32_t maph = map.height();
-		const uint32_t maphmp1 = maph + M1P;
+		const uint32_t maphmp1 = static_cast<uint16_t>(maph + XADJ); // cast required to handle signed value in uint16_t
 		const uint32_t mapw = map.width();
 		auto tmap           = std::make_unique<domain::gridmap>(mapw, maph);
 
@@ -311,7 +394,7 @@ public:
 			{
 				bool label = map.get_label(map.to_padded_id_from_padded(x, y));
 				uint32_t rx = maphmp1 - y;
-				uint32_t ry = x;
+				uint32_t ry = static_cast<uint16_t>(x + YADJ);
 				tmap->set_label(tmap->to_padded_id_from_padded(rx, ry), label);
 			}
 		}
