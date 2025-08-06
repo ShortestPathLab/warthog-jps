@@ -339,6 +339,9 @@ public:
 			const direction_id dh = dir_intercardinal_hori(s.d);
 			const direction_id dv = dir_intercardinal_vert(s.d);
 			const spoint adj = dir_unit_point(s.d);
+			BasicIntercardinalWalker walker;
+			walker.map = this->map_.map();
+			walker.adj_width = dir_id_adj(s.d, this->map_.map().width());
 			for (int axis = 0; axis < 2; ++axis) {
 				// 0 = follow hori edge, then follow vert edge
 				point start = s.start;
@@ -362,9 +365,18 @@ public:
 						// calc distance
 						point currentloc = loc;
 						jump_distance dist = 0;
+						// walk from current loc
+						walker.node_at = static_cast<uint32_t>(this->map_.point_to_id(currentloc));
+						walker.first_row();
 						while (true) {
 							point nextloc = currentloc + adj;
-							if (point_in_range(nextloc) && this->map_.map().get(this->map_.point_to_id(nextloc))) {
+							bool valid = point_in_range(nextloc);
+							if (valid) {
+								walker.next_row();
+								valid = walker.valid_row();
+							}
+							// loc in grid and non-corner cutting dia is clear
+							if (valid) {
 								// traversable tile
 								dist += 1;
 								const auto& cell = jump_table_[this->map_.point_to_id(nextloc)];
