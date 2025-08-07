@@ -14,6 +14,7 @@
 #include <array>
 #include <memory>
 #include <jps/domain/rotate_gridmap.h>
+#include <warthog/util/template.h>
 
 namespace jps::jump
 {
@@ -240,6 +241,16 @@ struct BasicIntercardinalWalker
 			    ? 0b0000'0110'0000'0011
 			    : 0b0000'0011'0000'0110;
 		}
+	}
+
+	void set_map(direction_id d, map_type map, uint32_t width) noexcept
+	{
+		assert(is_intercardinal_id(d));
+		warthog::util::choose_integer_sequence<
+			std::integer_sequence<direction_id, NORTHEAST_ID, NORTHWEST_ID, SOUTHEAST_ID, SOUTHWEST_ID>
+		>(d, [&,map,width](auto dv) {
+			set_map<decltype(dv)::value>(map, width);
+		});
 	}
 
 	void

@@ -340,8 +340,7 @@ public:
 			const direction_id dv = dir_intercardinal_vert(s.d);
 			const spoint adj = dir_unit_point(s.d);
 			BasicIntercardinalWalker walker;
-			walker.map = this->map_.map();
-			walker.adj_width = dir_id_adj(s.d, this->map_.map().width());
+			walker.set_map(s.d, this->map_.map(), this->map_.map().width());
 			for (int axis = 0; axis < 2; ++axis) {
 				// 0 = follow hori edge, then follow vert edge
 				point start = s.start;
