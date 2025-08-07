@@ -15,6 +15,7 @@
 #include <warthog/util/pqueue.h>
 #include <warthog/util/scenario_manager.h>
 #include <warthog/util/timer.h>
+#include <warthog/io/grid_trace.h>
 
 #include <jps/jump/jump_point_online.h>
 #include <jps/jump/jump_point_offline.h>
@@ -152,7 +153,7 @@ run_experiments(
 	return 0;
 }
 
-template<typename ExpansionPolicy>
+template<typename ExpansionPolicy, bool Trace = false>
 int
 run_jps(
     warthog::util::scenario_manager& scenmgr, std::string mapname,
@@ -163,7 +164,14 @@ run_jps(
 	warthog::heuristic::octile_heuristic heuristic(map.width(), map.height());
 	warthog::util::pqueue_min open;
 
-	warthog::search::unidirectional_search jps(&heuristic, &expander, &open);
+	using listener = std::conditional_t<Trace, std::tuple<::warthog::io::grid_trace>, std::tuple<>>;
+	warthog::search::unidirectional_search jps(&heuristic, &expander, &open, listener{});
+	if constexpr (Trace) {
+		std::cerr << "Trace\n";
+		auto& T = std::get<::warthog::io::grid_trace>(jps.get_listeners());
+		T.set_grid(&map);
+		T.stream_open("jps.trace.yaml");
+	}
 
 	int ret = run_experiments(
 	    jps, alg_name, scenmgr, verbose, checkopt, std::cout);
@@ -272,6 +280,12 @@ main(int argc, char** argv)
 	{
 		using jump_point = jps::jump::jump_point_offline<>;
 		return run_jps<jps_expansion_policy<jump_point>>(
+		    scenmgr, mapfile, alg);
+	}
+	else if (alg == "jps-trace")
+	{
+		using jump_point = jps::jump::jump_point_offline<>;
+		return run_jps<jps_expansion_policy<jump_point>, true>(
 		    scenmgr, mapfile, alg);
 	}
 	else
