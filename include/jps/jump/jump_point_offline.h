@@ -390,7 +390,7 @@ public:
 								if (dist != 0) {
 									jump_table_.set_line(s.d, this->map_.point_to_id(loc), -dist);
 								}
-								loc = nextloc + adj; // skip nextloc as this is a blocker
+								loc = nextloc;
 								break; // done with this line
 							}
 							currentloc = nextloc;
