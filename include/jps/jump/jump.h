@@ -23,6 +23,11 @@ inline constexpr bool is_blocked(jump_distance d) noexcept
 	return d == 0;
 }
 
+inline constexpr uint32_t to_unsigned_jump_distance(jump_distance d) noexcept
+{
+	return static_cast<uint32_t>(static_cast<int32_t>(d));
+}
+
 inline constexpr direction_id get_hori_from_intercardinal(direction_id d) noexcept
 {
 	constexpr uint32_t map = ( static_cast<uint32_t>(EAST_ID) << 4 * static_cast<int>(NORTHEAST_ID) )

@@ -196,7 +196,7 @@ jump_point_online_hori_target(
 			if (static_cast<uint32_t>(jump_count) >= target_jump)
 				return target_jump; // found target
 			else
-				return static_cast<jump_distance>(-(jump_count+1)); // no target
+				return static_cast<jump_distance>(-(jump_count-1)); // no target
 		}
 
 		// no blockers, check for target
@@ -664,7 +664,7 @@ public:
 
 	/// @brief same as jump_cardinal_next(point) but is given the correct grid_id type
 	/// @tparam D cardinal direction_id (NORTH_ID,SOUTH_ID,EAST_ID,WEST_ID)
-	/// @param loc current location on the grid to start the jump from
+	/// @param node_id the id pairs for grid and rgrid (at loc)
 	/// @return >0: jump point n steps away, <=0: blocker -n steps away
 	template <direction_id D>
 		requires CardinalId<D>
@@ -674,7 +674,7 @@ public:
     /// @brief returns all intercardinal jump points up to max_distance (default inf)
     ///        and max of results_size
     /// @tparam D intercardinal direction_id (NORTHEAST_ID,NORTHWEST_ID,SOUTHEAST_ID,SOUTHWEST_ID)
-    /// @param loc current location on the grid to start the jump from
+	/// @param node_id the id pairs for grid and rgrid
     /// @param result_size maximum number of results that can fit in result
     /// @param result pointer to results storage of at least size result_size
     /// @param max_distance the maximum intercardinal distance to scan to
@@ -692,6 +692,7 @@ public:
 	    domain::grid_pair_id node_id, intercardinal_jump_result* result, uint16_t result_size, jump_distance max_distance = std::numeric_limits<jump_distance>::max());
 	
 	/// @brief shoot ray to target point
+	/// @param node_id the id pairs for grid and rgrid (at loc)
 	/// @param loc shoot from loc
 	/// @param target shoot to target
 	/// @return pair <intercardinal-distance, cardinal-distance>, if both >= 0 than target is visible,
@@ -881,7 +882,7 @@ jump_point_online::jump_target(
 		// horizontal ray
 		if (xd == 0) [[unlikely]] {
 			// at target
-			cardinal_len = 0;
+			return {inter_len, 0};
 		} else if (xd > 0) {
 			// east
 			cardinal_len = jump_point_online_hori_target<domain::rgrid_east<EAST_ID>>(
@@ -908,7 +909,10 @@ jump_point_online::jump_target(
 				static_cast<uint32_t>(map_.point_to_id_d<NORTH_ID>(loc)),
 				static_cast<uint32_t>(map_.point_to_id_d<NORTH_ID>(target)));
 	}
-	return {inter_len, cardinal_len};
+	if (cardinal_len == 0) // corner case, do not return {>0,0} value at blocker, instead return {<,-1}
+		return {-inter_len, -1};
+	else
+		return {inter_len, cardinal_len};
 }
 
 }

@@ -31,6 +31,9 @@ struct jump_point_table
 	struct alignas(int64_t) cell : std::array<jump_res, 8>
 	{ };
 
+	static consteval bool chain_jump() noexcept { return ChainJump; }
+	static consteval bool dead_end() noexcept { return DeadEnd; }
+
 	std::unique_ptr<cell[]> db;
 	uint32_t width = 0;
 	uint32_t cells = 0;
@@ -251,6 +254,93 @@ public:
 				break;
 		}
 		return res;
+	}
+	
+	/// @brief shoot ray to target point
+	/// @param node_id the id pairs for grid and rgrid (at loc)
+	/// @param loc shoot from loc
+	/// @param target shoot to target
+	/// @return pair <intercardinal-distance, cardinal-distance>, if both >= 0 than target is visible,
+	///         first<0 means intercardinal reaches blocker at -first distance (second will be -1)
+	///         first>=0 second<0 means cardinal blocker at -second distance away
+	///         second<0 mean target is blocked in general
+	std::pair<jump_distance, jump_distance>
+	jump_target(
+	    domain::grid_pair_id node_id, point loc, point target)
+	{
+		if constexpr (!JumpTable::dead_end()) {
+			// dead end locations are not stored, so may not be able to find target, use online version
+			return OnlinePoint::jump_target(node_id, loc, target);
+		} else {
+			// direction_id real_d = d != 255 ? static_cast<direction_id>(d) : warthog::grid::point_to_direction_id(loc, target);
+			if (loc == target)
+				return {0,0};
+			jump_distance inter_len = 0;
+			jump_distance cardinal_len = 0;
+			struct {
+				uint32_t v;
+				uint32_t adj;
+			} id;
+			id.v = get<grid_id>(node_id).id;
+			direction_id d = point_to_direction_id(loc, target);
+			id.adj = dir_id_adj(d, this->map_[0].width());
+			auto [xd, yd] = warthog::grid::point_signed_diff(loc, target); // outside for cardinal pass
+			jump_distance jump_to;
+			if (is_intercardinal_id(d)) {
+				jump_to = static_cast<jump_distance>(std::min(std::abs(xd), std::abs(yd)));
+				uint32_t startv = id.v;
+				do {
+					jump_distance dist = static_cast<jump_distance>(jump_table_.get_jump(d, grid_id(id.v)));
+					if (dist <= 0) {
+						// hit wall, final check
+						inter_len += -dist;
+						id.v += to_unsigned_jump_distance(-dist) * id.adj;
+						if (inter_len < jump_to) // failed to reach target
+							return {-inter_len, -1};
+						break;
+					}
+					inter_len += dist;
+					id.v += to_unsigned_jump_distance(dist) * id.adj;
+				} while (inter_len < jump_to);
+				inter_len = jump_to;
+				id.v = startv + jump_to * id.adj; // correct for over jumping jump_to
+				if (std::abs(xd) > std::abs(yd)) {
+					// east/west
+					jump_to = static_cast<jump_distance>(std::abs(xd) - jump_to);
+					d = xd > 0 ? EAST_ID : WEST_ID;
+				} else if (std::abs(xd) < std::abs(yd)) {
+					// noth/south
+					jump_to = static_cast<jump_distance>(std::abs(yd) - jump_to);
+					d = yd > 0 ? SOUTH_ID : NORTH_ID;
+				} else {
+					// target reached
+					return {inter_len,0};
+				}
+				id.adj = dir_id_adj(d, this->map_[0].width());
+			} else {
+				// target is cardinal to loc, max is correct jump_to
+				jump_to = static_cast<jump_distance>(std::max(std::abs(xd), std::abs(yd)));
+			}
+			// jump_to and d are correct for the cardinal jump
+			do {
+				jump_distance dist = static_cast<jump_distance>(jump_table_.get_jump(d, grid_id(id.v)));
+				if (dist <= 0) {
+					// hit wall, final check
+					cardinal_len += -dist;
+					id.v += to_unsigned_jump_distance(-dist) * id.adj;
+					if (cardinal_len < jump_to) { // failed to reach target
+						if (cardinal_len == 0) // corner case
+							return {-inter_len, -1};
+						else
+							return {inter_len, -cardinal_len};
+					}
+					break;
+				}
+				cardinal_len += dist;
+				id.v += to_unsigned_jump_distance(dist) * id.adj;
+			} while (cardinal_len < jump_to);
+			return {inter_len, jump_to};
+		}
 	}
 
 	void
