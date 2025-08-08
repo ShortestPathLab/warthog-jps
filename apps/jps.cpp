@@ -87,20 +87,12 @@ check_optimality(
 
 	if(fabs(delta - epsilon) > epsilon)
 	{
-		std::stringstream strpathlen;
-		strpathlen << std::fixed << std::setprecision(exp->precision());
-		strpathlen << sol.sum_of_edge_costs_;
-
-		std::stringstream stroptlen;
-		stroptlen << std::fixed << std::setprecision(exp->precision());
-		stroptlen << exp->distance();
-
-		std::cerr << std::setprecision(exp->precision());
+		std::cerr << std::setprecision(15);
 		std::cerr << "optimality check failed!" << std::endl;
 		std::cerr << std::endl;
-		std::cerr << "optimal path length: " << stroptlen.str()
+		std::cerr << "optimal path length: " << exp->distance()
 		          << " computed length: ";
-		std::cerr << strpathlen.str() << std::endl;
+		std::cerr << sol.sum_of_edge_costs_ << std::endl;
 		std::cerr << "precision: " << precision << " epsilon: " << epsilon
 		          << std::endl;
 		std::cerr << "delta: " << delta << std::endl;
