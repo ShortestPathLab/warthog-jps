@@ -283,7 +283,7 @@ public:
 			} id;
 			id.v = get<grid_id>(node_id).id;
 			direction_id d = point_to_direction_id(loc, target);
-			id.adj = dir_id_adj(d, this->map_[0].width());
+			id.adj = dir_id_adj(d, this->map_.width());
 			auto [xd, yd] = warthog::grid::point_signed_diff(loc, target); // outside for cardinal pass
 			jump_distance jump_to;
 			if (is_intercardinal_id(d)) {
@@ -316,7 +316,7 @@ public:
 					// target reached
 					return {inter_len,0};
 				}
-				id.adj = dir_id_adj(d, this->map_[0].width());
+				id.adj = dir_id_adj(d, this->map_.width());
 			} else {
 				// target is cardinal to loc, max is correct jump_to
 				jump_to = static_cast<jump_distance>(std::max(std::abs(xd), std::abs(yd)));
@@ -430,7 +430,7 @@ public:
 			const direction_id dv = dir_intercardinal_vert(s.d);
 			const spoint adj = dir_unit_point(s.d);
 			BasicIntercardinalWalker walker;
-			walker.set_map(s.d, this->map_.map(), this->map_.map().width());
+			walker.set_map(s.d, this->map_.map(), this->map_.width());
 			for (int axis = 0; axis < 2; ++axis) {
 				// 0 = follow hori edge, then follow vert edge
 				point start = s.start;

@@ -79,6 +79,19 @@ struct direction_grid_id<WEST>
 	static constexpr bool east = false;
 };
 
+template <size_t I>
+struct index_grid_id;
+template <>
+struct index_grid_id<0>
+{
+	using type = grid_id;
+};
+template <>
+struct index_grid_id<1>
+{
+	using type = rgrid_id;
+};
+
 template <warthog::Identity Grid>
 struct grid_identity;
 template <>
@@ -99,7 +112,12 @@ struct grid_identity<rgrid_id>
 /// @brief returns id type for cardinal direction, {EAST,EAST_ID,WEST,WEST_ID} = grid_id; {NORTH,NORTH_ID,SOUTH,SOUTH_ID} = rgrid_id;
 /// @tparam D value in direction or direction_id
 template <auto D>
-using rgrid_id_t = typename details::direction_grid_id<D>::type;
+using grid_id_dir_t = typename details::direction_grid_id<D>::type;
+/// @brief returns id type of map index I
+template <size_t I>
+using grid_id_index_t = typename details::index_grid_id<I>::type;
+/// @brief returns id type for cardinal direction, {EAST,EAST_ID,WEST,WEST_ID} = grid_id; {NORTH,NORTH_ID,SOUTH,SOUTH_ID} = rgrid_id;
+/// @tparam D value in direction or direction_id
 template <warthog::Identity D>
 using grid_identity = details::grid_identity<std::remove_cvref_t<D>>;
 
@@ -117,7 +135,7 @@ struct grid_pair_id
 	grid_id g; ///< grid_id for horizontal id
 	rgrid_id r; ///< grid_id for vertical id
 };
-/// @return id.g or id.r depending on template parameter
+/// @return id.g for I==0, id.r for I==1
 template <size_t I>
 constexpr auto get(const grid_pair_id& id) noexcept
 {
@@ -128,6 +146,7 @@ constexpr auto get(const grid_pair_id& id) noexcept
 		return id.r;
 	}
 }
+/// @return id.g for I==0, id.r for I==1
 template <size_t I>
 constexpr auto& get(grid_pair_id& id) noexcept
 {
@@ -138,62 +157,76 @@ constexpr auto& get(grid_pair_id& id) noexcept
 		return id.r;
 	}
 }
+/// @return id.g for grid_id, id.r for rgrid_id
 template <warthog::Identity T>
 constexpr T get(const grid_pair_id& id) noexcept
 {
 	return get<grid_identity<T>::index>(id);
 }
+/// @return id.g for grid_id, id.r for rgrid_id
 template <warthog::Identity T>
 constexpr T& get(grid_pair_id& id) noexcept
 {
 	return get<grid_identity<T>::index>(id);
 }
+/// @return get<grid_id|rgrid_id>(id) with associated horizontal/vertical of D
 template <direction_id D>
-constexpr rgrid_id_t<D> get_d(const grid_pair_id& id) noexcept
+constexpr grid_id_dir_t<D> get_d(const grid_pair_id& id) noexcept
 {
 	return get<rgrid_index<D>>(id);
 }
+/// @return get<grid_id|rgrid_id>(id) with associated horizontal/vertical of D
 template <direction_id D>
-constexpr rgrid_id_t<D>& get_d(grid_pair_id& id) noexcept
+constexpr grid_id_dir_t<D>& get_d(grid_pair_id& id) noexcept
 {
 	return get<rgrid_index<D>>(id);
 }
+/// @return get<grid_id|rgrid_id>(id) with associated horizontal/vertical of D
 template <direction D>
-constexpr rgrid_id_t<D> get_d(const grid_pair_id& id) noexcept
+constexpr grid_id_dir_t<D> get_d(const grid_pair_id& id) noexcept
 {
 	return get<rgrid_index<D>>(id);
 }
+/// @return get<grid_id|rgrid_id>(id) with associated horizontal/vertical of D
 template <direction D>
-constexpr rgrid_id_t<D>& get_d(grid_pair_id& id) noexcept
+constexpr grid_id_dir_t<D>& get_d(grid_pair_id& id) noexcept
 {
 	return get<rgrid_index<D>>(id);
 }
 
+/// @brief class with functions to handle conversions from/to grid and rgrid, designed to be inherited by other classes for functionality.
 struct rgridmap_point_conversions
 {
-	static constexpr uint16_t XADJ = uint16_t(-1u); // height adjustment to rotate
+	static constexpr uint16_t XADJ = uint16_t(-1u); // width adjustment to rotate for height
 	static constexpr uint16_t YADJ = gridmap::PADDED_ROWS; // height adjustment to rotate
-	uint16_t map_height_m1p_ = 0;
-	uint16_t map_width_ = 0;
-	uint16_t rmap_width_ = 0;
+	std::array<uint16_t, 2> map_height_ = {}; // height + XADJ
+	std::array<uint16_t, 2> map_width_ = {};
+	// uint16_t map_width_ = 0;
+	// uint16_t map_height_m1p_ = 0;
+	// uint16_t rmap_width_ = 0;
+	// uint16_t rmap_height_ = 0;
 
-	void conv_assign(const gridmap& map, const gridmap& rmap) noexcept
+	void conv_assign(gridmap::bittable map, gridmap::bittable rmap) noexcept
 	{
-		map_height_m1p_ = static_cast<uint16_t>(map.height() + XADJ);
-		map_width_ = static_cast<uint16_t>(map.width());
-		rmap_width_ = static_cast<uint16_t>(rmap.width());
+		map_height_ = {static_cast<uint16_t>(map.height() + XADJ), static_cast<uint16_t>(rmap.height() + XADJ)};
+		map_width_ = {static_cast<uint16_t>(map.width()), static_cast<uint16_t>(rmap.width())};
 	}
 
 	/// @return returns the padded width of map
-	uint16_t width() const noexcept { return map_width_; }
+	uint16_t width() const noexcept { return map_width_[0]; }
 	/// @return returns the padded height of map
-	uint16_t height() const noexcept { return map_height_m1p_ - XADJ; }
+	uint16_t height() const noexcept { return uint16_t(map_height_[0] - XADJ); }
+
+	/// @return returns the padded width of map
+	uint16_t rwidth() const noexcept { return map_width_[1]; }
+	/// @return returns the padded height of map
+	uint16_t rheight() const noexcept { return uint16_t(map_height_[1] - XADJ); }
 
 	point
 	point_to_rpoint(point p) const noexcept
 	{
 		return {
-			static_cast<uint16_t>(map_height_m1p_ - p.y),
+			static_cast<uint16_t>(map_height_[0] - p.y),
 			static_cast<uint16_t>(p.x + YADJ)};
 	}
 	point
@@ -201,14 +234,14 @@ struct rgridmap_point_conversions
 	{
 		return {
 			static_cast<uint16_t>(p.y - YADJ),
-			static_cast<uint16_t>(map_height_m1p_ - p.x)};
+			static_cast<uint16_t>(map_height_[0] - p.x)};
 	}
 	grid_id
 	point_to_id(point p) const noexcept
 	{
 		return grid_id{
 			static_cast<grid_id::id_type>(p.y)
-				* map_width_
+				* map_width_[0]
 			+ static_cast<grid_id::id_type>(p.x)};
 	}
 	rgrid_id
@@ -216,23 +249,22 @@ struct rgridmap_point_conversions
 	{
 		return rgrid_id{
 			static_cast<rgrid_id::id_type>(p.y)
-				* rmap_width_
+				* map_width_[1]
 			+ static_cast<rgrid_id::id_type>(p.x)};
 	}
 	point
 	id_to_point(grid_id p) const noexcept
 	{
 		return {
-			static_cast<uint16_t>(p.id % map_width_),
-			static_cast<uint16_t>(p.id / map_width_)};
+			static_cast<uint16_t>(p.id % map_width_[0]),
+			static_cast<uint16_t>(p.id / map_width_[0])};
 	}
 	point
 	rid_to_rpoint(rgrid_id p) const noexcept
 	{
 		return {
-			static_cast<uint16_t>(p.id % rmap_width_),
-			static_cast<uint16_t>(
-				p.id / rmap_width_)};
+			static_cast<uint16_t>(p.id % map_width_[1]),
+			static_cast<uint16_t>(p.id / map_width_[1])};
 	}
 	rgrid_id
 	id_to_rid(grid_id mapid) const noexcept
@@ -253,9 +285,9 @@ struct rgridmap_point_conversions
 
 	template <auto D, ::warthog::Identity GridId>
 		requires std::same_as<GridId, grid_id> || std::same_as<GridId, rgrid_id>
-	rgrid_id_t<D> to_id_d(GridId id) const noexcept
+	grid_id_dir_t<D> to_id_d(GridId id) const noexcept
 	{
-		using res_type = rgrid_id_t<D>;
+		using res_type = grid_id_dir_t<D>;
 		if constexpr (std::same_as<GridId, res_type>) {
 			return id; // is same as output, do nothing
 		} else if constexpr (std::same_as<res_type, grid_id>) {
@@ -266,9 +298,9 @@ struct rgridmap_point_conversions
 	}
 
 	template <auto D>
-	rgrid_id_t<D> point_to_id_d(point loc) const noexcept
+	grid_id_dir_t<D> point_to_id_d(point loc) const noexcept
 	{
-		using res_type = rgrid_id_t<D>;
+		using res_type = grid_id_dir_t<D>;
 		if constexpr (std::same_as<res_type, grid_id>) {
 			return point_to_id(loc);
 		} else {
@@ -277,9 +309,9 @@ struct rgridmap_point_conversions
 	}
 
 	template <auto D>
-	rgrid_id_t<D> rpoint_to_id_d(point loc) const noexcept
+	grid_id_dir_t<D> rpoint_to_id_d(point loc) const noexcept
 	{
-		using res_type = rgrid_id_t<D>;
+		using res_type = grid_id_dir_t<D>;
 		if constexpr (std::same_as<res_type, grid_id>) {
 			return point_to_id(rpoint_to_point(loc));
 		} else {
@@ -288,6 +320,7 @@ struct rgridmap_point_conversions
 	}
 };
 
+/// @brief a copy-by-value class pointing to grid/rgrid
 struct gridmap_rotate_ptr : std::array<domain::gridmap*, 2>
 {
 	gridmap_rotate_ptr() : array{}
@@ -301,21 +334,26 @@ struct gridmap_rotate_ptr : std::array<domain::gridmap*, 2>
 	const domain::gridmap& rmap() const noexcept { return *(*this)[1]; }
 	operator bool() const noexcept { return (*this)[0]; }
 };
+/// @brief a copy-by-value class pointing to grid/rgrid with conversions
 struct gridmap_rotate_ptr_convs : gridmap_rotate_ptr, rgridmap_point_conversions
 {
 	gridmap_rotate_ptr_convs() = default;
 	gridmap_rotate_ptr_convs(domain::gridmap& l_map, domain::gridmap& l_rmap) noexcept
-		: gridmap_rotate_ptr(l_map, l_rmap), rgridmap_point_conversions{static_cast<uint16_t>(l_map.height()+XADJ), static_cast<uint16_t>(l_map.width()), static_cast<uint16_t>(l_rmap.width())}
-	{ }
+		: gridmap_rotate_ptr(l_map, l_rmap)
+	{
+		conv_assign(l_map, l_rmap);
+	}
 	gridmap_rotate_ptr_convs(gridmap_rotate_ptr maps) noexcept
-		: gridmap_rotate_ptr(maps), rgridmap_point_conversions{}
+		: gridmap_rotate_ptr(maps)
 	{
 		if (*this) {
 			conv_assign(map(), rmap());
 		}
 	}
 };
-struct gridmap_rotate_table : std::array<domain::gridmap::bittable, 2>
+/// @brief a copy-by-value class for fast access to grid/rgrid
+///        differs from gridmap_rotate_ptr with direct pointer to bit array, instead of pointer to gridmap to bit array
+struct gridmap_rotate_table : std::array<domain::gridmap::bitarray, 2>
 {
 	gridmap_rotate_table() : array{}
 	{ }
@@ -325,23 +363,25 @@ struct gridmap_rotate_table : std::array<domain::gridmap::bittable, 2>
 	gridmap_rotate_table(domain::gridmap::bittable& l_map, domain::gridmap::bittable& l_rmap) noexcept
 		: array{l_map, l_rmap}
 	{ }
-	domain::gridmap::bittable& map() noexcept { return (*this)[0]; }
-	const domain::gridmap::bittable& map() const noexcept { return (*this)[0]; }
-	domain::gridmap::bittable& rmap() noexcept { return (*this)[1]; }
-	const domain::gridmap::bittable& rmap() const noexcept { return (*this)[1]; }
+	domain::gridmap::bitarray map() const noexcept { return (*this)[0]; }
+	domain::gridmap::bitarray rmap() const noexcept { return (*this)[1]; }
 	operator bool() const noexcept { return (*this)[0].data(); }
 };
+/// @brief a copy-by-value class for fast access to grid/rgrid with conversions
 struct gridmap_rotate_table_convs : gridmap_rotate_table, rgridmap_point_conversions
 {
 	gridmap_rotate_table_convs() = default;
 	gridmap_rotate_table_convs(domain::gridmap& l_map, domain::gridmap& l_rmap) noexcept
-		: gridmap_rotate_table(l_map, l_rmap), rgridmap_point_conversions{}
+		: gridmap_rotate_table(l_map, l_rmap)
 	{
 		conv_assign(l_map, l_rmap);
 	}
 	gridmap_rotate_table_convs(gridmap_rotate_table maps, rgridmap_point_conversions conv) noexcept
 		: gridmap_rotate_table(maps), rgridmap_point_conversions{conv}
 	{ }
+	domain::gridmap::bittable table() noexcept { return domain::gridmap::bittable((*this)[0], width(), height()); }
+	domain::gridmap::bittable rtable() noexcept { return domain::gridmap::bittable((*this)[1], rwidth(), rheight()); }
+	domain::gridmap::bittable table(size_t i) noexcept { return domain::gridmap::bittable((*this)[i], map_width_[i], uint16_t(map_height_[i] - XADJ)); }
 };
 
 class rotate_gridmap : public rgridmap_point_conversions

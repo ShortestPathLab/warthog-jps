@@ -738,11 +738,11 @@ jump_point_online::jump_cardinal_next(domain::grid_pair_id node_id)
 {
 	if constexpr (D == NORTH_ID || D == EAST_ID)
 	{
-		return jump_east(map_[domain::rgrid_index<D>], static_cast<uint32_t>(get_d<D>(node_id)));
+		return jump_east(map_.table(domain::rgrid_index<D>), static_cast<uint32_t>(get_d<D>(node_id)));
 	}
 	else if constexpr (D == SOUTH_ID || D == WEST_ID)
 	{
-		return jump_west(map_[domain::rgrid_index<D>], static_cast<uint32_t>(get_d<D>(node_id)));
+		return jump_west(map_.table(domain::rgrid_index<D>), static_cast<uint32_t>(get_d<D>(node_id)));
 	} else {
 		assert(false);
 		return 0;
@@ -796,8 +796,8 @@ jump_point_online::jump_intercardinal_many(
 	// setup the walker members
 	// 0 = map, 1 = rmap
 	walker.map = {map_[0], map_[1]};
-	walker.map_width(map_[0].width());
-	walker.rmap_width(map_[1].width());
+	walker.map_width(map_.width());
+	walker.rmap_width(map_.rwidth());
 	walker.node_at[0] = static_cast<uint32_t>(get<grid_id>(node_id));
 	walker.node_at[1] = static_cast<uint32_t>(get<rgrid_id>(node_id));
 	assert(map_.map().get(grid_id(walker.node_at[0])) && map_.rmap().get(grid_id(walker.node_at[1])));
@@ -844,18 +844,18 @@ jump_point_online::jump_target(
 		if (xd > 0) { // east
 			if (yd > 0) { // south
 				d = SOUTHEAST_ID;
-				walker.set_map<SOUTHEAST_ID>(map_[0], map_[0].width());
+				walker.set_map<SOUTHEAST_ID>(map_[0], map_.width());
 			} else {
 				d = NORTHEAST_ID;
-				walker.set_map<NORTHEAST_ID>(map_[0], map_[0].width());
+				walker.set_map<NORTHEAST_ID>(map_[0], map_.width());
 			}
 		} else { // west
 			if (yd > 0) { // south
 				d = SOUTHWEST_ID;
-				walker.set_map<SOUTHWEST_ID>(map_[0], map_[0].width());
+				walker.set_map<SOUTHWEST_ID>(map_[0], map_.width());
 			} else {
 				d = NORTHWEST_ID;
-				walker.set_map<NORTHWEST_ID>(map_[0], map_[0].width());
+				walker.set_map<NORTHWEST_ID>(map_[0], map_.width());
 			}
 		}
 		walker.node_at = static_cast<uint32_t>(get<grid_id>(node_id));
@@ -886,26 +886,26 @@ jump_point_online::jump_target(
 		} else if (xd > 0) {
 			// east
 			cardinal_len = jump_point_online_hori_target<domain::rgrid_east<EAST_ID>>(
-				map_[domain::rgrid_index<EAST_ID>],
+				map_.table(domain::rgrid_index<EAST_ID>),
 				static_cast<uint32_t>(map_.point_to_id_d<EAST_ID>(loc)),
 				static_cast<uint32_t>(map_.point_to_id_d<EAST_ID>(target)));
 		} else {
 			// west
 			cardinal_len = jump_point_online_hori_target<domain::rgrid_east<WEST_ID>>(
-				map_[domain::rgrid_index<WEST_ID>],
+				map_.table(domain::rgrid_index<EAST_ID>),
 				static_cast<uint32_t>(map_.point_to_id_d<WEST_ID>(loc)),
 				static_cast<uint32_t>(map_.point_to_id_d<WEST_ID>(target)));
 		}
 	} else if (yd > 0) {
 		// south
 		cardinal_len = jump_point_online_hori_target<domain::rgrid_east<SOUTH_ID>>(
-			map_[domain::rgrid_index<SOUTH_ID>],
+			map_.table(domain::rgrid_index<EAST_ID>),
 				static_cast<uint32_t>(map_.point_to_id_d<SOUTH_ID>(loc)),
 				static_cast<uint32_t>(map_.point_to_id_d<SOUTH_ID>(target)));
 	} else {
 		// north
 		cardinal_len = jump_point_online_hori_target<domain::rgrid_east<NORTH_ID>>(
-			map_[domain::rgrid_index<NORTH_ID>],
+			map_.table(domain::rgrid_index<EAST_ID>),
 				static_cast<uint32_t>(map_.point_to_id_d<NORTH_ID>(loc)),
 				static_cast<uint32_t>(map_.point_to_id_d<NORTH_ID>(target)));
 	}
