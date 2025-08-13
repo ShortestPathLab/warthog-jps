@@ -128,7 +128,7 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 	const grid_id current_id = grid_id(current->get_id());
 	point loc = rmap_.id_to_point(current_id);
 	domain::grid_pair_id pair_id{current_id, rmap_.rpoint_to_rid(rmap_.point_to_rpoint(loc))};
-	assert(rmap_.map().get_label(get<grid_id>(pair_id)) && rmap_.map().get_label(grid_id(get<rgrid_id>(pair_id)))); // loc must be trav on map
+	assert(rmap_.map().get_label(get<grid_id>(pair_id)) && rmap_.rmap().get_label(grid_id(get<rgrid_id>(pair_id)))); // loc must be trav on map
 	// const jps_rid current_rid = jpl_.id_to_rid(current_id);
 	// const cost_t current_cost = current->get_g();
 	const direction dir_c = from_direction(

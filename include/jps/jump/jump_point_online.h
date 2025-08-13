@@ -892,20 +892,20 @@ jump_point_online::jump_target(
 		} else {
 			// west
 			cardinal_len = jump_point_online_hori_target<domain::rgrid_east<WEST_ID>>(
-				map_.table(domain::rgrid_index<EAST_ID>),
+				map_.table(domain::rgrid_index<WEST_ID>),
 				static_cast<uint32_t>(map_.point_to_id_d<WEST_ID>(loc)),
 				static_cast<uint32_t>(map_.point_to_id_d<WEST_ID>(target)));
 		}
 	} else if (yd > 0) {
 		// south
 		cardinal_len = jump_point_online_hori_target<domain::rgrid_east<SOUTH_ID>>(
-			map_.table(domain::rgrid_index<EAST_ID>),
+			map_.table(domain::rgrid_index<SOUTH_ID>),
 				static_cast<uint32_t>(map_.point_to_id_d<SOUTH_ID>(loc)),
 				static_cast<uint32_t>(map_.point_to_id_d<SOUTH_ID>(target)));
 	} else {
 		// north
 		cardinal_len = jump_point_online_hori_target<domain::rgrid_east<NORTH_ID>>(
-			map_.table(domain::rgrid_index<EAST_ID>),
+			map_.table(domain::rgrid_index<NORTH_ID>),
 				static_cast<uint32_t>(map_.point_to_id_d<NORTH_ID>(loc)),
 				static_cast<uint32_t>(map_.point_to_id_d<NORTH_ID>(target)));
 	}

@@ -107,8 +107,7 @@ jps_expansion_policy<JpsJump>::expand(
 	const grid_id current_id = grid_id(current->get_id());
 	const point loc = rmap_.id_to_point(current_id);
 	const domain::grid_pair_id pair_id{current_id, rmap_.rpoint_to_rid(rmap_.point_to_rpoint(loc))};
-	assert(rmap_.map().get_label(current_id) && rmap_.map().get_label(rmap_.point_to_id(loc))); // loc must be trav on map
-	assert(rmap_.rmap().get_label(static_cast<grid_id>(rmap_.rpoint_to_rid(rmap_.point_to_rpoint(loc))))); // loc must be trav on rmap
+	assert(rmap_.map().get_label(get<grid_id>(pair_id)) && rmap_.rmap().get_label(grid_id(get<rgrid_id>(pair_id)))); // loc must be trav on map
 	// const jps_rid current_rid = jpl_.id_to_rid(current_id);
 	// const cost_t current_cost = current->get_g();
 	const direction dir_c = from_direction(
