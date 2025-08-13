@@ -46,17 +46,18 @@ struct jump_point_table
 		return cells * sizeof(jump_res);
 	}
 
-	static consteval length chain_length() noexcept
-	{
-		constexpr length amax = static_cast<length>(std::numeric_limits<jump_res>::max());
-		constexpr length amin = static_cast<length>(std::abs(std::numeric_limits<jump_res>::min()));
-		//                   254               127
-		return !DeadEnd ? amax - 1 : std::min(amax, amin-1);
-	}
+	/// @return the value that indicates to chain
 	static consteval jump_res chain_value() noexcept
 	{
 		return DeadEnd ? std::numeric_limits<jump_res>::min() : std::numeric_limits<jump_res>::max();
 	}
+	/// @return the length to jump after chain_value
+	static consteval length chain_stride() noexcept
+	{
+		constexpr length acv = std::abs(static_cast<length>(chain_value()));
+		return acv - 2; // direct jump max at chain_stride()+1, but chain only chain_stride() as we must never reach 0
+	}
+	static_assert(!chain_jump() || std::abs(int32_t(std::make_signed_t<jump_res>(chain_value()))) > int32_t(chain_stride()), "absolute value of chain_value() must be greater than chain_length()");
 
 	/// @brief setup db, init to zero
 	void init(uint32_t width, uint32_t height)
@@ -78,7 +79,7 @@ struct jump_point_table
 		assert(loc.id < cells);
 		assert(DeadEnd || len >= 0);
 		assert(std::abs(len) < std::numeric_limits<int16_t>::max());
-		int32_t id = static_cast<int32_t>(loc.id);
+		uint32_t id = loc.id;
 		const uint32_t id_adj = warthog::grid::dir_id_adj(d, width);
 		const length len_adj = DeadEnd ? static_cast<length>(len >= 0 ? -1 : 1) : -1;
 		while (len != 0) {
@@ -90,9 +91,10 @@ struct jump_point_table
 				// if len <= chain_length(), use len, otherwise use chain_value() to force a chain lookup
 				if constexpr (DeadEnd) {
 					// seperate DeadEnd code to remove abs
-					value = std::abs(len) <= chain_length() ? static_cast<jump_res>(len) : chain_value();
+					static_assert(std::is_signed_v<jump_res>);
+					value = std::abs(len) <= chain_stride()+1 ? static_cast<jump_res>(len) : chain_value();
 				} else {
-					value = len <= chain_length() ? static_cast<jump_res>(len) : chain_value();
+					value = len <= chain_stride()+1 ? static_cast<jump_res>(len) : chain_value();
 				}
 			}
 			db[id][d] = value;
@@ -150,22 +152,22 @@ struct jump_point_table
 		assert(db != nullptr);
 		assert(loc.id < cells);
 		assert(db[loc.id][d] == chain_value());
-		int32_t id = loc.id;
-		const int32_t id_adj = warthog::grid::dir_id_adj(d, width);
+		const uint32_t id_adj = static_cast<uint32_t>(chain_stride()) * warthog::grid::dir_id_adj(d, width);
 		length len = 0;
 		jump_res j;
 		do {
 			// continue from previous jump
-			id += id_adj;
-			len += chain_length();
-			j = static_cast<length>(db[id][d]);
+			loc.id += id_adj;
+			len += chain_stride();
+			j = static_cast<length>(db[loc.id][d]);
 		} while (j == chain_value());
 		assert(j != 0);
 		if constexpr (DeadEnd) {
-			// check if block and negate
+			// check if block and negate, j is signed in this version
 			len = j >= 0 ? (len+j) : -(len-j);
 		} else {
-			len += j;
+			// j is unsigned
+			len += static_cast<std::make_unsigned_t<length>>(j);
 		}
 		return len;
 	}
@@ -469,7 +471,7 @@ public:
 								// traversable tile
 								dist += 1;
 								const auto& cell = jump_table_[this->map_.point_to_id(nextloc)];
-								if (cell[dh] > 0 || cell[dv] > 0) {
+								if (auto id = this->map_.point_to_id(nextloc); jump_table_.get_jump(dh, id) > 0 || jump_table_.get_jump(dv, id) > 0) {
 									// turning point here
 									jump_table_.set_line(s.d, this->map_.point_to_id(loc), dist);
 									loc = nextloc;

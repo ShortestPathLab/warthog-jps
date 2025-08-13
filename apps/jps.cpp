@@ -251,8 +251,6 @@ main(int argc, char** argv)
 		using jump_point = jps::jump::jump_point_online;
 		return run_jps<jps_prune_expansion_policy<jump_point>>(
 		    scenmgr, mapfile, alg);
-		return run_jps<jps_prune_expansion_policy<jump_point, 32, 64>>(
-		    scenmgr, mapfile, alg);
 	}
 	else if(alg == "jpsP32")
 	{
@@ -264,6 +262,12 @@ main(int argc, char** argv)
 	{
 		using jump_point = jps::jump::jump_point_offline<>;
 		return run_jps<jps_expansion_policy<jump_point>>(
+		    scenmgr, mapfile, alg);
+	}
+	else if(alg == "jpsP+")
+	{
+		using jump_point = jps::jump::jump_point_offline<>;
+		return run_jps<jps_prune_expansion_policy<jump_point>>(
 		    scenmgr, mapfile, alg);
 	}
 	else
