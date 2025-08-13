@@ -11,5 +11,7 @@ include/jps/jump/jump_point_offline.h
 include/jps/jump/jump_point_online.h
 
 include/jps/search/jps_expansion_policy.h
+include/jps/search/jps_gridmap_expansion_policy.h
 include/jps/search/jps.h
+include/jps/search/jps_prune_expansion_policy.h
 )
