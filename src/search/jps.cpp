@@ -1,4 +1,3 @@
-// #include <jps/jump/online_jump_point_locator2.h>
 #include <jps/search/jps.h>
 #include <warthog/constants.h>
 #include <warthog/domain/gridmap.h>
