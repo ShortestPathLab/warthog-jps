@@ -68,7 +68,7 @@ help(std::ostream& out)
 	    << "Invoking the program this way solves all instances in [scen "
 	       "file] with algorithm [alg]\n"
 	    << "Currently recognised values for [alg]:\n"
-	    << "\tjps, jpsP, jpsP32\n";
+	    << "\tjps, jpsP, jpsP32, jps+, jpsP+\n";
 	// << ""
 	// << "The following are valid parameters for GENERATING instances:\n"
 	// << "\t --gen [map file (required)]\n"
