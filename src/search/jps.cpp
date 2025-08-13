@@ -1,4 +1,3 @@
-#include <jps/jump/online_jump_point_locator2.h>
 #include <jps/search/jps.h>
 #include <warthog/constants.h>
 #include <warthog/domain/gridmap.h>
@@ -252,51 +251,51 @@ create_jump_point_graph(warthog::domain::gridmap* gm)
 }
 #endif
 
-warthog::domain::gridmap*
-create_corner_map(warthog::domain::gridmap* gm)
-{
-	uint32_t mapwidth  = gm->header_width();
-	uint32_t mapheight = gm->header_height();
-	warthog::domain::gridmap* corner_map
-	    = new warthog::domain::gridmap(mapheight, mapwidth);
+// warthog::domain::gridmap*
+// create_corner_map(warthog::domain::gridmap* gm)
+// {
+// 	uint32_t mapwidth  = gm->header_width();
+// 	uint32_t mapheight = gm->header_height();
+// 	warthog::domain::gridmap* corner_map
+// 	    = new warthog::domain::gridmap(mapheight, mapwidth);
 
-	uint32_t gmwidth = gm->width();
+// 	uint32_t gmwidth = gm->width();
 
-	// add nodes to graph
-	for(uint32_t y = 0; y < mapheight; y++)
-	{
-		for(uint32_t x = 0; x < mapwidth; x++)
-		{
-			jps_id from_id = jps_id(gm->to_padded_id_from_unpadded(x, y));
-			if(!gm->get_label(from_id)) { continue; }
+// 	// add nodes to graph
+// 	for(uint32_t y = 0; y < mapheight; y++)
+// 	{
+// 		for(uint32_t x = 0; x < mapwidth; x++)
+// 		{
+// 			jps_id from_id = jps_id(gm->to_padded_id_from_unpadded(x, y));
+// 			if(!gm->get_label(from_id)) { continue; }
 
-			jps_id w_id  = jps_id(from_id.id - 1);
-			jps_id e_id  = jps_id(from_id.id + 1);
-			jps_id s_id  = jps_id(from_id.id + gmwidth);
-			jps_id n_id  = jps_id(from_id.id - gmwidth);
-			jps_id nw_id = jps_id((from_id.id - gmwidth) - 1);
-			jps_id ne_id = jps_id((from_id.id - gmwidth) + 1);
-			jps_id sw_id = jps_id((from_id.id + gmwidth) - 1);
-			jps_id se_id = jps_id((from_id.id + gmwidth) + 1);
+// 			jps_id w_id  = jps_id(from_id.id - 1);
+// 			jps_id e_id  = jps_id(from_id.id + 1);
+// 			jps_id s_id  = jps_id(from_id.id + gmwidth);
+// 			jps_id n_id  = jps_id(from_id.id - gmwidth);
+// 			jps_id nw_id = jps_id((from_id.id - gmwidth) - 1);
+// 			jps_id ne_id = jps_id((from_id.id - gmwidth) + 1);
+// 			jps_id sw_id = jps_id((from_id.id + gmwidth) - 1);
+// 			jps_id se_id = jps_id((from_id.id + gmwidth) + 1);
 
-			// detect all corner turning points (== jump points)
-			// and add them to the jump point graph
-			uint32_t tiles;
-			gm->get_neighbours(from_id, (uint8_t*)&tiles);
-			if((!gm->get_label(nw_id) && gm->get_label(w_id)
-			    && gm->get_label(n_id))
-			   || (!gm->get_label(ne_id) && gm->get_label(e_id)
-			       && gm->get_label(n_id))
-			   || (!gm->get_label(se_id) && gm->get_label(e_id)
-			       && gm->get_label(s_id))
-			   || (!gm->get_label(sw_id) && gm->get_label(w_id)
-			       && gm->get_label(s_id)))
-			{
-				corner_map->set_label(from_id, true);
-			}
-		}
-	}
-	return corner_map;
-}
+// 			// detect all corner turning points (== jump points)
+// 			// and add them to the jump point graph
+// 			uint32_t tiles;
+// 			gm->get_neighbours(from_id, (uint8_t*)&tiles);
+// 			if((!gm->get_label(nw_id) && gm->get_label(w_id)
+// 			    && gm->get_label(n_id))
+// 			   || (!gm->get_label(ne_id) && gm->get_label(e_id)
+// 			       && gm->get_label(n_id))
+// 			   || (!gm->get_label(se_id) && gm->get_label(e_id)
+// 			       && gm->get_label(s_id))
+// 			   || (!gm->get_label(sw_id) && gm->get_label(w_id)
+// 			       && gm->get_label(s_id)))
+// 			{
+// 				corner_map->set_label(from_id, true);
+// 			}
+// 		}
+// 	}
+// 	return corner_map;
+// }
 
 } // namespace jps::search
