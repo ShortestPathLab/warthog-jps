@@ -16,8 +16,8 @@
 #include <warthog/util/scenario_manager.h>
 #include <warthog/util/timer.h>
 
-#include <jps/jump/jump_point_online.h>
 #include <jps/jump/jump_point_offline.h>
+#include <jps/jump/jump_point_online.h>
 #include <jps/search/jps_expansion_policy.h>
 #include <jps/search/jps_prune_expansion_policy.h>
 

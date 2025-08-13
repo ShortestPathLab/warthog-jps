@@ -19,33 +19,37 @@
 // @created: 06/01/2010
 
 #include "jps_gridmap_expansion_policy.h"
-#include <warthog/search/gridmap_expansion_policy.h>
 #include <jps/domain/rotate_gridmap.h>
+#include <warthog/search/gridmap_expansion_policy.h>
 #include <warthog/util/template.h>
 
 namespace jps::search
 {
 
-/// @brief 
-/// @tparam JpsJump 
-/// @tparam InterLimit max length the intercardinal can expand to, =0 for run-time set, -1 to prune all intercardinal points
-/// @tparam InterSize size of intercardinal successor array, is stored on the stack.
-///                   If this successor count is reached withing InterLimit, then end successor unless InterLimit<0
+/// @brief
+/// @tparam JpsJump
+/// @tparam InterLimit max length the intercardinal can expand to, =0 for
+/// run-time set, -1 to prune all intercardinal points
+/// @tparam InterSize size of intercardinal successor array, is stored on the
+/// stack.
+///                   If this successor count is reached withing InterLimit,
+///                   then end successor unless InterLimit<0
 ///
 /// JPS expansion policy that pushes the first cardinal and intercardinal
-/// jump point, block-based jumping is the standard jump used by jump_point_online.
-/// jps_2011_expansion_policy<jump_point_online> gives JPS (B).
-/// jps_2011_expansion_policy<jump_point_offline> gives JPS+.
+/// jump point, block-based jumping is the standard jump used by
+/// jump_point_online. jps_2011_expansion_policy<jump_point_online> gives JPS
+/// (B). jps_2011_expansion_policy<jump_point_offline> gives JPS+.
 template<typename JpsJump, int16_t InterLimit = -1, size_t InterSize = 1024>
-class jps_prune_expansion_policy
-    : public jps_gridmap_expansion_policy
+class jps_prune_expansion_policy : public jps_gridmap_expansion_policy
 {
 	static_assert(InterSize >= 1, "InterSize must be at least 2.");
+
 public:
 	jps_prune_expansion_policy(warthog::domain::gridmap* map)
 	    : jps_gridmap_expansion_policy(map)
 	{
-		if (map != nullptr) {
+		if(map != nullptr)
+		{
 			jpl_.set_map(rmap_);
 			map_width_ = rmap_.map().width();
 		}
@@ -71,7 +75,8 @@ public:
 	mem() override
 	{
 		return jps_gridmap_expansion_policy::mem()
-			+ (sizeof(jps_prune_expansion_policy) - sizeof(jps_gridmap_expansion_policy));
+		    + (sizeof(jps_prune_expansion_policy)
+		       - sizeof(jps_gridmap_expansion_policy));
 	}
 
 	jump_point&
@@ -85,23 +90,32 @@ public:
 		return jpl_;
 	}
 
-	bool set_jump_limit(jump::jump_distance limit = std::numeric_limits<jump::jump_distance>::max()) noexcept requires(InterLimit == 0)
+	bool
+	set_jump_limit(
+	    jump::jump_distance limit
+	    = std::numeric_limits<jump::jump_distance>::max()) noexcept
+	    requires(InterLimit == 0)
 	{
-		if (limit < 1)
-			return false;
+		if(limit < 1) return false;
 		jump_limit_ = limit;
 	}
-	jump::jump_distance get_jump_limit() const noexcept requires(InterLimit == 0)
+	jump::jump_distance
+	get_jump_limit() const noexcept
+	    requires(InterLimit == 0)
 	{
 		return jump_limit_;
 	}
-	static constexpr jump::jump_distance get_jump_limit() noexcept requires(InterLimit != 0)
+	static constexpr jump::jump_distance
+	get_jump_limit() noexcept
+	    requires(InterLimit != 0)
 	{
-		return InterLimit < 0 ? std::numeric_limits<jump::jump_distance>::max() : static_cast<jump::jump_distance>(InterLimit);
+		return InterLimit < 0 ? std::numeric_limits<jump::jump_distance>::max()
+		                      : static_cast<jump::jump_distance>(InterLimit);
 	}
 
 protected:
-	void set_rmap_(domain::rotate_gridmap& rmap) override
+	void
+	set_rmap_(domain::rotate_gridmap& rmap) override
 	{
 		jps_gridmap_expansion_policy::set_rmap_(rmap);
 		jpl_.set_map(rmap);
@@ -110,10 +124,11 @@ protected:
 
 private:
 	JpsJump jpl_;
-	point target_loc_ = {};
-	grid_id target_id_ = {};
+	point target_loc_   = {};
+	grid_id target_id_  = {};
 	uint32_t map_width_ = 0;
-	jump::jump_distance jump_limit_ = std::numeric_limits<jump::jump_distance>::max();
+	jump::jump_distance jump_limit_
+	    = std::numeric_limits<jump::jump_distance>::max();
 };
 
 template<typename JpsJump, int16_t InterLimit, size_t InterSize>
@@ -126,14 +141,19 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 
 	// compute the direction of travel used to reach the current node.
 	const grid_id current_id = grid_id(current->get_id());
-	point loc = rmap_.id_to_point(current_id);
-	domain::grid_pair_id pair_id{current_id, rmap_.rpoint_to_rid(rmap_.point_to_rpoint(loc))};
-	assert(rmap_.map().get_label(get<grid_id>(pair_id)) && rmap_.rmap().get_label(grid_id(get<rgrid_id>(pair_id)))); // loc must be trav on map
+	point loc                = rmap_.id_to_point(current_id);
+	domain::grid_pair_id pair_id{
+	    current_id, rmap_.rpoint_to_rid(rmap_.point_to_rpoint(loc))};
+	assert(
+	    rmap_.map().get_label(get<grid_id>(pair_id))
+	    && rmap_.rmap().get_label(
+	        grid_id(get<rgrid_id>(pair_id)))); // loc must be trav on map
 	// const jps_rid current_rid = jpl_.id_to_rid(current_id);
 	// const cost_t current_cost = current->get_g();
 	const direction dir_c = from_direction(
 	    grid_id(current->get_parent()), current_id, rmap_.map().width());
-	const direction_id target_d = warthog::grid::point_to_direction_id(loc, target_loc_);
+	const direction_id target_d
+	    = warthog::grid::point_to_direction_id(loc, target_loc_);
 
 	// get the tiles around the current node c
 	uint32_t c_tiles;
@@ -142,21 +162,25 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 	// look for jump points in the direction of each natural
 	// and forced neighbour
 	uint32_t succ_dirs = compute_successors(dir_c, c_tiles);
-	if (succ_dirs & static_cast<uint32_t>(warthog::grid::to_dir(target_d))) {
+	if(succ_dirs & static_cast<uint32_t>(warthog::grid::to_dir(target_d)))
+	{
 		// target in successor direction, check
-		if (auto target_dist = jpl_.jump_target(pair_id, loc, target_loc_); target_dist.second >= 0) {
+		if(auto target_dist = jpl_.jump_target(pair_id, loc, target_loc_);
+		   target_dist.second >= 0)
+		{
 			// target is visible, push
-			warthog::search::search_node* jp_succ
-				    = this->generate(target_id_);
-			add_neighbour(jp_succ, target_dist.first * warthog::DBL_ROOT_TWO + target_dist.second * warthog::DBL_ONE);
+			warthog::search::search_node* jp_succ = this->generate(target_id_);
+			add_neighbour(
+			    jp_succ,
+			    target_dist.first * warthog::DBL_ROOT_TWO
+			        + target_dist.second * warthog::DBL_ONE);
 			return; // no other successor required
 		}
 	}
 
 	// cardinal directions
-	::warthog::util::for_each_integer_sequence<
-		std::integer_sequence<direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID>
-	>([&](auto iv) {
+	::warthog::util::for_each_integer_sequence<std::integer_sequence<
+	    direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID>>([&](auto iv) {
 		constexpr direction_id di = decltype(iv)::value;
 		if(succ_dirs & warthog::grid::to_dir(di))
 		{
@@ -164,7 +188,10 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 			if(jump_result > 0) // jump point
 			{
 				// successful jump
-				pad_id node{static_cast<uint32_t>(current_id.id + warthog::grid::dir_id_adj(di, map_width_) * jump_result)};
+				pad_id node{static_cast<uint32_t>(
+				    current_id.id
+				    + warthog::grid::dir_id_adj(di, map_width_)
+				        * jump_result)};
 				assert(rmap_.map().get(node)); // successor must be traversable
 				warthog::search::search_node* jp_succ = this->generate(node);
 				add_neighbour(jp_succ, jump_result * warthog::DBL_ONE);
@@ -172,69 +199,101 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 		}
 	});
 	// intercardinal directions
-	::warthog::util::for_each_integer_sequence<
-		std::integer_sequence<direction_id, NORTHEAST_ID, NORTHWEST_ID, SOUTHEAST_ID, SOUTHWEST_ID>
-	>([&](auto iv) {
-		constexpr direction_id di = decltype(iv)::value;
-		if(succ_dirs & warthog::grid::to_dir(di))
-		{
-			const int32_t node_adj_ic = warthog::grid::dir_id_adj(di, map_width_);
-			const int32_t node_adj_vert = warthog::grid::dir_id_adj_vert(di, map_width_);
-			constexpr int32_t node_adj_hori = warthog::grid::dir_id_adj_hori(di);
-			jump::intercardinal_jump_result res[InterSize];
-			jump::jump_distance inter_total = 0;
-			while (true) { // InterSize == -1 will loop InterSize results until all are found
-				auto [result_n, dist] = jpl_.template jump_intercardinal_many<di>(pair_id, res, InterSize, get_jump_limit());
-				for(decltype(result_n) result_i = 0; result_i < result_n; ++result_i) // jump point
-				{
-					// successful jump
-					const jump::intercardinal_jump_result res_i = res[result_i];
-					assert(res_i.inter > 0);
-					const uint32_t node = current_id.id + static_cast<uint32_t>(node_adj_ic * (inter_total + res_i.inter));
-					const auto cost = warthog::DBL_ROOT_TWO * (inter_total + res_i.inter);
-					assert(rmap_.map().get(pad_id{node})); // successor must be traversable
-					if (res_i.hori > 0) {
-						// horizontal
-						const uint32_t node_j = node + static_cast<uint32_t>(node_adj_hori * res_i.hori);
-						const auto cost_j = cost + warthog::DBL_ONE * res_i.hori;
-						assert(rmap_.map().get(pad_id{node_j})); // successor must be traversable
-						warthog::search::search_node* jp_succ = this->generate(pad_id{node_j});
-						add_neighbour(jp_succ, cost_j);
-					}
-					if (res_i.vert > 0) {
-						// horizontal
-						const uint32_t node_j = node + static_cast<uint32_t>(node_adj_vert * res_i.vert);
-						const auto cost_j = cost + warthog::DBL_ONE * res_i.vert;
-						assert(rmap_.map().get(pad_id{node_j})); // successor must be traversable
-						warthog::search::search_node* jp_succ = this->generate(pad_id{node_j});
-						add_neighbour(jp_succ, cost_j);
-					}
-				}
-				if (dist <= 0) // hit wall, break
-					break;
-				if constexpr (InterLimit < 0) {
-					// repeat until all jump points are discovered
-					inter_total += dist;
-					loc = loc + dist * dir_unit_point(di);
-					pair_id = rmap_.point_to_pair_id(loc);
-				} else {
-					// reach limit, push dia onto queue
-					const uint32_t node = current_id.id + static_cast<uint32_t>(node_adj_ic * dist);
-					const auto cost = warthog::DBL_ROOT_TWO * dist;
-					assert(rmap_.map().get(pad_id{node})); // successor must be traversable
-					warthog::search::search_node* jp_succ = this->generate(pad_id{node});
-					add_neighbour(jp_succ, cost);
-					break;
-				}
-			}
-		}
-	});
+	::warthog::util::for_each_integer_sequence<std::integer_sequence<
+	    direction_id, NORTHEAST_ID, NORTHWEST_ID, SOUTHEAST_ID, SOUTHWEST_ID>>(
+	    [&](auto iv) {
+		    constexpr direction_id di = decltype(iv)::value;
+		    if(succ_dirs & warthog::grid::to_dir(di))
+		    {
+			    const int32_t node_adj_ic
+			        = warthog::grid::dir_id_adj(di, map_width_);
+			    const int32_t node_adj_vert
+			        = warthog::grid::dir_id_adj_vert(di, map_width_);
+			    constexpr int32_t node_adj_hori
+			        = warthog::grid::dir_id_adj_hori(di);
+			    jump::intercardinal_jump_result res[InterSize];
+			    jump::jump_distance inter_total = 0;
+			    while(true)
+			    { // InterSize == -1 will loop InterSize results until all are
+				  // found
+				    auto [result_n, dist]
+				        = jpl_.template jump_intercardinal_many<di>(
+				            pair_id, res, InterSize, get_jump_limit());
+				    for(decltype(result_n) result_i = 0; result_i < result_n;
+				        ++result_i) // jump point
+				    {
+					    // successful jump
+					    const jump::intercardinal_jump_result res_i
+					        = res[result_i];
+					    assert(res_i.inter > 0);
+					    const uint32_t node
+					        = current_id.id
+					        + static_cast<uint32_t>(
+					              node_adj_ic * (inter_total + res_i.inter));
+					    const auto cost = warthog::DBL_ROOT_TWO
+					        * (inter_total + res_i.inter);
+					    assert(rmap_.map().get(
+					        pad_id{node})); // successor must be traversable
+					    if(res_i.hori > 0)
+					    {
+						    // horizontal
+						    const uint32_t node_j = node
+						        + static_cast<uint32_t>(node_adj_hori
+						                                * res_i.hori);
+						    const auto cost_j
+						        = cost + warthog::DBL_ONE * res_i.hori;
+						    assert(rmap_.map().get(pad_id{
+						        node_j})); // successor must be traversable
+						    warthog::search::search_node* jp_succ
+						        = this->generate(pad_id{node_j});
+						    add_neighbour(jp_succ, cost_j);
+					    }
+					    if(res_i.vert > 0)
+					    {
+						    // horizontal
+						    const uint32_t node_j = node
+						        + static_cast<uint32_t>(node_adj_vert
+						                                * res_i.vert);
+						    const auto cost_j
+						        = cost + warthog::DBL_ONE * res_i.vert;
+						    assert(rmap_.map().get(pad_id{
+						        node_j})); // successor must be traversable
+						    warthog::search::search_node* jp_succ
+						        = this->generate(pad_id{node_j});
+						    add_neighbour(jp_succ, cost_j);
+					    }
+				    }
+				    if(dist <= 0) // hit wall, break
+					    break;
+				    if constexpr(InterLimit < 0)
+				    {
+					    // repeat until all jump points are discovered
+					    inter_total += dist;
+					    loc          = loc + dist * dir_unit_point(di);
+					    pair_id      = rmap_.point_to_pair_id(loc);
+				    }
+				    else
+				    {
+					    // reach limit, push dia onto queue
+					    const uint32_t node = current_id.id
+					        + static_cast<uint32_t>(node_adj_ic * dist);
+					    const auto cost = warthog::DBL_ROOT_TWO * dist;
+					    assert(rmap_.map().get(
+					        pad_id{node})); // successor must be traversable
+					    warthog::search::search_node* jp_succ
+					        = this->generate(pad_id{node});
+					    add_neighbour(jp_succ, cost);
+					    break;
+				    }
+			    }
+		    }
+	    });
 }
 
 template<typename JpsJump, int16_t InterLimit, size_t InterSize>
 warthog::search::search_node*
-jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::generate_start_node(
-    warthog::search::search_problem_instance* pi)
+jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::
+    generate_start_node(warthog::search::search_problem_instance* pi)
 {
 	uint32_t max_id = map_->width() * map_->height();
 	if(static_cast<uint32_t>(pi->start_) >= max_id) { return nullptr; }
@@ -250,8 +309,8 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::generate_start_node(
 
 template<typename JpsJump, int16_t InterLimit, size_t InterSize>
 warthog::search::search_node*
-jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::generate_target_node(
-    warthog::search::search_problem_instance* pi)
+jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::
+    generate_target_node(warthog::search::search_problem_instance* pi)
 {
 	uint32_t max_id = map_->width() * map_->height();
 	if(static_cast<uint32_t>(pi->target_) >= max_id) { return nullptr; }
