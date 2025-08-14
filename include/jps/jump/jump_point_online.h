@@ -137,7 +137,7 @@ jump_point_online_hori(
 
 		// failed, goto next 56 bits
 		jump_count += static_cast<jump_distance>(63 - 7);
-		nei_slider.width8_bits = 7;
+		// nei_slider.width8_bits = 7;
 		nei_slider.adj_bytes(East ? 7 : -7);
 
 		// get next neis at end of loop
@@ -177,7 +177,7 @@ jump_point_online_hori_target(
 	if constexpr(!East)
 	{ // adjust to last byte for west
 		nei_slider.adj_bytes(-7);
-		nei_slider.width8_bits = 7 - nei_slider.width8_bits;
+		nei_slider.width8_bits = 7u - nei_slider.width8_bits;
 	}
 
 	// order going east is stored as least significant bit to most significant
