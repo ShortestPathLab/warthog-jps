@@ -47,7 +47,8 @@ jump_point_online_hori(
 	// or high bit to low bit (WEST)
 	auto nei_slider
 	    = ::warthog::domain::gridmap_slider::from_bittable(map, pad_id{node});
-	if constexpr (!East) {
+	if constexpr(!East)
+	{
 		nei_slider.adj_bytes(-7); // west is opposite side
 		nei_slider.width8_bits = 7u - nei_slider.width8_bits;
 	}
@@ -67,12 +68,13 @@ jump_point_online_hori(
 	// mask out to trav(1) before node location
 	assert(nei_slider.width8_bits < 8);
 	uint64_t tmp = East ? ~(~0ull << nei_slider.width8_bits)
-						: ~(~0ull >> nei_slider.width8_bits);
-	neis[0] |= tmp;
-	neis[1] |= tmp;
-	neis[2] |= tmp;
+	                    : ~(~0ull >> nei_slider.width8_bits);
+	neis[0]     |= tmp;
+	neis[1]     |= tmp;
+	neis[2]     |= tmp;
 
-	jump_distance jump_count = 7u - static_cast<jump_distance>(nei_slider.width8_bits);
+	jump_distance jump_count
+	    = 7u - static_cast<jump_distance>(nei_slider.width8_bits);
 
 	while(true)
 	{
