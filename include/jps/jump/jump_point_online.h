@@ -59,17 +59,20 @@ jump_point_online_hori(
 	// order going east is stored as least significant bit to most significant
 	// bit
 
+	// first loop gets neis as 8 <= width8_bits < 16
+	// other loops will have width8_bits = 7
+	std::array<uint64_t, 3> neis = nei_slider.get_neighbours_64bit_le();
+	// shift above and below 2 points east
+	// mask out to trav(1) before node location
+	assert(nei_slider.width8_bits < 16);
+	uint64_t tmp = East ? ~(~0ull << nei_slider.width8_bits)
+						: ~(~0ull >> nei_slider.width8_bits);
+	neis[0] |= tmp;
+	neis[1] |= tmp;
+	neis[2] |= tmp;
+
 	while(true)
 	{
-		std::array<uint64_t, 3> neis = nei_slider.get_neighbours_64bit_le();
-		assert(nei_slider.width8_bits < 16);
-		uint64_t tmp = East ? ~(~0ull << nei_slider.width8_bits)
-		                    : ~(~0ull >> nei_slider.width8_bits);
-		// shift above and below 2 points east
-		// mask out to trav(1) before node location
-		neis[0] |= tmp;
-		neis[1] |= tmp;
-		neis[2] |= tmp;
 		// find first jump point, is +1 location past blocker above or below
 		if constexpr(East)
 		{
@@ -132,7 +135,15 @@ jump_point_online_hori(
 		// failed, goto next 56 bits
 		jump_count += static_cast<jump_distance>(63 - nei_slider.width8_bits);
 		nei_slider.adj_bytes(East ? 7 : -7);
-		nei_slider.width8_bits = 7;
+		// nei_slider.width8_bits = 7;
+
+		// get next neis at end of loop
+		neis = nei_slider.get_neighbours_64bit_le();
+		// mask out to trav(1) is not nessesary on loop, as we know it is clear
+		// constexpr uint64_t neis_mask = East ? ~(~0ull << 7) : ~(~0ull >> 7);
+		// neis[0] |= neis_mask;
+		// neis[1] |= neis_mask;
+		// neis[2] |= neis_mask;
 	}
 }
 
