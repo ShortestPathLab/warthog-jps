@@ -47,29 +47,37 @@ jump_point_online_hori(
 	// or high bit to low bit (WEST)
 	auto nei_slider
 	    = ::warthog::domain::gridmap_slider::from_bittable(map, pad_id{node});
-	nei_slider.adj_bytes(
-	    East ? -1 : -6); // current location is 1 byte from boundrary
+	if constexpr(!East)
+	{
+		nei_slider.adj_bytes(-7); // west is opposite side
+		nei_slider.width8_bits = 7u - nei_slider.width8_bits;
+	}
+	assert(nei_slider.width8_bits < 8);
 	// width8_bits is how many bits in on word current node is at, from lsb
 	// EAST and from msb WEST
-	nei_slider.width8_bits
-	    = East ? nei_slider.width8_bits + 8 : 15 - nei_slider.width8_bits;
-	// 15 - width8_bits == 63 - (width8_bits + 6 * 8)
-	jump_distance jump_count = 0;
+	// 7 - width8_bits == 63 - (width8_bits + 7 * 8)
 
 	// order going east is stored as least significant bit to most significant
 	// bit
 
+	// first loop gets neis as 8 <= width8_bits < 16
+	// other loops will have width8_bits = 7
+	std::array<uint64_t, 3> neis = nei_slider.get_neighbours_64bit_le();
+	// the rest will only jump 7
+	// shift above and below 2 points east
+	// mask out to trav(1) before node location
+	assert(nei_slider.width8_bits < 8);
+	uint64_t tmp = East ? ~(~0ull << nei_slider.width8_bits)
+	                    : ~(~0ull >> nei_slider.width8_bits);
+	neis[0]     |= tmp;
+	neis[1]     |= tmp;
+	neis[2]     |= tmp;
+
+	jump_distance jump_count
+	    = 7u - static_cast<jump_distance>(nei_slider.width8_bits);
+
 	while(true)
 	{
-		std::array<uint64_t, 3> neis = nei_slider.get_neighbours_64bit_le();
-		assert(nei_slider.width8_bits < 16);
-		uint64_t tmp = East ? ~(~0ull << nei_slider.width8_bits)
-		                    : ~(~0ull >> nei_slider.width8_bits);
-		// shift above and below 2 points east
-		// mask out to trav(1) before node location
-		neis[0] |= tmp;
-		neis[1] |= tmp;
-		neis[2] |= tmp;
 		// find first jump point, is +1 location past blocker above or below
 		if constexpr(East)
 		{
@@ -95,8 +103,8 @@ jump_point_online_hori(
 			//  v is blocker location, prune unless target is present
 			// 10111111
 			// dead end takes president as jump point can't pass a blocker
-			jump_count += static_cast<jump_distance>(stop_pos)
-			    - static_cast<jump_distance>(nei_slider.width8_bits);
+			// first jump may not skip 7, this is adjusted for on init
+			jump_count += static_cast<jump_distance>(stop_pos) - 7;
 			uint32_t target_jump [[maybe_unused]]
 			= Target ? (East ? target - node : node - target) : 0;
 			// if blocked: pos + jump_count = first block
@@ -130,9 +138,17 @@ jump_point_online_hori(
 		}
 
 		// failed, goto next 56 bits
-		jump_count += static_cast<jump_distance>(63 - nei_slider.width8_bits);
+		jump_count += static_cast<jump_distance>(63 - 7);
+		// nei_slider.width8_bits = 7;
 		nei_slider.adj_bytes(East ? 7 : -7);
-		nei_slider.width8_bits = 7;
+
+		// get next neis at end of loop
+		neis = nei_slider.get_neighbours_64bit_le();
+		// mask out to trav(1) is not nessesary on loop, as we know it is clear
+		// constexpr uint64_t neis_mask = East ? ~(~0ull << 7) : ~(~0ull >> 7);
+		// neis[0] |= neis_mask;
+		// neis[1] |= neis_mask;
+		// neis[2] |= neis_mask;
 	}
 }
 
@@ -163,7 +179,7 @@ jump_point_online_hori_target(
 	if constexpr(!East)
 	{ // adjust to last byte for west
 		nei_slider.adj_bytes(-7);
-		nei_slider.width8_bits = 7 - nei_slider.width8_bits;
+		nei_slider.width8_bits = 7u - nei_slider.width8_bits;
 	}
 
 	// order going east is stored as least significant bit to most significant
