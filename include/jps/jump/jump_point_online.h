@@ -2,7 +2,7 @@
 #define JPS_JUMP_JUMP_POINT_ONLINE_H
 
 //
-// jump/jump_point_offline.h
+// jps/jump/jump_point_offline.h
 //
 // Online jump-point locator.
 // Contains utility functions for online jump-point locators

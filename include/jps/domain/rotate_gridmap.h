@@ -2,7 +2,7 @@
 #define WARTHOG_DOMAIN_ROTATE_GRIDMAP_H
 
 //
-// domain/rotate_gridmap.h
+// jps/domain/rotate_gridmap.h
 //
 // An extended domain of gridmap that uses 2 gridmaps, one rotated
 // for use in JPS block-based jump-point location.

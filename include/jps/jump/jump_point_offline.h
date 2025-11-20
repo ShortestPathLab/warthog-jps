@@ -2,7 +2,7 @@
 #define JPS_JUMP_JUMP_POINT_OFFLINE_H
 
 //
-// jump/jump_point_offline.h
+// jps/jump/jump_point_offline.h
 //
 // Offline level jump-point locator.
 // Contains two components, the jump_point_table which handles how jump-points
@@ -326,10 +326,11 @@ public:
 		return res;
 	}
 
-	/// @brief shoot ray to target point
+	/// @brief test jump directly to target point is visible or blocked
+	///        i.e. has line-of-sight or is blocked and where
 	/// @param node_id the id pairs for grid and rgrid (at loc)
-	/// @param loc shoot from loc
-	/// @param target shoot to target
+	/// @param loc x/y location (node_id points here)
+	/// @param target target point to check visiblity to
 	/// @return pair <intercardinal-distance, cardinal-distance>, if both >= 0
 	/// than target is visible,
 	///         first<0 means intercardinal reaches blocker at -first distance
@@ -440,6 +441,7 @@ public:
 		}
 	}
 
+	/// @brief set the underlying map, re-computing offline jump table
 	void
 	set_map(const rotate_grid& map)
 	{
@@ -447,6 +449,7 @@ public:
 		// compute offline jump-point table
 		compute_jump_table();
 	}
+	/// @brief computes the jump table. Linear complexity to size of grid O(WH)
 	void
 	compute_jump_table()
 	{
@@ -458,6 +461,8 @@ public:
 
 		// handle cardinal scans
 
+		// compute jump table in N,S,E,W
+		// preset how to scan in each direction to reduce code to a for-loop
 		struct CardinalScan
 		{
 			direction_id d;
@@ -470,6 +475,8 @@ public:
 		     {EAST_ID, point(0, 0), spoint(0, 1)},
 		     {WEST_ID, point(width - 1, 0), spoint(0, 1)}}};
 
+		// esseintally compile-type for-each N,S,E,W
+		// computes each direction and stores result in table in linear time on grid size
 		using jump_cardinal_type = jump_distance(OnlinePoint*, uint32_t);
 		warthog::util::for_each_integer_sequence<std::integer_sequence<
 		    direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID>>([&](auto iv) {
@@ -534,6 +541,9 @@ public:
 		//
 		// InterCardinal scans
 		//
+
+		// compute jump table in NE,NW,SE,SW
+		// preset how to scan in each direction to reduce code to a for-loop
 		struct ICardinalScan
 		{
 			direction_id d;

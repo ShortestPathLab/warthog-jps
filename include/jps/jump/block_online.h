@@ -2,7 +2,7 @@
 #define JPS_JUMP_BLOCK_ONLINE_H
 
 //
-// jump/block_online.h
+// jps/jump/block_online.h
 //
 // Block-based jump-point location fuctions, used in jump_point_online.
 // Handles low-level block jumps, scanning up to 56 cells (bits) at a time.

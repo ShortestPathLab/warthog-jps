@@ -8,14 +8,14 @@
 // could be reached by an equivalent (or shorter) path that visits
 // the parent of n but not n itself.
 //
-// An extension of this idea is to generate jump nodes located in the
-// same direction as the remaining neighbours.
+// Used with jump_point_online gives JPS (B) algorithm.
+// Used with jump_point_offline gives JPS+ (B) algorithm.
 //
 // Theoretical details:
 // [Harabor D. and Grastien A., 2011, Online Node Pruning for Pathfinding
 // On Grid Maps, AAAI]
 //
-// @author: dharabor
+// @author: dharabor & Ryan Hechenberger
 // @created: 06/01/2010
 
 #include "jps_gridmap_expansion_policy.h"
@@ -26,13 +26,14 @@
 namespace jps::search
 {
 
-/// @brief
-/// @tparam JpsJump
+/// @brief generates successor nodes for use in warthog-core search algorithm
+/// @tparam JpsJump the jump-point locator to use
 ///
-/// JPS expansion policy that pushes the first cardinal and intercardinal
-/// jump point, block-based jumping is the standard jump used by
-/// jump_point_online. jps_2011_expansion_policy<jump_point_online> gives JPS
-/// (B). jps_2011_expansion_policy<jump_point_offline> gives JPS+.
+/// JPS expansion policy that pushes the first cardinal and first intercardinal
+/// jump points for all taut directions.
+/// The given JpsJump expects a class from jps::jump namespace,
+/// such as jump_point_online for online JPS (B), or jump_point_offline<> for
+/// offline JPS+ (B).
 template<typename JpsJump>
 class jps_expansion_policy : public jps_gridmap_expansion_policy
 {

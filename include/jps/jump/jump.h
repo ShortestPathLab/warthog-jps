@@ -2,7 +2,7 @@
 #define JPS_JUMP_JUMP_H
 
 //
-// jump/jump.h
+// jps/jump/jump.h
 //
 // Global jump header.
 // Include types and basic utility functions.

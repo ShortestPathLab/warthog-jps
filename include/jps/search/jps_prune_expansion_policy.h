@@ -1,21 +1,24 @@
 #ifndef JPS_SEARCH_JPS_PRUNE_EXPANSION_POLICY_H
 #define JPS_SEARCH_JPS_PRUNE_EXPANSION_POLICY_H
 
-// jps_expansion_policy.h
+// jps_prune_expansion_policy.h
 //
 // This expansion policy reduces the branching factor
 // of a node n during search by ignoring any neighbours which
 // could be reached by an equivalent (or shorter) path that visits
 // the parent of n but not n itself.
+// It extends jps_expansion_policy by pruning the intercardinal nodes
+// (NE/NW/SE/SE) by expanding these nodes in-place and pushing their
+// cardinal successors.
 //
-// An extension of this idea is to generate jump nodes located in the
-// same direction as the remaining neighbours.
+// Used with jump_point_online gives JPS (B+P) algorithm.
+// Used with jump_point_offline gives JPS+ (B+P) algorithm.
 //
 // Theoretical details:
 // [Harabor D. and Grastien A., 2011, Online Node Pruning for Pathfinding
 // On Grid Maps, AAAI]
 //
-// @author: dharabor
+// @author: dharabor & Ryan Hechenberger
 // @created: 06/01/2010
 
 #include "jps_gridmap_expansion_policy.h"
