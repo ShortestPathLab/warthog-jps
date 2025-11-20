@@ -1,12 +1,20 @@
 #ifndef JPS_JUMP_JUMP_POINT_OFFLINE_H
 #define JPS_JUMP_JUMP_POINT_OFFLINE_H
 
-// A class wrapper around some code that finds, online, jump point
-// successors of an arbitrary nodes in a uniform-cost grid map.
 //
-// For theoretical details see:
-// [Harabor D. and Grastien A, 2011,
-// Online Graph Pruning Pathfinding on Grid Maps, AAAI]
+// jump/jump_point_offline.h
+//
+// Offline level jump-point locator.
+// Contains two components, the jump_point_table which handles how jump-points
+// are stored in all 8-directions.
+// The jump_point_offline is given a templated jump_point_table and an online
+// jump-point locator.
+//
+// The table will precompute the jump-point distances from an online locator
+// and store them into a jump_point_table.
+//
+// @author Ryan Hechenberger
+// @created 2025-11-20
 //
 
 #include "jump_point_online.h"
@@ -18,10 +26,10 @@
 namespace jps::jump
 {
 
-/// @brief Store, set and access offline jump-point results
-/// @tparam ChainJump if true: store 1-byte jumps that chain; false: 2-byte
-/// full jump
-/// @tparam DeadEnd if true: track deadend as negative, false: only jump-points
+/// @brief Store, set and access offline jump-point results in all 8-directions.
+/// @tparam ChainJump if true: store jumps as 1-byte, chaining for long jumps;
+///         false: stores in 2-bytes the full jump distance
+/// @tparam DeadEnd if true: track deadend as negative, false: deadend not recorded
 template<bool ChainJump = false, bool DeadEnd = true>
 struct jump_point_table
 {

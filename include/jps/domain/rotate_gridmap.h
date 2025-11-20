@@ -1,10 +1,29 @@
 #ifndef WARTHOG_DOMAIN_ROTATE_GRIDMAP_H
 #define WARTHOG_DOMAIN_ROTATE_GRIDMAP_H
 
-// domain::gridmap.h
 //
-// A uniform cost domain::gridmap implementation.  The map is stored in
-// a compact matrix form. Nodes are represented as single bit quantities.
+// domain/rotate_gridmap.h
+//
+// An extended domain of gridmap that uses 2 gridmaps, one rotated
+// for use in JPS block-based jump-point location.
+//
+// Class rotate_gridmap is the main implementation.
+// It supports pointing to a user-supplied gridmap and rotated gridmap,
+// or just a user provided gridmap, which it would generate and own the
+// rotated gridmap.
+//
+// Small copyable storage of these maps are provided in utility structs:
+// gridmap_rotate_ptr, gridmap_rotate_ptr_convs: 2 pointers to gridmap,
+//   accessing the grid would require 2-level of indirects (gridmap->data[i])
+// gridmap_rotate_table, gridmap_rotate_table_convs: 2 gridmap::bitarray,
+//   accessing the grid is only a single redirect
+// Use of these datatypes do not copy the tables themselves, and are quite compact.
+// The non _convs variants should be 2-pointer sized (16-bytes).
+// The _convs variants are supplied with width and height, allowing for x/y
+// and grid_id and rgrid_id conversions between the two grid (24-bytes).
+//
+// @author Ryan Hechenberger
+// @created 2025-11-20
 //
 
 #include <array>
