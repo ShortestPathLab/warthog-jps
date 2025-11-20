@@ -14,8 +14,8 @@
 // @created 2025-11-20
 //
 
-#include "jump.h"
 #include "block_online.h"
+#include "jump.h"
 #include <array>
 #include <jps/domain/rotate_gridmap.h>
 #include <jps/forward.h>

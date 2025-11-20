@@ -17,10 +17,10 @@
 //   accessing the grid would require 2-level of indirects (gridmap->data[i])
 // gridmap_rotate_table, gridmap_rotate_table_convs: 2 gridmap::bitarray,
 //   accessing the grid is only a single redirect
-// Use of these datatypes do not copy the tables themselves, and are quite compact.
-// The non _convs variants should be 2-pointer sized (16-bytes).
-// The _convs variants are supplied with width and height, allowing for x/y
-// and grid_id and rgrid_id conversions between the two grid (24-bytes).
+// Use of these datatypes do not copy the tables themselves, and are quite
+// compact. The non _convs variants should be 2-pointer sized (16-bytes). The
+// _convs variants are supplied with width and height, allowing for x/y and
+// grid_id and rgrid_id conversions between the two grid (24-bytes).
 //
 // @author Ryan Hechenberger
 // @created 2025-11-20
@@ -404,7 +404,8 @@ struct gridmap_rotate_ptr : std::array<domain::gridmap*, 2>
 	}
 	operator bool() const noexcept { return (*this)[0]; }
 };
-/// @brief a copy-by-value class pointing to grid/rgrid with id conversions functions
+/// @brief a copy-by-value class pointing to grid/rgrid with id conversions
+/// functions
 struct gridmap_rotate_ptr_convs : gridmap_rotate_ptr,
                                   rgridmap_point_conversions
 {
@@ -448,7 +449,8 @@ struct gridmap_rotate_table : std::array<domain::gridmap::bitarray, 2>
 	}
 	operator bool() const noexcept { return (*this)[0].data(); }
 };
-/// @brief a copy-by-value class for fast access to grid/rgrid with id conversions functions
+/// @brief a copy-by-value class for fast access to grid/rgrid with id
+/// conversions functions
 struct gridmap_rotate_table_convs : gridmap_rotate_table,
                                     rgridmap_point_conversions
 {
@@ -487,8 +489,8 @@ struct gridmap_rotate_table_convs : gridmap_rotate_table,
 /// provided and controlled by the user.
 ///
 /// Supports static_cast operations for all gridmap_rotate_(ptr|table)(_conv)?.
-/// They will act as valid small pointer classes (16-24 bytes) with various levels
-/// if indirection to the grid data.
+/// They will act as valid small pointer classes (16-24 bytes) with various
+/// levels if indirection to the grid data.
 class rotate_gridmap : public rgridmap_point_conversions
 {
 private:
@@ -617,7 +619,11 @@ public:
 		    *this, static_cast<rgridmap_point_conversions>(*this));
 	}
 
-	size_t mem() const noexcept { return rmap_obj != nullptr ? rmap_obj->mem() : 0; }
+	size_t
+	mem() const noexcept
+	{
+		return rmap_obj != nullptr ? rmap_obj->mem() : 0;
+	}
 };
 
 } // namespace warthog::grid

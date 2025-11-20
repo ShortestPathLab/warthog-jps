@@ -26,10 +26,12 @@
 namespace jps::jump
 {
 
-/// @brief Store, set and access offline jump-point results in all 8-directions.
+/// @brief Store, set and access offline jump-point results in all
+/// 8-directions.
 /// @tparam ChainJump if true: store jumps as 1-byte, chaining for long jumps;
 ///         false: stores in 2-bytes the full jump distance
-/// @tparam DeadEnd if true: track deadend as negative, false: deadend not recorded
+/// @tparam DeadEnd if true: track deadend as negative, false: deadend not
+/// recorded
 template<bool ChainJump = false, bool DeadEnd = true>
 struct jump_point_table
 {
@@ -476,7 +478,8 @@ public:
 		     {WEST_ID, point(width - 1, 0), spoint(0, 1)}}};
 
 		// esseintally compile-type for-each N,S,E,W
-		// computes each direction and stores result in table in linear time on grid size
+		// computes each direction and stores result in table in linear time on
+		// grid size
 		using jump_cardinal_type = jump_distance(OnlinePoint*, uint32_t);
 		warthog::util::for_each_integer_sequence<std::integer_sequence<
 		    direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID>>([&](auto iv) {

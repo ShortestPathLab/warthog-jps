@@ -13,7 +13,8 @@
 // IntercardinalWalker<D> is an intercardinal (NE/NW/SE/SW) jump-point locator
 // utility structure.  Gives low-level operations so users easily create their
 // own fast intercardinal expanders.
-// The BasicIntercardinalWalker is a non-templated version of IntercardinalWalker.
+// The BasicIntercardinalWalker is a non-templated version of
+// IntercardinalWalker.
 //
 // @author Ryan Hechenberger
 // @created 2025-11-20

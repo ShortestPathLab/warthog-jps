@@ -38,15 +38,15 @@ namespace jps::search
 ///         run-time set, -1 for no limit. Will push nodes first than check if
 ///         limit is reached, thus jump_point_offline may exceed this greatly.
 /// @tparam InterSize the max amount of intercardinal successors.
-///         This is where results to the JpsJump are stored, which are placed on
-///         the stack.  If this limit is reached, then that intercardinal will be
-///         a successor and successors in that direction will cease.
+///         This is where results to the JpsJump are stored, which are placed
+///         on the stack.  If this limit is reached, then that intercardinal
+///         will be a successor and successors in that direction will cease.
 ///         The max successors will not exceed to 2*max(W,H).
 ///
-/// JPS expansion policy that pushes all jump points that have a direct line-of-sight
-/// to the expanding node following its intercardinal first, then cardinal.
-/// It essentially expands the discovered intercardinal successor of JPS without
-/// adding those intercardinal nodes to the queue.
+/// JPS expansion policy that pushes all jump points that have a direct
+/// line-of-sight to the expanding node following its intercardinal first, then
+/// cardinal. It essentially expands the discovered intercardinal successor of
+/// JPS without adding those intercardinal nodes to the queue.
 ///
 /// The given JpsJump expects a class from jps::jump namespace,
 /// such as jump_point_online for online JPS (B+P), or jump_point_offline<> for

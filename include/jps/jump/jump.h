@@ -37,7 +37,8 @@ is_blocked(jump_distance d) noexcept
 	return d == 0;
 }
 
-// simple cast to unsigned jump distance, care as it is both widening and changing sign
+// simple cast to unsigned jump distance, care as it is both widening and
+// changing sign
 inline constexpr uint32_t
 to_unsigned_jump_distance(jump_distance d) noexcept
 {
@@ -76,13 +77,15 @@ get_vert_from_intercardinal(direction_id d) noexcept
 }
 
 /// @brief standard result type of an intercardianl jump.
-///        Supports the inter-cardinal distance, as well as the jump-point distance
-///        of the hori/vert from the inter (if exists)
+///        Supports the inter-cardinal distance, as well as the jump-point
+///        distance of the hori/vert from the inter (if exists)
 struct intercardinal_jump_result
 {
 	jump_distance inter; ///< intercardinal distance (NE/NW/SE/SW)
-	jump_distance hori; ///< hori distance from inter (i.e. get_hori_from_intercardinal(D))
-	jump_distance vert; ///< vert distance from inter (i.e. get_vert_from_intercardinal(D))
+	jump_distance hori;  ///< hori distance from inter (i.e.
+	                     ///< get_hori_from_intercardinal(D))
+	jump_distance vert;  ///< vert distance from inter (i.e.
+	                     ///< get_vert_from_intercardinal(D))
 };
 
 } // namespace jps::jump

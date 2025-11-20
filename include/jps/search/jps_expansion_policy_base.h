@@ -6,7 +6,7 @@
 //
 // The base expansion policy for jps-base algorithm.
 // Adds interface for setting the domain, rotate_gridmap.
-// 
+//
 //
 // @author: Ryan Hechenberger
 // @created: 06/01/2010
@@ -42,7 +42,8 @@ public:
 		    + rmap_.mem();
 	}
 
-	/// @brief Sets the map, creating the rotated gridmap from map at current state.
+	/// @brief Sets the map, creating the rotated gridmap from map at current
+	/// state.
 	/// @param map the gridmap to use and rotate
 	void
 	set_map(warthog::domain::gridmap& map)
@@ -51,7 +52,8 @@ public:
 		gridmap_expansion_policy_base::set_map(map);
 		set_rmap_(rmap_);
 	}
-	/// @brief Gives a user-proved map and rotated map, the expander does not own either resource.
+	/// @brief Gives a user-proved map and rotated map, the expander does not
+	/// own either resource.
 	/// @param rmap the rotated_gridmap pair-point struct
 	void
 	set_map(domain::gridmap_rotate_ptr rmap)
