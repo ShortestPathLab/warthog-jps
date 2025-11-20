@@ -4,6 +4,18 @@ Warthog is an optimised C++ library for pathfinding search.
 Warthog-JPS is an extension to Warthog with JPS support.
 See [warthog-core](https://github.com/ShortestPathLab/warthog-core) for more details on Warthog setup.
 
+	@article{Harabor_Grastien_2014,
+	title={Improving Jump Point Search},
+	volume={24},
+	url={https://ojs.aaai.org/index.php/ICAPS/article/view/13633},
+	DOI={10.1609/icaps.v24i1.13633},
+	number={1},
+	journal={Proceedings of the International Conference on Automated Planning and Scheduling},
+	author={Harabor, Daniel and Grastien, Alban},
+	year={2014},
+	pages={128-135}
+	}
+
 # Using JPS
 
 ## Compile
@@ -17,7 +29,28 @@ cmake --build build
 ./build/warthog-jps --alg jps --scen example.scen
 ```
 
+The example scenario `example.scen` is not a part of this repo.
+Get benchmark from places like MovingAI or pathfinding.ai found in the resource section.
+
 JPS requires `warthog-core` repo to compile, and by default will fetch the repo.
+
+## JPS Variants
+
+JPS comes with several variants.
+All variants use block-based symmetry breaking for finding jump-point locations,
+making them at least JPS (B).
+These jump points are found in namespace `jps::jump`, while `jps::search` uses provided `jps::jump` locators
+to produce successors used in warthog-core.
+
+The algorithms provided to `--alg` parameter, along with their `jps::search` and `jps::jump` classes presented
+in the table below:
+
+| `--alg`            | `jps::search`                  | `jps::jump`            |
+|------------------------------------------------------------------------------|
+| `jps`              | `jps_expansion_policy<>`       | `jump_point_online`    |
+| `jpsP` or `jps2`   | `jps_prune_expansion_policy<>` | `jump_point_online`    |
+| `jps+`             | `jps_expansion_policy`         | `jump_point_offline<>` |
+| `jpsP+` or `jps2+` | `jps_prune_expansion_policy<>` | `jump_point_offline<>` |
 
 ## Use in project
 

@@ -68,7 +68,7 @@ help(std::ostream& out)
 	    << "Invoking the program this way solves all instances in [scen "
 	       "file] with algorithm [alg]\n"
 	    << "Currently recognised values for [alg]:\n"
-	    << "\tjps, jpsP, jpsP32, jps+, jpsP+\n";
+	    << "\tjps, jpsP or jps2, jps+, jpsP+ or jps2+\n";
 	// << ""
 	// << "The following are valid parameters for GENERATING instances:\n"
 	// << "\t --gen [map file (required)]\n"
@@ -246,16 +246,10 @@ main(int argc, char** argv)
 		return run_jps<jps_expansion_policy<jump_point>>(
 		    scenmgr, mapfile, alg);
 	}
-	else if(alg == "jpsP")
+	else if(alg == "jpsP" || alg == "jps2")
 	{
 		using jump_point = jps::jump::jump_point_online;
 		return run_jps<jps_prune_expansion_policy<jump_point>>(
-		    scenmgr, mapfile, alg);
-	}
-	else if(alg == "jpsP32")
-	{
-		using jump_point = jps::jump::jump_point_online;
-		return run_jps<jps_prune_expansion_policy<jump_point, 32, 64>>(
 		    scenmgr, mapfile, alg);
 	}
 	else if(alg == "jps+")
@@ -264,7 +258,7 @@ main(int argc, char** argv)
 		return run_jps<jps_expansion_policy<jump_point>>(
 		    scenmgr, mapfile, alg);
 	}
-	else if(alg == "jpsP+")
+	else if(alg == "jpsP+" || alg == "jps2+")
 	{
 		using jump_point = jps::jump::jump_point_offline<>;
 		return run_jps<jps_prune_expansion_policy<jump_point>>(
