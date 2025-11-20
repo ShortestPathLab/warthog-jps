@@ -23,6 +23,10 @@ class jps_expansion_policy_base
     : public warthog::search::gridmap_expansion_policy_base
 {
 public:
+	/// @brief sets the policy to use with map
+	/// @param map point to gridmap, if null map will need to be set later;
+	///            otherwise sets map and creates a rotated gridmap.
+	///            Use set_map to provide a map at a later stage.
 	jps_expansion_policy_base(warthog::domain::gridmap* map)
 	    : gridmap_expansion_policy_base(map)
 	{
@@ -35,7 +39,7 @@ public:
 		return gridmap_expansion_policy_base::mem()
 		    + (sizeof(jps_expansion_policy_base)
 		       - sizeof(gridmap_expansion_policy_base))
-		    + map_->mem();
+		    + rmap_.mem();
 	}
 
 	/// @brief Sets the map, creating the rotated gridmap from map at current state.

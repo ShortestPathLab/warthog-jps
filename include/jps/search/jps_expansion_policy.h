@@ -40,6 +40,10 @@ template<typename JpsJump>
 class jps_expansion_policy : public jps_expansion_policy_base
 {
 public:
+	/// @brief sets the policy to use with map
+	/// @param map point to gridmap, if null map will need to be set later;
+	///            otherwise sets map and creates a rotated gridmap.
+	///            Use set_map to provide a map at a later stage.
 	jps_expansion_policy(warthog::domain::gridmap* map)
 	    : jps_expansion_policy_base(map)
 	{

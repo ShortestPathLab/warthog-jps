@@ -404,7 +404,7 @@ struct gridmap_rotate_ptr : std::array<domain::gridmap*, 2>
 	}
 	operator bool() const noexcept { return (*this)[0]; }
 };
-/// @brief a copy-by-value class pointing to grid/rgrid with conversions
+/// @brief a copy-by-value class pointing to grid/rgrid with id conversions functions
 struct gridmap_rotate_ptr_convs : gridmap_rotate_ptr,
                                   rgridmap_point_conversions
 {
@@ -448,7 +448,7 @@ struct gridmap_rotate_table : std::array<domain::gridmap::bitarray, 2>
 	}
 	operator bool() const noexcept { return (*this)[0].data(); }
 };
-/// @brief a copy-by-value class for fast access to grid/rgrid with conversions
+/// @brief a copy-by-value class for fast access to grid/rgrid with id conversions functions
 struct gridmap_rotate_table_convs : gridmap_rotate_table,
                                     rgridmap_point_conversions
 {
@@ -481,6 +481,14 @@ struct gridmap_rotate_table_convs : gridmap_rotate_table,
 	}
 };
 
+/// The main rotate gridmap class.
+/// Stores a pointer to a gridmap and rotated gridmap.
+/// The rotated gridmap memory may be created and owned by this class, or
+/// provided and controlled by the user.
+///
+/// Supports static_cast operations for all gridmap_rotate_(ptr|table)(_conv)?.
+/// They will act as valid small pointer classes (16-24 bytes) with various levels
+/// if indirection to the grid data.
 class rotate_gridmap : public rgridmap_point_conversions
 {
 private:
@@ -608,6 +616,8 @@ public:
 		return gridmap_rotate_table_convs(
 		    *this, static_cast<rgridmap_point_conversions>(*this));
 	}
+
+	size_t mem() const noexcept { return rmap_obj != nullptr ? rmap_obj->mem() : 0; }
 };
 
 } // namespace warthog::grid
