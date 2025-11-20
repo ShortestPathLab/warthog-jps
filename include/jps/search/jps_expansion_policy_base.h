@@ -1,10 +1,16 @@
-#ifndef JPS_SEARCH_JPS_GRIDMAP_EXPANSION_POLICY_H
-#define JPS_SEARCH_JPS_GRIDMAP_EXPANSION_POLICY_H
+#ifndef JPS_SEARCH_JPS_EXPANSION_POLICY_BASE_H
+#define JPS_SEARCH_JPS_EXPANSION_POLICY_BASE_H
 
-// jps_gridmap_expansion_policy.h
 //
-// This expansion policy is a base policy for the jps algorithms.
-// It creates a common class for the rotated gridmap.
+// jps_expansion_policy_base.h
+//
+// The base expansion policy for jps-base algorithm.
+// Adds interface for setting the domain, rotate_gridmap.
+// 
+//
+// @author: Ryan Hechenberger
+// @created: 06/01/2010
+//
 
 #include "jps.h"
 #include <jps/domain/rotate_gridmap.h>
@@ -13,11 +19,11 @@
 namespace jps::search
 {
 
-class jps_gridmap_expansion_policy
+class jps_expansion_policy_base
     : public warthog::search::gridmap_expansion_policy_base
 {
 public:
-	jps_gridmap_expansion_policy(warthog::domain::gridmap* map)
+	jps_expansion_policy_base(warthog::domain::gridmap* map)
 	    : gridmap_expansion_policy_base(map)
 	{
 		if(map != nullptr) { rmap_.create_rmap(*map); }
@@ -27,11 +33,13 @@ public:
 	mem() override
 	{
 		return gridmap_expansion_policy_base::mem()
-		    + (sizeof(jps_gridmap_expansion_policy)
+		    + (sizeof(jps_expansion_policy_base)
 		       - sizeof(gridmap_expansion_policy_base))
 		    + map_->mem();
 	}
 
+	/// @brief Sets the map, creating the rotated gridmap from map at current state.
+	/// @param map the gridmap to use and rotate
 	void
 	set_map(warthog::domain::gridmap& map)
 	{
@@ -39,6 +47,8 @@ public:
 		gridmap_expansion_policy_base::set_map(map);
 		set_rmap_(rmap_);
 	}
+	/// @brief Gives a user-proved map and rotated map, the expander does not own either resource.
+	/// @param rmap the rotated_gridmap pair-point struct
 	void
 	set_map(domain::gridmap_rotate_ptr rmap)
 	{
@@ -58,4 +68,4 @@ protected:
 
 } // namespace jps::search
 
-#endif // JPS_SEARCH_JPS_GRIDMAP_EXPANSION_POLICY_H
+#endif // JPS_SEARCH_JPS_EXPANSION_POLICY_BASE_H

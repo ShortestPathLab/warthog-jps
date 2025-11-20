@@ -1,6 +1,7 @@
 #ifndef JPS_SEARCH_JPS_EXPANSION_POLICY_H
 #define JPS_SEARCH_JPS_EXPANSION_POLICY_H
 
+//
 // jps_expansion_policy.h
 //
 // This expansion policy reduces the branching factor
@@ -17,8 +18,9 @@
 //
 // @author: dharabor & Ryan Hechenberger
 // @created: 06/01/2010
+//
 
-#include "jps_gridmap_expansion_policy.h"
+#include "jps_expansion_policy_base.h"
 #include <jps/domain/rotate_gridmap.h>
 #include <warthog/search/gridmap_expansion_policy.h>
 #include <warthog/util/template.h>
@@ -35,11 +37,11 @@ namespace jps::search
 /// such as jump_point_online for online JPS (B), or jump_point_offline<> for
 /// offline JPS+ (B).
 template<typename JpsJump>
-class jps_expansion_policy : public jps_gridmap_expansion_policy
+class jps_expansion_policy : public jps_expansion_policy_base
 {
 public:
 	jps_expansion_policy(warthog::domain::gridmap* map)
-	    : jps_gridmap_expansion_policy(map)
+	    : jps_expansion_policy_base(map)
 	{
 		if(map != nullptr)
 		{
@@ -66,9 +68,9 @@ public:
 	size_t
 	mem() override
 	{
-		return jps_gridmap_expansion_policy::mem()
+		return jps_expansion_policy_base::mem()
 		    + (sizeof(jps_expansion_policy)
-		       - sizeof(jps_gridmap_expansion_policy));
+		       - sizeof(jps_expansion_policy_base));
 	}
 
 	jump_point&
@@ -86,7 +88,7 @@ protected:
 	void
 	set_rmap_(domain::rotate_gridmap& rmap) override
 	{
-		jps_gridmap_expansion_policy::set_rmap_(rmap);
+		jps_expansion_policy_base::set_rmap_(rmap);
 		jpl_.set_map(rmap);
 		map_width_ = rmap.map().width();
 	}
