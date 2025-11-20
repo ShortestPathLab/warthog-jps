@@ -1,6 +1,7 @@
 #ifndef JPS_SEARCH_JPS_EXPANSION_POLICY_H
 #define JPS_SEARCH_JPS_EXPANSION_POLICY_H
 
+//
 // jps_expansion_policy.h
 //
 // This expansion policy reduces the branching factor
@@ -8,17 +9,18 @@
 // could be reached by an equivalent (or shorter) path that visits
 // the parent of n but not n itself.
 //
-// An extension of this idea is to generate jump nodes located in the
-// same direction as the remaining neighbours.
+// Used with jump_point_online gives JPS (B) algorithm.
+// Used with jump_point_offline gives JPS+ (B) algorithm.
 //
 // Theoretical details:
 // [Harabor D. and Grastien A., 2011, Online Node Pruning for Pathfinding
 // On Grid Maps, AAAI]
 //
-// @author: dharabor
+// @author: dharabor & Ryan Hechenberger
 // @created: 06/01/2010
+//
 
-#include "jps_gridmap_expansion_policy.h"
+#include "jps_expansion_policy_base.h"
 #include <jps/domain/rotate_gridmap.h>
 #include <warthog/search/gridmap_expansion_policy.h>
 #include <warthog/util/template.h>
@@ -26,19 +28,24 @@
 namespace jps::search
 {
 
-/// @brief
-/// @tparam JpsJump
+/// @brief generates successor nodes for use in warthog-core search algorithm
+/// @tparam JpsJump the jump-point locator to use
 ///
-/// JPS expansion policy that pushes the first cardinal and intercardinal
-/// jump point, block-based jumping is the standard jump used by
-/// jump_point_online. jps_2011_expansion_policy<jump_point_online> gives JPS
-/// (B). jps_2011_expansion_policy<jump_point_offline> gives JPS+.
+/// JPS expansion policy that pushes the first cardinal and first intercardinal
+/// jump points for all taut directions.
+/// The given JpsJump expects a class from jps::jump namespace,
+/// such as jump_point_online for online JPS (B), or jump_point_offline<> for
+/// offline JPS+ (B).
 template<typename JpsJump>
-class jps_expansion_policy : public jps_gridmap_expansion_policy
+class jps_expansion_policy : public jps_expansion_policy_base
 {
 public:
+	/// @brief sets the policy to use with map
+	/// @param map point to gridmap, if null map will need to be set later;
+	///            otherwise sets map and creates a rotated gridmap.
+	///            Use set_map to provide a map at a later stage.
 	jps_expansion_policy(warthog::domain::gridmap* map)
-	    : jps_gridmap_expansion_policy(map)
+	    : jps_expansion_policy_base(map)
 	{
 		if(map != nullptr)
 		{
@@ -65,9 +72,9 @@ public:
 	size_t
 	mem() override
 	{
-		return jps_gridmap_expansion_policy::mem()
+		return jps_expansion_policy_base::mem()
 		    + (sizeof(jps_expansion_policy)
-		       - sizeof(jps_gridmap_expansion_policy));
+		       - sizeof(jps_expansion_policy_base));
 	}
 
 	jump_point&
@@ -85,7 +92,7 @@ protected:
 	void
 	set_rmap_(domain::rotate_gridmap& rmap) override
 	{
-		jps_gridmap_expansion_policy::set_rmap_(rmap);
+		jps_expansion_policy_base::set_rmap_(rmap);
 		jpl_.set_map(rmap);
 		map_width_ = rmap.map().width();
 	}

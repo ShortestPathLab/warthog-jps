@@ -1,12 +1,20 @@
 #ifndef JPS_JUMP_JUMP_POINT_OFFLINE_H
 #define JPS_JUMP_JUMP_POINT_OFFLINE_H
 
-// A class wrapper around some code that finds, online, jump point
-// successors of an arbitrary nodes in a uniform-cost grid map.
 //
-// For theoretical details see:
-// [Harabor D. and Grastien A, 2011,
-// Online Graph Pruning Pathfinding on Grid Maps, AAAI]
+// jps/jump/jump_point_offline.h
+//
+// Offline level jump-point locator.
+// Contains two components, the jump_point_table which handles how jump-points
+// are stored in all 8-directions.
+// The jump_point_offline is given a templated jump_point_table and an online
+// jump-point locator.
+//
+// The table will precompute the jump-point distances from an online locator
+// and store them into a jump_point_table.
+//
+// @author Ryan Hechenberger
+// @created 2025-11-20
 //
 
 #include "jump_point_online.h"
@@ -18,10 +26,12 @@
 namespace jps::jump
 {
 
-/// @brief Store, set and access offline jump-point results
-/// @tparam ChainJump if true: store 1-byte jumps that chain; false: 2-byte
-/// full jump
-/// @tparam DeadEnd if true: track deadend as negative, false: only jump-points
+/// @brief Store, set and access offline jump-point results in all
+/// 8-directions.
+/// @tparam ChainJump if true: store jumps as 1-byte, chaining for long jumps;
+///         false: stores in 2-bytes the full jump distance
+/// @tparam DeadEnd if true: track deadend as negative, false: deadend not
+/// recorded
 template<bool ChainJump = false, bool DeadEnd = true>
 struct jump_point_table
 {
@@ -318,10 +328,11 @@ public:
 		return res;
 	}
 
-	/// @brief shoot ray to target point
+	/// @brief test jump directly to target point is visible or blocked
+	///        i.e. has line-of-sight or is blocked and where
 	/// @param node_id the id pairs for grid and rgrid (at loc)
-	/// @param loc shoot from loc
-	/// @param target shoot to target
+	/// @param loc x/y location (node_id points here)
+	/// @param target target point to check visiblity to
 	/// @return pair <intercardinal-distance, cardinal-distance>, if both >= 0
 	/// than target is visible,
 	///         first<0 means intercardinal reaches blocker at -first distance
@@ -432,6 +443,7 @@ public:
 		}
 	}
 
+	/// @brief set the underlying map, re-computing offline jump table
 	void
 	set_map(const rotate_grid& map)
 	{
@@ -439,6 +451,7 @@ public:
 		// compute offline jump-point table
 		compute_jump_table();
 	}
+	/// @brief computes the jump table. Linear complexity to size of grid O(WH)
 	void
 	compute_jump_table()
 	{
@@ -450,6 +463,8 @@ public:
 
 		// handle cardinal scans
 
+		// compute jump table in N,S,E,W
+		// preset how to scan in each direction to reduce code to a for-loop
 		struct CardinalScan
 		{
 			direction_id d;
@@ -462,6 +477,9 @@ public:
 		     {EAST_ID, point(0, 0), spoint(0, 1)},
 		     {WEST_ID, point(width - 1, 0), spoint(0, 1)}}};
 
+		// esseintally compile-type for-each N,S,E,W
+		// computes each direction and stores result in table in linear time on
+		// grid size
 		using jump_cardinal_type = jump_distance(OnlinePoint*, uint32_t);
 		warthog::util::for_each_integer_sequence<std::integer_sequence<
 		    direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID>>([&](auto iv) {
@@ -526,6 +544,9 @@ public:
 		//
 		// InterCardinal scans
 		//
+
+		// compute jump table in NE,NW,SE,SW
+		// preset how to scan in each direction to reduce code to a for-loop
 		struct ICardinalScan
 		{
 			direction_id d;

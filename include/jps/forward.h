@@ -1,7 +1,15 @@
 #ifndef JPS_FORWARD_H
 #define JPS_FORWARD_H
 
-#include <vector>
+//
+// jps/forward.h
+//
+// Global namespace types include.
+//
+// @author Ryan Hechenberger
+// @created 2025-11-20
+//
+
 #include <warthog/constants.h>
 #include <warthog/defines.h>
 #include <warthog/domain/grid.h>
@@ -10,16 +18,13 @@
 namespace jps
 {
 
-using namespace warthog::grid;
+using namespace ::warthog::grid;
 using ::warthog::pad_id;
 // using jps_id = grid_id;
 struct rmap_id_tag
 { };
 using rgrid_id = warthog::identity_base<rmap_id_tag, grid_id::id_type>;
 using warthog::cost_t;
-
-using vec_jps_id   = std::vector<grid_id>;
-using vec_jps_cost = std::vector<cost_t>;
 
 } // namespace jps
 

@@ -1,24 +1,29 @@
 #ifndef JPS_SEARCH_JPS_PRUNE_EXPANSION_POLICY_H
 #define JPS_SEARCH_JPS_PRUNE_EXPANSION_POLICY_H
 
-// jps_expansion_policy.h
+//
+// jps_prune_expansion_policy.h
 //
 // This expansion policy reduces the branching factor
 // of a node n during search by ignoring any neighbours which
 // could be reached by an equivalent (or shorter) path that visits
 // the parent of n but not n itself.
+// It extends jps_expansion_policy by pruning the intercardinal nodes
+// (NE/NW/SE/SE) by expanding these nodes in-place and pushing their
+// cardinal successors.
 //
-// An extension of this idea is to generate jump nodes located in the
-// same direction as the remaining neighbours.
+// Used with jump_point_online gives JPS (B+P) algorithm.
+// Used with jump_point_offline gives JPS+ (B+P) algorithm.
 //
 // Theoretical details:
 // [Harabor D. and Grastien A., 2011, Online Node Pruning for Pathfinding
 // On Grid Maps, AAAI]
 //
-// @author: dharabor
+// @author: dharabor & Ryan Hechenberger
 // @created: 06/01/2010
+//
 
-#include "jps_gridmap_expansion_policy.h"
+#include "jps_expansion_policy_base.h"
 #include <jps/domain/rotate_gridmap.h>
 #include <warthog/search/gridmap_expansion_policy.h>
 #include <warthog/util/template.h>
@@ -26,27 +31,38 @@
 namespace jps::search
 {
 
-/// @brief
-/// @tparam JpsJump
-/// @tparam InterLimit max length the intercardinal can expand to, =0 for
-/// run-time set, -1 to prune all intercardinal points
-/// @tparam InterSize size of intercardinal successor array, is stored on the
-/// stack.
-///                   If this successor count is reached withing InterLimit,
-///                   then end successor unless InterLimit<0
+/// @brief generates successor nodes for use in warthog-core search algorithm,
+///        pruning intercardinals
+/// @tparam JpsJump the jump-point locator to use
+/// @tparam InterLimit max distance the intercardinal can expand to, =0 for
+///         run-time set, -1 for no limit. Will push nodes first than check if
+///         limit is reached, thus jump_point_offline may exceed this greatly.
+/// @tparam InterSize the max amount of intercardinal successors.
+///         This is where results to the JpsJump are stored, which are placed
+///         on the stack.  If this limit is reached, then that intercardinal
+///         will be a successor and successors in that direction will cease.
+///         The max successors will not exceed to 2*max(W,H).
 ///
-/// JPS expansion policy that pushes the first cardinal and intercardinal
-/// jump point, block-based jumping is the standard jump used by
-/// jump_point_online. jps_2011_expansion_policy<jump_point_online> gives JPS
-/// (B). jps_2011_expansion_policy<jump_point_offline> gives JPS+.
+/// JPS expansion policy that pushes all jump points that have a direct
+/// line-of-sight to the expanding node following its intercardinal first, then
+/// cardinal. It essentially expands the discovered intercardinal successor of
+/// JPS without adding those intercardinal nodes to the queue.
+///
+/// The given JpsJump expects a class from jps::jump namespace,
+/// such as jump_point_online for online JPS (B+P), or jump_point_offline<> for
+/// offline JPS+ (B+P).
 template<typename JpsJump, int16_t InterLimit = -1, size_t InterSize = 1024>
-class jps_prune_expansion_policy : public jps_gridmap_expansion_policy
+class jps_prune_expansion_policy : public jps_expansion_policy_base
 {
 	static_assert(InterSize >= 1, "InterSize must be at least 2.");
 
 public:
+	/// @brief sets the policy to use with map
+	/// @param map point to gridmap, if null map will need to be set later;
+	///            otherwise sets map and creates a rotated gridmap.
+	///            Use set_map to provide a map at a later stage.
 	jps_prune_expansion_policy(warthog::domain::gridmap* map)
-	    : jps_gridmap_expansion_policy(map)
+	    : jps_expansion_policy_base(map)
 	{
 		if(map != nullptr)
 		{
@@ -54,7 +70,7 @@ public:
 			map_width_ = rmap_.map().width();
 		}
 	}
-	using jps_gridmap_expansion_policy::jps_gridmap_expansion_policy;
+	using jps_expansion_policy_base::jps_expansion_policy_base;
 	~jps_prune_expansion_policy() = default;
 
 	using jump_point = JpsJump;
@@ -74,9 +90,9 @@ public:
 	size_t
 	mem() override
 	{
-		return jps_gridmap_expansion_policy::mem()
+		return jps_expansion_policy_base::mem()
 		    + (sizeof(jps_prune_expansion_policy)
-		       - sizeof(jps_gridmap_expansion_policy));
+		       - sizeof(jps_expansion_policy_base));
 	}
 
 	jump_point&
@@ -117,7 +133,7 @@ protected:
 	void
 	set_rmap_(domain::rotate_gridmap& rmap) override
 	{
-		jps_gridmap_expansion_policy::set_rmap_(rmap);
+		jps_expansion_policy_base::set_rmap_(rmap);
 		jpl_.set_map(rmap);
 		map_width_ = rmap.map().width();
 	}
@@ -214,8 +230,7 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 			    jump::intercardinal_jump_result res[InterSize];
 			    jump::jump_distance inter_total = 0;
 			    while(true)
-			    { // InterSize == -1 will loop InterSize results until all are
-				  // found
+			    {
 				    auto [result_n, dist]
 				        = jpl_.template jump_intercardinal_many<di>(
 				            pair_id, res, InterSize, get_jump_limit());
