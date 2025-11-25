@@ -46,7 +46,7 @@ The algorithms provided to `--alg` parameter, along with their `jps::search` and
 in the table below:
 
 | `--alg`            | `jps::search`                  | `jps::jump`            |
-|------------------------------------------------------------------------------|
+|--------------------|--------------------------------|------------------------|
 | `jps`              | `jps_expansion_policy<>`       | `jump_point_online`    |
 | `jpsP` or `jps2`   | `jps_prune_expansion_policy<>` | `jump_point_online`    |
 | `jps+`             | `jps_expansion_policy`         | `jump_point_offline<>` |
