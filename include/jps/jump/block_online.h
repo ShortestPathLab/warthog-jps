@@ -16,7 +16,7 @@
 // The BasicIntercardinalWalker is a non-templated version of
 // IntercardinalWalker.
 //
-// @author Ryan Hechenberger
+// @author dharabor & Ryan Hechenberger
 // @created 2025-11-20
 //
 

@@ -10,7 +10,7 @@
 // The table will precompute the jump-point distances from an online locator
 // and store them into a jump_point_table.
 //
-// @author Ryan Hechenberger
+// @author dharabor & Ryan Hechenberger
 // @created 2025-11-20
 //
 
