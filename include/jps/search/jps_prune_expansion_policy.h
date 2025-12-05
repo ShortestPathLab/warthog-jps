@@ -35,7 +35,7 @@ namespace jps::search
 ///        pruning intercardinals
 /// @tparam JpsJump the jump-point locator to use
 /// @tparam InterLimit max distance the intercardinal can expand to, =0 for
-///         run-time set, -1 for no limit. Will push nodes first than check if
+///         run-time set, -1 for no limit. Will push nodes first then check if
 ///         limit is reached, thus jump_point_offline may exceed this greatly.
 /// @tparam InterSize the max amount of intercardinal successors.
 ///         This is where results to the JpsJump are stored, which are placed

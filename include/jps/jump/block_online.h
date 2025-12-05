@@ -122,8 +122,8 @@ jump_point_online_hori(
 			//  otherwise: jump_count = trav cell after turn (jump point
 			//  location)
 			// check for target with target_jump (dist) <= jump_count, as if <
-			// than target is reachable, if equal then trav pos is the target
-			// if greater, than target is further or another row or behind (as
+			// then target is reachable, if equal then trav pos is the target
+			// if greater, then target is further or another row or behind (as
 			// unsigned)
 			assert(jump_count >= 0);
 			// must be checked as unsigned for:
@@ -222,8 +222,8 @@ jump_point_online_hori_target(
 			//  otherwise: jump_count = trav cell after turn (jump point
 			//  location)
 			// check for target with target_jump (dist) <= jump_count, as if <
-			// than target is reachable, if equal then trav pos is the target
-			// if greater, than target is further or another row or behind (as
+			// then target is reachable, if equal then trav pos is the target
+			// if greater, then target is further or another row or behind (as
 			// unsigned)
 			assert(jump_count >= 0);
 			if(static_cast<uint32_t>(jump_count) >= target_jump)

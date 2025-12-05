@@ -334,7 +334,7 @@ public:
 	/// @param loc x/y location (node_id points here)
 	/// @param target target point to check visiblity to
 	/// @return pair <intercardinal-distance, cardinal-distance>, if both >= 0
-	/// than target is visible,
+	/// then target is visible,
 	///         first<0 means intercardinal reaches blocker at -first distance
 	///         (second will be -1) first>=0 second<0 means cardinal blocker at
 	///         -second distance away second<0 mean target is blocked in
