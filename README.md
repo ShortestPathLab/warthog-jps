@@ -4,6 +4,8 @@ Warthog is an optimised C++ library for pathfinding search.
 Warthog-JPS is an extension to Warthog with JPS support.
 See [warthog-core](https://github.com/ShortestPathLab/warthog-core) for more details on Warthog setup.
 
+If you find this work useful, please cite our paper as follows:
+
 	@article{Harabor_Grastien_2014,
 	title={Improving Jump Point Search},
 	volume={24},
@@ -26,11 +28,13 @@ Simply run the following code below:
 ```
 cmake -DCMAKE_BUILD_TYPE=Release -B build
 cmake --build build
-./build/warthog-jps --alg jps --scen example.scen
+./build/warthog-jps --alg jps --scen example/arena2.map.scen
 ```
 
-The example scenario `example.scen` is not a part of this repo.
-Get benchmark from places like MovingAI or pathfinding.ai found in the resource section.
+The example map is from the MovingAI benchmarks under Dragon Age Origins.
+Use the `build.sh` or `run.sh` for quick compile/usage of this scenario.
+
+For more evaluation data, please refer to existing benchmarks from the community, which offer a range of different challenges across a variety of maps/domains; links found in the resource section.
 
 JPS requires `warthog-core` repo to compile, and by default will fetch the repo.
 
@@ -39,6 +43,13 @@ JPS requires `warthog-core` repo to compile, and by default will fetch the repo.
 JPS comes with several variants.
 All variants use block-based symmetry breaking for finding jump-point locations,
 making them at least JPS (B).
+The list is as follows:
+
+- `jps` JPS (B) like original with block-based symmetry
+- `jpsP` or `jps2` JPS (B+P) with intercardinal pruning
+- `jps+` JPS+ (B) is original with offline jump points
+- `jpsP+` or `jps2+` JPS+ (B+P) offline with pruning
+
 These jump points are found in namespace `jps::jump`, while `jps::search` uses provided `jps::jump` locators
 to produce successors used in warthog-core.
 
