@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 project(WarthogJPS
-	VERSION 0.5.0
+	VERSION 0.5.1
 	LANGUAGES CXX C)
 
 set_property(GLOBAL PROPERTY WARTHOG_warthog-jps ON)
