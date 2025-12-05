@@ -80,7 +80,7 @@ struct jump_point_table
 	chain_stride() noexcept
 	{
 		length acv = static_cast<length>(chain_value());
-		acv = acv >= 0 ? acv : -acv;
+		acv        = acv >= 0 ? acv : -acv;
 		return acv - 2; // direct jump max at chain_stride()+1, but chain only
 		                // chain_stride() as we must never reach 0
 	}
