@@ -127,7 +127,7 @@ protected:
 	rotate_grid map_;
 };
 
-void
+inline void
 jump_point_online::set_map(const rotate_grid& orig)
 {
 	map_ = orig;
@@ -238,7 +238,7 @@ jump_point_online::jump_intercardinal_many(
 	return {results_count, walk_count};
 }
 
-std::pair<jump_distance, jump_distance>
+inline std::pair<jump_distance, jump_distance>
 jump_point_online::jump_target(
     domain::grid_pair_id node_id, point loc, point target)
 {
