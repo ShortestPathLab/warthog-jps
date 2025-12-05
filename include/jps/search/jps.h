@@ -29,7 +29,7 @@ namespace jps::search
 //
 // @return one of direction::{N, S, E, W}
 inline direction
-from_direction(jps_id n1_id_p, jps_id n2_id_p, uint32_t map_width_p)
+from_direction(grid_id n1_id_p, grid_id n2_id_p, uint32_t map_width_p)
 {
 	if(uint32_t{n1_id_p} == warthog::domain::GRID_ID_MAX) { return NONE; }
 
@@ -81,7 +81,7 @@ from_direction(jps_id n1_id_p, jps_id n2_id_p, uint32_t map_width_p)
 //}
 
 inline direction
-from_direction_4c(jps_id n1_xy_id, jps_id n2_xy_id, uint32_t mapwidth)
+from_direction_4c(grid_id n1_xy_id, grid_id n2_xy_id, uint32_t mapwidth)
 {
 	if(n1_xy_id.is_none()) { return NONE; }
 
@@ -190,29 +190,6 @@ compute_successors_4c(direction d, uint32_t tiles)
 	}
 	return retval;
 }
-
-#if 0
-// creates a warthog::graph::xy_graph which contains only
-// nodes that are jump points and edges which represent valid jumps,
-// from one jump point to another.
-//
-// @param gm: the input grid
-// @param id_map: a key/value set that maps the grid id of
-// of each jump points to a corresponding id in the graph (optional)
-//
-//
-// @return the jump point graph
-warthog::graph::xy_graph*
-create_jump_point_graph(warthog::domain::gridmap* gm);
-#endif
-
-// given an input grid, create a new map where every (x, y) location
-// is labeled as a corner point or not.
-//
-// @param: gm; the input grid
-// @return the corner gridmap
-warthog::domain::gridmap*
-create_corner_map(warthog::domain::gridmap* gm);
 
 } // namespace jps::search
 

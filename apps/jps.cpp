@@ -8,11 +8,6 @@
 //
 
 #include <jps/search/jps.h>
-#include <jps/search/jps2_expansion_policy.h>
-#include <jps/search/jps2plus_expansion_policy.h>
-#include <jps/search/jps4c_expansion_policy.h>
-#include <jps/search/jps_expansion_policy.h>
-#include <jps/search/jpsplus_expansion_policy.h>
 #include <warthog/constants.h>
 #include <warthog/domain/gridmap.h>
 #include <warthog/heuristic/octile_heuristic.h>
@@ -21,7 +16,10 @@
 #include <warthog/util/scenario_manager.h>
 #include <warthog/util/timer.h>
 
-#include <jps/search/jps_expansion_policy2.h>
+#include <jps/jump/jump_point_offline.h>
+#include <jps/jump/jump_point_online.h>
+#include <jps/search/jps_expansion_policy.h>
+#include <jps/search/jps_prune_expansion_policy.h>
 
 #include "cfg.h"
 #include <getopt.h>
@@ -70,8 +68,7 @@ help(std::ostream& out)
 	    << "Invoking the program this way solves all instances in [scen "
 	       "file] with algorithm [alg]\n"
 	    << "Currently recognised values for [alg]:\n"
-	    << "\tjps, jps+, jps2, jps2+\n"
-	    << "\tjpsV2, jpsV2-cardinal, jpsV2-prune\n";
+	    << "\tjps, jpsP or jps2, jps+, jpsP+ or jps2+\n";
 	// << ""
 	// << "The following are valid parameters for GENERATING instances:\n"
 	// << "\t --gen [map file (required)]\n"
@@ -90,20 +87,12 @@ check_optimality(
 
 	if(fabs(delta - epsilon) > epsilon)
 	{
-		std::stringstream strpathlen;
-		strpathlen << std::fixed << std::setprecision(exp->precision());
-		strpathlen << sol.sum_of_edge_costs_;
-
-		std::stringstream stroptlen;
-		stroptlen << std::fixed << std::setprecision(exp->precision());
-		stroptlen << exp->distance();
-
-		std::cerr << std::setprecision(exp->precision());
+		std::cerr << std::setprecision(15);
 		std::cerr << "optimality check failed!" << std::endl;
 		std::cerr << std::endl;
-		std::cerr << "optimal path length: " << stroptlen.str()
+		std::cerr << "optimal path length: " << exp->distance()
 		          << " computed length: ";
-		std::cerr << strpathlen.str() << std::endl;
+		std::cerr << sol.sum_of_edge_costs_ << std::endl;
 		std::cerr << "precision: " << precision << " epsilon: " << epsilon
 		          << std::endl;
 		std::cerr << "delta: " << delta << std::endl;
@@ -253,39 +242,26 @@ main(int argc, char** argv)
 	using namespace jps::search;
 	if(alg == "jps")
 	{
-		return run_jps<jps_expansion_policy>(scenmgr, mapfile, alg);
+		using jump_point = jps::jump::jump_point_online;
+		return run_jps<jps_expansion_policy<jump_point>>(
+		    scenmgr, mapfile, alg);
+	}
+	else if(alg == "jpsP" || alg == "jps2")
+	{
+		using jump_point = jps::jump::jump_point_online;
+		return run_jps<jps_prune_expansion_policy<jump_point>>(
+		    scenmgr, mapfile, alg);
 	}
 	else if(alg == "jps+")
 	{
-		return run_jps<jpsplus_expansion_policy>(scenmgr, mapfile, alg);
-	}
-	else if(alg == "jps2")
-	{
-		return run_jps<jps2_expansion_policy>(scenmgr, mapfile, alg);
-	}
-	else if(alg == "jps2+")
-	{
-		return run_jps<jps2plus_expansion_policy>(scenmgr, mapfile, alg);
-	}
-	else if(alg == "jpsV2")
-	{
-		using jump_point
-		    = jps::jump::jump_point_online<jps::JpsFeature::DEFAULT>;
-		return run_jps<jps_expansion_policy2<jump_point>>(
+		using jump_point = jps::jump::jump_point_offline<>;
+		return run_jps<jps_expansion_policy<jump_point>>(
 		    scenmgr, mapfile, alg);
 	}
-	else if(alg == "jpsV2-cardinal")
+	else if(alg == "jpsP+" || alg == "jps2+")
 	{
-		using jump_point = jps::jump::jump_point_online<
-		    jps::JpsFeature::STORE_CARDINAL_JUMP>;
-		return run_jps<jps_expansion_policy2<jump_point>>(
-		    scenmgr, mapfile, alg);
-	}
-	else if(alg == "jpsV2-prune")
-	{
-		using jump_point = jps::jump::jump_point_online<
-		    jps::JpsFeature::PRUNE_INTERCARDINAL>;
-		return run_jps<jps_expansion_policy2<jump_point>>(
+		using jump_point = jps::jump::jump_point_offline<>;
+		return run_jps<jps_prune_expansion_policy<jump_point>>(
 		    scenmgr, mapfile, alg);
 	}
 	else
