@@ -79,7 +79,8 @@ struct jump_point_table
 	static consteval length
 	chain_stride() noexcept
 	{
-		constexpr length acv = std::abs(static_cast<length>(chain_value()));
+		length acv = static_cast<length>(chain_value());
+		acv        = acv >= 0 ? acv : -acv;
 		return acv - 2; // direct jump max at chain_stride()+1, but chain only
 		                // chain_stride() as we must never reach 0
 	}
