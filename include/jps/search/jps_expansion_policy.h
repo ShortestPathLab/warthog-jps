@@ -1,6 +1,7 @@
 #ifndef JPS_SEARCH_JPS_EXPANSION_POLICY_H
 #define JPS_SEARCH_JPS_EXPANSION_POLICY_H
 
+//
 // jps_expansion_policy.h
 //
 // This expansion policy reduces the branching factor
@@ -8,40 +9,46 @@
 // could be reached by an equivalent (or shorter) path that visits
 // the parent of n but not n itself.
 //
-// An extension of this idea is to generate jump nodes located in the
-// same direction as the remaining neighbours.
+// Used with jump_point_online gives JPS (B) algorithm.
+// Used with jump_point_offline gives JPS+ (B) algorithm.
 //
 // Theoretical details:
 // [Harabor D. and Grastien A., 2011, Online Node Pruning for Pathfinding
 // On Grid Maps, AAAI]
 //
-// @author: dharabor
+// @author: dharabor & Ryan Hechenberger
 // @created: 06/01/2010
+//
 
-#include "jps_gridmap_expansion_policy.h"
-#include <warthog/search/gridmap_expansion_policy.h>
+#include "jps_expansion_policy_base.h"
 #include <jps/domain/rotate_gridmap.h>
+#include <warthog/search/gridmap_expansion_policy.h>
 #include <warthog/util/template.h>
 
 namespace jps::search
 {
 
-/// @brief 
-/// @tparam JpsJump 
+/// @brief generates successor nodes for use in warthog-core search algorithm
+/// @tparam JpsJump the jump-point locator to use
 ///
-/// JPS expansion policy that pushes the first cardinal and intercardinal
-/// jump point, block-based jumping is the standard jump used by jump_point_online.
-/// jps_2011_expansion_policy<jump_point_online> gives JPS (B).
-/// jps_2011_expansion_policy<jump_point_offline> gives JPS+.
+/// JPS expansion policy that pushes the first cardinal and first intercardinal
+/// jump points for all taut directions.
+/// The given JpsJump expects a class from jps::jump namespace,
+/// such as jump_point_online for online JPS (B), or jump_point_offline<> for
+/// offline JPS+ (B).
 template<typename JpsJump>
-class jps_expansion_policy
-    : public jps_gridmap_expansion_policy
+class jps_expansion_policy : public jps_expansion_policy_base
 {
 public:
+	/// @brief sets the policy to use with map
+	/// @param map point to gridmap, if null map will need to be set later;
+	///            otherwise sets map and creates a rotated gridmap.
+	///            Use set_map to provide a map at a later stage.
 	jps_expansion_policy(warthog::domain::gridmap* map)
-	    : jps_gridmap_expansion_policy(map)
+	    : jps_expansion_policy_base(map)
 	{
-		if (map != nullptr) {
+		if(map != nullptr)
+		{
 			jpl_.set_map(rmap_);
 			map_width_ = rmap_.map().width();
 		}
@@ -65,8 +72,9 @@ public:
 	size_t
 	mem() override
 	{
-		return jps_gridmap_expansion_policy::mem()
-			+ (sizeof(jps_expansion_policy) - sizeof(jps_gridmap_expansion_policy));
+		return jps_expansion_policy_base::mem()
+		    + (sizeof(jps_expansion_policy)
+		       - sizeof(jps_expansion_policy_base));
 	}
 
 	jump_point&
@@ -81,17 +89,18 @@ public:
 	}
 
 protected:
-	void set_rmap_(domain::rotate_gridmap& rmap) override
+	void
+	set_rmap_(domain::rotate_gridmap& rmap) override
 	{
-		jps_gridmap_expansion_policy::set_rmap_(rmap);
+		jps_expansion_policy_base::set_rmap_(rmap);
 		jpl_.set_map(rmap);
 		map_width_ = rmap.map().width();
 	}
 
 private:
 	JpsJump jpl_;
-	point target_loc_ = {};
-	grid_id target_id_ = {};
+	point target_loc_   = {};
+	grid_id target_id_  = {};
 	uint32_t map_width_ = 0;
 };
 
@@ -105,15 +114,19 @@ jps_expansion_policy<JpsJump>::expand(
 
 	// compute the direction of travel used to reach the current node.
 	const grid_id current_id = grid_id(current->get_id());
-	const point loc = rmap_.id_to_point(current_id);
-	const domain::grid_pair_id pair_id{current_id, rmap_.rpoint_to_rid(rmap_.point_to_rpoint(loc))};
-	assert(rmap_.map().get_label(current_id) && rmap_.map().get_label(rmap_.point_to_id(loc))); // loc must be trav on map
-	assert(rmap_.rmap().get_label(static_cast<grid_id>(rmap_.rpoint_to_rid(rmap_.point_to_rpoint(loc))))); // loc must be trav on rmap
+	const point loc          = rmap_.id_to_point(current_id);
+	const domain::grid_pair_id pair_id{
+	    current_id, rmap_.rpoint_to_rid(rmap_.point_to_rpoint(loc))};
+	assert(
+	    rmap_.map().get_label(get<grid_id>(pair_id))
+	    && rmap_.rmap().get_label(
+	        grid_id(get<rgrid_id>(pair_id)))); // loc must be trav on map
 	// const jps_rid current_rid = jpl_.id_to_rid(current_id);
 	// const cost_t current_cost = current->get_g();
 	const direction dir_c = from_direction(
 	    grid_id(current->get_parent()), current_id, rmap_.map().width());
-	const direction_id target_d = warthog::grid::point_to_direction_id(loc, target_loc_);
+	const direction_id target_d
+	    = warthog::grid::point_to_direction_id(loc, target_loc_);
 
 	// get the tiles around the current node c
 	uint32_t c_tiles;
@@ -122,21 +135,25 @@ jps_expansion_policy<JpsJump>::expand(
 	// look for jump points in the direction of each natural
 	// and forced neighbour
 	uint32_t succ_dirs = compute_successors(dir_c, c_tiles);
-	if (succ_dirs & static_cast<uint32_t>(warthog::grid::to_dir(target_d))) {
+	if(succ_dirs & static_cast<uint32_t>(warthog::grid::to_dir(target_d)))
+	{
 		// target in successor direction, check
-		if (auto target_dist = jpl_.jump_target(pair_id, loc, target_loc_); target_dist.second >= 0) {
+		if(auto target_dist = jpl_.jump_target(pair_id, loc, target_loc_);
+		   target_dist.second >= 0)
+		{
 			// target is visible, push
-			warthog::search::search_node* jp_succ
-				    = this->generate(target_id_);
-			add_neighbour(jp_succ, target_dist.first * warthog::DBL_ROOT_TWO + target_dist.second * warthog::DBL_ONE);
+			warthog::search::search_node* jp_succ = this->generate(target_id_);
+			add_neighbour(
+			    jp_succ,
+			    target_dist.first * warthog::DBL_ROOT_TWO
+			        + target_dist.second * warthog::DBL_ONE);
 			return; // no other successor required
 		}
 	}
 
 	// cardinal directions
-	::warthog::util::for_each_integer_sequence<
-		std::integer_sequence<direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID>
-	>([&](auto iv) {
+	::warthog::util::for_each_integer_sequence<std::integer_sequence<
+	    direction_id, NORTH_ID, EAST_ID, SOUTH_ID, WEST_ID>>([&](auto iv) {
 		constexpr direction_id di = decltype(iv)::value;
 		if(succ_dirs & warthog::grid::to_dir(di))
 		{
@@ -144,7 +161,10 @@ jps_expansion_policy<JpsJump>::expand(
 			if(jump_result > 0) // jump point
 			{
 				// successful jump
-				pad_id node{static_cast<uint32_t>(current_id.id + warthog::grid::dir_id_adj(di, map_width_) * jump_result)};
+				pad_id node{static_cast<uint32_t>(
+				    current_id.id
+				    + warthog::grid::dir_id_adj(di, map_width_)
+				        * jump_result)};
 				assert(rmap_.map().get(node)); // successor must be traversable
 				warthog::search::search_node* jp_succ = this->generate(node);
 				add_neighbour(jp_succ, jump_result * warthog::DBL_ONE);
@@ -152,24 +172,30 @@ jps_expansion_policy<JpsJump>::expand(
 		}
 	});
 	// intercardinal directions
-	::warthog::util::for_each_integer_sequence<
-		std::integer_sequence<direction_id, NORTHEAST_ID, NORTHWEST_ID, SOUTHEAST_ID, SOUTHWEST_ID>
-	>([&](auto iv) {
-		constexpr direction_id di = decltype(iv)::value;
-		if(succ_dirs & warthog::grid::to_dir(di))
-		{
-			jump::intercardinal_jump_result res;
-			auto jump_result = jpl_.template jump_intercardinal_many<di>(pair_id, &res, 1);
-			if(jump_result.first > 0) // jump point
-			{
-				// successful jump
-				pad_id node{pad_id(static_cast<int32_t>(current_id.id + warthog::grid::dir_id_adj(di, map_width_) * res.inter))};
-				assert(rmap_.map().get(node)); // successor must be traversable
-				warthog::search::search_node* jp_succ = this->generate(node);
-				add_neighbour(jp_succ, res.inter * warthog::DBL_ROOT_TWO);
-			}
-		}
-	});
+	::warthog::util::for_each_integer_sequence<std::integer_sequence<
+	    direction_id, NORTHEAST_ID, NORTHWEST_ID, SOUTHEAST_ID, SOUTHWEST_ID>>(
+	    [&](auto iv) {
+		    constexpr direction_id di = decltype(iv)::value;
+		    if(succ_dirs & warthog::grid::to_dir(di))
+		    {
+			    jump::intercardinal_jump_result res;
+			    auto jump_result = jpl_.template jump_intercardinal_many<di>(
+			        pair_id, &res, 1);
+			    if(jump_result.first > 0) // jump point
+			    {
+				    // successful jump
+				    pad_id node{pad_id(static_cast<int32_t>(
+				        current_id.id
+				        + warthog::grid::dir_id_adj(di, map_width_)
+				            * res.inter))};
+				    assert(rmap_.map().get(
+				        node)); // successor must be traversable
+				    warthog::search::search_node* jp_succ
+				        = this->generate(node);
+				    add_neighbour(jp_succ, res.inter * warthog::DBL_ROOT_TWO);
+			    }
+		    }
+	    });
 }
 
 template<typename JpsJump>

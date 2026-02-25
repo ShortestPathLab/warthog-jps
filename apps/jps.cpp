@@ -17,8 +17,8 @@
 #include <warthog/util/timer.h>
 #include <warthog/io/grid_trace.h>
 
-#include <jps/jump/jump_point_online.h>
 #include <jps/jump/jump_point_offline.h>
+#include <jps/jump/jump_point_online.h>
 #include <jps/search/jps_expansion_policy.h>
 #include <jps/search/jps_prune_expansion_policy.h>
 
@@ -69,7 +69,7 @@ help(std::ostream& out)
 	    << "Invoking the program this way solves all instances in [scen "
 	       "file] with algorithm [alg]\n"
 	    << "Currently recognised values for [alg]:\n"
-	    << "\tjps, jpsP, jpsP32\n";
+	    << "\tjps, jpsP or jps2, jps+, jpsP+ or jps2+\n";
 	// << ""
 	// << "The following are valid parameters for GENERATING instances:\n"
 	// << "\t --gen [map file (required)]\n"
@@ -88,20 +88,12 @@ check_optimality(
 
 	if(fabs(delta - epsilon) > epsilon)
 	{
-		std::stringstream strpathlen;
-		strpathlen << std::fixed << std::setprecision(exp->precision());
-		strpathlen << sol.sum_of_edge_costs_;
-
-		std::stringstream stroptlen;
-		stroptlen << std::fixed << std::setprecision(exp->precision());
-		stroptlen << exp->distance();
-
-		std::cerr << std::setprecision(exp->precision());
+		std::cerr << std::setprecision(15);
 		std::cerr << "optimality check failed!" << std::endl;
 		std::cerr << std::endl;
-		std::cerr << "optimal path length: " << stroptlen.str()
+		std::cerr << "optimal path length: " << exp->distance()
 		          << " computed length: ";
-		std::cerr << strpathlen.str() << std::endl;
+		std::cerr << sol.sum_of_edge_costs_ << std::endl;
 		std::cerr << "precision: " << precision << " epsilon: " << epsilon
 		          << std::endl;
 		std::cerr << "delta: " << delta << std::endl;
@@ -262,18 +254,10 @@ main(int argc, char** argv)
 		return run_jps<jps_expansion_policy<jump_point>>(
 		    scenmgr, mapfile, alg);
 	}
-	else if(alg == "jpsP")
+	else if(alg == "jpsP" || alg == "jps2")
 	{
 		using jump_point = jps::jump::jump_point_online;
 		return run_jps<jps_prune_expansion_policy<jump_point>>(
-		    scenmgr, mapfile, alg);
-		return run_jps<jps_prune_expansion_policy<jump_point, 32, 64>>(
-		    scenmgr, mapfile, alg);
-	}
-	else if(alg == "jpsP32")
-	{
-		using jump_point = jps::jump::jump_point_online;
-		return run_jps<jps_prune_expansion_policy<jump_point, 32, 64>>(
 		    scenmgr, mapfile, alg);
 	}
 	else if(alg == "jps+")
@@ -282,10 +266,10 @@ main(int argc, char** argv)
 		return run_jps<jps_expansion_policy<jump_point>>(
 		    scenmgr, mapfile, alg);
 	}
-	else if (alg == "jps-trace")
+	else if(alg == "jpsP+" || alg == "jps2+")
 	{
 		using jump_point = jps::jump::jump_point_offline<>;
-		return run_jps<jps_expansion_policy<jump_point>, true>(
+		return run_jps<jps_prune_expansion_policy<jump_point>>(
 		    scenmgr, mapfile, alg);
 	}
 	else
