@@ -16,7 +16,7 @@
 #include <warthog/util/scenario_manager.h>
 #include <warthog/util/timer.h>
 #ifdef WARTHOG_POSTHOC
-#include <warthog/io/grid_trace.h>
+#include <jps/io/octile_grid_trace.h>
 #endif
 
 #include <jps/jump/jump_point_offline.h>
@@ -53,7 +53,7 @@ int filter_id = -1;
 #ifdef WARTHOG_POSTHOC
 // write trace to file, empty string to disable
 std::string trace_file;
-using listener_grid = ::warthog::io::grid_trace;
+using listener_grid = ::warthog::io::octile_grid_trace;
 using listener_type = std::tuple<listener_grid>;
 #else
 using listener_type = std::tuple<>;
