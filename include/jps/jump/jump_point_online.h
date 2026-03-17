@@ -19,8 +19,6 @@
 #include <array>
 #include <jps/domain/rotate_gridmap.h>
 #include <jps/forward.h>
-#include "jump.h"
-#include <array>
 #include <memory>
 #include <warthog/util/template.h>
 

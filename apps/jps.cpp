@@ -33,10 +33,10 @@
 #include <fstream>
 #include <functional>
 #include <iomanip>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <unordered_map>
-#include <iostream>
 
 // #include "time_constraints.h"
 
@@ -157,14 +157,16 @@ run_experiments(
 	    i < ie; i++)
 	{
 #ifdef WARTHOG_POSTHOC
-		std::optional<std::ofstream> trace_stream; // open and pass to trace if used
+		std::optional<std::ofstream>
+		    trace_stream; // open and pass to trace if used
 		if constexpr(std::same_as<
-						listener_type,
-						std::remove_cvref_t<decltype(algo.get_listeners())>>)
+		                 listener_type,
+		                 std::remove_cvref_t<decltype(algo.get_listeners())>>)
 		{
 			if(i == filter_id && !trace_file.empty())
 			{
-				listener_grid& l = std::get<listener_grid>(algo.get_listeners());
+				listener_grid& l
+				    = std::get<listener_grid>(algo.get_listeners());
 				trace_stream.emplace(trace_file);
 				l.open(*trace_stream);
 			}
@@ -180,13 +182,14 @@ run_experiments(
 		sol.reset();
 
 		algo.get_path(&pi, &par, &sol);
-		
+
 #ifdef WARTHOG_POSTHOC
 		if constexpr(std::same_as<
-						listener_type,
-						std::remove_cvref_t<decltype(algo.get_listeners())>>)
+		                 listener_type,
+		                 std::remove_cvref_t<decltype(algo.get_listeners())>>)
 		{
-			if (trace_stream.has_value()) {
+			if(trace_stream.has_value())
+			{
 				// close
 				std::get<listener_grid>(algo.get_listeners()).close();
 			}
@@ -228,7 +231,8 @@ run_jps(
 	warthog::heuristic::octile_heuristic heuristic(map.width(), map.height());
 	warthog::util::pqueue_min open;
 
-	warthog::search::unidirectional_search jps(&heuristic, &expander, &open, listener_type( WARTHOG_POSTHOC_DO(&map) ));
+	warthog::search::unidirectional_search jps(
+	    &heuristic, &expander, &open, listener_type(WARTHOG_POSTHOC_DO(&map)));
 
 	int ret = run_experiments(
 	    jps, alg_name, scenmgr, verbose, checkopt, std::cout);

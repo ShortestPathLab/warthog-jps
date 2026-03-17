@@ -3,7 +3,8 @@
 
 // io/octile_grid_trace.h
 //
-// Adds support for Octile grid trace, draws successor lines intercardinal then cardinal.
+// Adds support for Octile grid trace, draws successor lines intercardinal then
+// cardinal.
 //
 // @author: Ryan Hechenberger
 // @created: 2025-08-07
