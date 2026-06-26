@@ -15,6 +15,9 @@
 #include <warthog/util/pqueue.h>
 #include <warthog/util/scenario_manager.h>
 #include <warthog/util/timer.h>
+#ifdef WARTHOG_POSTHOC
+#include <jps/io/octile_grid_trace.h>
+#endif
 
 #include <jps/jump/jump_point_offline.h>
 #include <jps/jump/jump_point_online.h>
@@ -23,12 +26,14 @@
 
 #include "cfg.h"
 #include <getopt.h>
+#include <warthog/config.h>
 
 #include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iomanip>
+#include <iostream>
 #include <memory>
 #include <sstream>
 #include <unordered_map>
@@ -43,6 +48,16 @@ int checkopt = 0;
 int verbose = 0;
 // display program help on startup
 int print_help = 0;
+// run only this query, or -1 for all
+int filter_id = -1;
+#ifdef WARTHOG_POSTHOC
+// write trace to file, empty string to disable
+std::string trace_file;
+using listener_grid = ::warthog::io::octile_grid_trace;
+using listener_type = std::tuple<listener_grid>;
+#else
+using listener_type = std::tuple<>;
+#endif
 
 void
 help(std::ostream& out)
@@ -65,6 +80,11 @@ help(std::ostream& out)
 	       "values in the scen file)\n"
 	    << "\t--verbose (optional; prints debugging info when compiled "
 	       "with debug symbols)\n"
+	    << "\t--filter [id] (optional; run only query [id])\n"
+#ifdef WARTHOG_POSTHOC
+	    << "\t--trace [.trace.yaml file] (optional; write posthoc trace for "
+	       "first query to [file])\n"
+#endif
 	    << "Invoking the program this way solves all instances in [scen "
 	       "file] with algorithm [alg]\n"
 	    << "Currently recognised values for [alg]:\n"
@@ -87,7 +107,15 @@ check_optimality(
 
 	if(fabs(delta - epsilon) > epsilon)
 	{
-		std::cerr << std::setprecision(15);
+		std::stringstream strpathlen;
+		strpathlen << std::fixed << std::setprecision(exp->precision());
+		strpathlen << sol.sum_of_edge_costs_;
+
+		std::stringstream stroptlen;
+		stroptlen << std::fixed << std::setprecision(exp->precision());
+		stroptlen << exp->distance();
+
+		std::cerr << std::setprecision(exp->precision());
 		std::cerr << "optimality check failed!" << std::endl;
 		std::cerr << std::endl;
 		std::cerr << "optimal path length: " << exp->distance()
@@ -96,10 +124,16 @@ check_optimality(
 		std::cerr << "precision: " << precision << " epsilon: " << epsilon
 		          << std::endl;
 		std::cerr << "delta: " << delta << std::endl;
-		exit(1);
+		return false;
 	}
 	return true;
 }
+
+#ifdef WARTHOG_POSTHOC
+#define WARTHOG_POSTHOC_DO(f) f
+#else
+#define WARTHOG_POSTHOC_DO(f)
+#endif
 
 template<typename Search>
 int
@@ -108,12 +142,36 @@ run_experiments(
     warthog::util::scenario_manager& scenmgr, bool verbose, bool checkopt,
     std::ostream& out)
 {
+	WARTHOG_GINFO_FMT("start search with algorithm {}", alg_name);
+	warthog::search::search_parameters par;
+	warthog::search::solution sol;
 	auto* expander = algo.get_expander();
 	if(expander == nullptr) return 1;
+
 	out << "id\talg\texpanded\tgenerated\treopen\tsurplus\theapops"
 	    << "\tnanos\tplen\tpcost\tscost\tmap\n";
-	for(unsigned int i = 0; i < scenmgr.num_experiments(); i++)
+	for(uint32_t i  = filter_id >= 0 ? static_cast<uint32_t>(filter_id) : 0,
+	             ie = filter_id >= 0
+	        ? i + 1
+	        : static_cast<uint32_t>(scenmgr.num_experiments());
+	    i < ie; i++)
 	{
+#ifdef WARTHOG_POSTHOC
+		std::optional<std::ofstream>
+		    trace_stream; // open and pass to trace if used
+		if constexpr(std::same_as<
+		                 listener_type,
+		                 std::remove_cvref_t<decltype(algo.get_listeners())>>)
+		{
+			if(i == filter_id && !trace_file.empty())
+			{
+				listener_grid& l
+				    = std::get<listener_grid>(algo.get_listeners());
+				trace_stream.emplace(trace_file);
+				l.open(*trace_stream);
+			}
+		}
+#endif
 		warthog::util::experiment* exp = scenmgr.get_experiment(i);
 
 		warthog::pack_id startid
@@ -121,10 +179,22 @@ run_experiments(
 		warthog::pack_id goalid
 		    = expander->get_pack(exp->goalx(), exp->goaly());
 		warthog::search::problem_instance pi(startid, goalid, verbose);
-		warthog::search::search_parameters par;
-		warthog::search::solution sol;
+		sol.reset();
 
 		algo.get_path(&pi, &par, &sol);
+
+#ifdef WARTHOG_POSTHOC
+		if constexpr(std::same_as<
+		                 listener_type,
+		                 std::remove_cvref_t<decltype(algo.get_listeners())>>)
+		{
+			if(trace_stream.has_value())
+			{
+				// close
+				std::get<listener_grid>(algo.get_listeners()).close();
+			}
+		}
+#endif
 
 		out << i << "\t" << alg_name << "\t" << sol.met_.nodes_expanded_
 		    << "\t" << sol.met_.nodes_generated_ << "\t"
@@ -137,10 +207,16 @@ run_experiments(
 
 		if(checkopt)
 		{
-			if(!check_optimality(sol, exp)) return 4;
+			if(!check_optimality(sol, exp))
+			{
+				WARTHOG_GCRIT("search error: failed suboptimal 4");
+				return 4;
+			}
 		}
 	}
 
+	WARTHOG_GINFO_FMT(
+	    "search complete; total memory: {}", algo.mem() + scenmgr.mem());
 	return 0;
 }
 
@@ -155,17 +231,12 @@ run_jps(
 	warthog::heuristic::octile_heuristic heuristic(map.width(), map.height());
 	warthog::util::pqueue_min open;
 
-	warthog::search::unidirectional_search jps(&heuristic, &expander, &open);
+	warthog::search::unidirectional_search jps(
+	    &heuristic, &expander, &open, listener_type(WARTHOG_POSTHOC_DO(&map)));
 
 	int ret = run_experiments(
 	    jps, alg_name, scenmgr, verbose, checkopt, std::cout);
-	if(ret != 0)
-	{
-		std::cerr << "run_experiments error code " << ret << std::endl;
-		return ret;
-	}
-	std::cerr << "done. total memory: " << jps.mem() + scenmgr.mem() << "\n";
-	return 0;
+	return ret;
 }
 
 } // namespace
@@ -175,13 +246,17 @@ main(int argc, char** argv)
 {
 	// parse arguments
 	warthog::util::param valid_args[]
-	    = {{"alg", required_argument, 0, 1},
+	    = {{"alg", required_argument, 0, 0},
 	       {"scen", required_argument, 0, 0},
-	       {"map", required_argument, 0, 1},
+	       {"map", required_argument, 0, 0},
 	       // {"gen", required_argument, 0, 3},
 	       {"help", no_argument, &print_help, 1},
 	       {"checkopt", no_argument, &checkopt, 1},
 	       {"verbose", no_argument, &verbose, 1},
+	       {"filter", required_argument, &filter_id, 1},
+#ifdef WARTHOG_POSTHOC
+	       {"trace", required_argument, 0, 0},
+#endif
 	       {"costs", required_argument, 0, 1},
 	       {0, 0, 0, 0}};
 
@@ -191,7 +266,7 @@ main(int argc, char** argv)
 	if(argc == 1 || print_help)
 	{
 		help(std::cout);
-		exit(0);
+		return 0;
 	}
 
 	std::string sfile = cfg.get_param_value("scen");
@@ -199,6 +274,14 @@ main(int argc, char** argv)
 	// std::string gen = cfg.get_param_value("gen");
 	std::string mapfile  = cfg.get_param_value("map");
 	std::string costfile = cfg.get_param_value("costs");
+
+	if(filter_id == 1)
+	{
+		filter_id = std::stoi(cfg.get_param_value("filter"));
+	}
+#ifdef WARTHOG_POSTHOC
+	trace_file = cfg.get_param_value("trace");
+#endif
 
 	// if(gen != "")
 	// {
@@ -213,7 +296,7 @@ main(int argc, char** argv)
 	if(alg == "" || sfile == "")
 	{
 		help(std::cout);
-		exit(0);
+		return 0;
 	}
 
 	// load up the instances
@@ -223,12 +306,13 @@ main(int argc, char** argv)
 	if(scenmgr.num_experiments() == 0)
 	{
 		std::cerr << "err; scenario file does not contain any instances\n";
-		exit(0);
+		return 1;
 	}
 
 	// the map filename can be given or (default) taken from the scenario file
 	if(mapfile == "")
 	{
+		// first, try to load the map from the scenario file
 		mapfile = warthog::util::find_map_filename(scenmgr, sfile);
 		if(mapfile.empty())
 		{
