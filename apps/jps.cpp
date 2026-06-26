@@ -1,4 +1,4 @@
-// warthog.cpp
+// jps.cpp
 //
 // Pulls together a variety of different algorithms
 // for pathfinding on grid graphs.
@@ -7,13 +7,19 @@
 // @created: 2016-11-23
 //
 
+#include <warthog/config.h>
+
 #include <jps/search/jps.h>
 #include <warthog/constants.h>
 #include <warthog/domain/gridmap.h>
 #include <warthog/heuristic/octile_heuristic.h>
+
+#include <warthog/scenario/grid_patch_set.h>
+#include <warthog/scenario/scenario_manager.h>
+#include <warthog/scenario/scenario_runner.h>
 #include <warthog/search/unidirectional_search.h>
 #include <warthog/util/pqueue.h>
-#include <warthog/util/scenario_manager.h>
+#include <warthog/util/string.h>
 #include <warthog/util/timer.h>
 #ifdef WARTHOG_POSTHOC
 #include <jps/io/octile_grid_trace.h>
@@ -26,7 +32,6 @@
 
 #include "cfg.h"
 #include <getopt.h>
-#include <warthog/config.h>
 
 #include <cmath>
 #include <filesystem>
@@ -48,12 +53,15 @@ int checkopt = 0;
 int verbose = 0;
 // display program help on startup
 int print_help = 0;
-// run only this query, or -1 for all
+// run only this inst, or -1 for all
 int filter_id = -1;
+// dump map at id if set
+int dump_map_id = -1;
+std::string dump_map_file;
 #ifdef WARTHOG_POSTHOC
 // write trace to file, empty string to disable
 std::string trace_file;
-using listener_grid = ::warthog::io::octile_grid_trace;
+using listener_grid = ::warthog::io::grid_trace;
 using listener_type = std::tuple<listener_grid>;
 #else
 using listener_type = std::tuple<>;
@@ -74,53 +82,52 @@ help(std::ostream& out)
 	    << "\t--scen [scen file] (required) \n"
 	    << "\t--map [map file] (optional; specify this to override map "
 	       "values in scen file) \n"
-	    << "\t--costs [costs file] (required if using a weighted "
-	       "terrain algorithm)\n"
+	    << "\t--cost [type] (optional; force use of selected solution cost of "
+	       "instance, error if not exists)"
 	    << "\t--checkopt (optional; compare solution costs against "
 	       "values in the scen file)\n"
 	    << "\t--verbose (optional; prints debugging info when compiled "
 	       "with debug symbols)\n"
-	    << "\t--filter [id] (optional; run only query [id])\n"
+	    << "\t--filter [id] (optional; run only inst [id])\n"
+	    << "\t--dump-map [id] (optional; dump current gridmap at start of "
+	       "inst id to stderr default)\n"
+	    << "\t--dump-map-file [filename] (optional; override dump map to "
+	       "file)\n"
 #ifdef WARTHOG_POSTHOC
 	    << "\t--trace [.trace.yaml file] (optional; write posthoc trace for "
-	       "first query to [file])\n"
+	       "first instance to [file])\n"
 #endif
 	    << "Invoking the program this way solves all instances in [scen "
 	       "file] with algorithm [alg]\n"
 	    << "Currently recognised values for [alg]:\n"
-	    << "\tjps, jpsP or jps2, jps+, jpsP+ or jps2+\n";
-	// << ""
-	// << "The following are valid parameters for GENERATING instances:\n"
-	// << "\t --gen [map file (required)]\n"
-	// << "Invoking the program this way generates at random 1000 valid
-	// problems for \n"
-	// << "gridmap [map file]\n";
+	    << "\tjps, jpsP or jps2, jps+, jpsP+ or jps2+\n"
+	    << "Currently recognised values for [v2-cost]:\n"
+	    << "8c-ncc (default), 8c-cc, 4c, aa-ncc, aa-cc\n"
+	    << "8c = 8-connected, 4c = 4-connected, aa = anyangle, ncc = "
+	       "no-corner-cut, cc = corner-cut\n";
 }
 
 bool
 check_optimality(
-    warthog::search::solution& sol, warthog::util::experiment* exp)
+    const warthog::search::solution& sol,
+    const warthog::scenario::experiment* exp)
 {
-	uint32_t precision = 2;
-	double epsilon     = (1.0 / (int)pow(10, precision)) / 2;
-	double delta       = fabs(sol.sum_of_edge_costs_ - exp->distance());
-
-	if(fabs(delta - epsilon) > epsilon)
+	if(!exp->distance())
 	{
-		std::stringstream strpathlen;
-		strpathlen << std::fixed << std::setprecision(exp->precision());
-		strpathlen << sol.sum_of_edge_costs_;
+		// unknown solution
+		return true;
+	}
+	constexpr int32_t precision = 2;
+	double epsilon              = std::pow(10.0, -precision) * 0.5;
+	double delta = std::fabs(sol.sum_of_edge_costs_ - *exp->distance());
 
-		std::stringstream stroptlen;
-		stroptlen << std::fixed << std::setprecision(exp->precision());
-		stroptlen << exp->distance();
-
-		std::cerr << std::setprecision(exp->precision());
+	if(delta > epsilon)
+	{
 		std::cerr << "optimality check failed!" << std::endl;
 		std::cerr << std::endl;
-		std::cerr << "optimal path length: " << exp->distance()
+		std::cerr << "optimal path length: " << sol.sum_of_edge_costs_
 		          << " computed length: ";
-		std::cerr << sol.sum_of_edge_costs_ << std::endl;
+		std::cerr << *exp->distance() << std::endl;
 		std::cerr << "precision: " << precision << " epsilon: " << epsilon
 		          << std::endl;
 		std::cerr << "delta: " << delta << std::endl;
@@ -135,30 +142,89 @@ check_optimality(
 #define WARTHOG_POSTHOC_DO(f)
 #endif
 
+// convenience wrapper around initialisation code
+struct gridmap_scenario
+{
+	const warthog::scenario::scenario_manager* mgr;
+	warthog::scenario::scenario_runner run;
+	warthog::domain::gridmap grid;
+	jps::domain::rotate_gridmap rgrid;
+	warthog::scenario::grid_patch_set patches;
+
+	gridmap_scenario(const warthog::scenario::scenario_manager& scen)
+	    : mgr(&scen), run(&scen)
+	{ }
+
+	bool
+	load_map(const std::filesystem::path map)
+	{
+		if(!patches.load(map)) { return false; }
+		if(!run.gridmap_init(grid, patches)) { return false; }
+		rgrid.create_rmap(grid);
+		return true;
+	}
+
+	bool
+	apply_patches()
+	{
+		for (auto& P : run.get_patches())
+		{
+			uint32_t x, y;
+			grid.to_padded_xy_from_unpadded(P.topleft_x, P.topleft_y, x, y);
+			if (!rgrid.apply_patch_map(patches.get_patch(P.patch_id), warthog::grid::point(x, y)))
+			{ return false; }
+			if (!rgrid.apply_patch_rmap(patches.get_patch(P.patch_id), warthog::grid::point(x, y)))
+			{ return false; }
+		}
+		
+		return true;
+	}
+};
+
 template<typename Search>
 int
 run_experiments(
-    Search& algo, std::string alg_name,
-    warthog::util::scenario_manager& scenmgr, bool verbose, bool checkopt,
-    std::ostream& out)
+    Search& algo, std::string alg_name, gridmap_scenario& scen, bool verbose,
+    bool checkopt, std::ostream& out)
 {
 	WARTHOG_GINFO_FMT("start search with algorithm {}", alg_name);
 	warthog::search::search_parameters par;
 	warthog::search::solution sol;
 	auto* expander = algo.get_expander();
-	if(expander == nullptr) return 1;
+	if(expander == nullptr) return (int)std::errc::invalid_argument;
 
-	out << "id\talg\texpanded\tgenerated\treopen\tsurplus\theapops"
+	out << "id\tsnapshot\talg\texpanded\tgenerated\treopen\tsurplus\theapops"
 	    << "\tnanos\tplen\tpcost\tscost\tmap\n";
-	for(uint32_t i  = filter_id >= 0 ? static_cast<uint32_t>(filter_id) : 0,
-	             ie = filter_id >= 0
-	        ? i + 1
-	        : static_cast<uint32_t>(scenmgr.num_experiments());
-	    i < ie; i++)
+
+	for(uint32_t i = 0;; ++i)
 	{
 #ifdef WARTHOG_POSTHOC
 		std::optional<std::ofstream>
 		    trace_stream; // open and pass to trace if used
+
+#endif
+		auto [exp, patch_count] = scen.run.experiment_next();
+		if(exp == nullptr) { break; }
+		if(patch_count != 0)
+		{
+			if(!scen.apply_patches())
+			{
+				// failed to apply patches, exit
+				WARTHOG_GCRIT("dynamic patch error: failed to apply patches");
+				return (int)std::errc::io_error;
+			}
+		}
+
+		if(i == dump_map_id)
+		{
+			// print map
+			scen.grid.save(dump_map_file, false);
+		}
+
+		if(filter_id >= 0 && i == filter_id)
+		{
+			// trace
+#ifdef WARTHOG_POSTHOC
 		if constexpr(std::same_as<
 		                 listener_type,
 		                 std::remove_cvref_t<decltype(algo.get_listeners())>>)
@@ -172,7 +238,8 @@ run_experiments(
 			}
 		}
 #endif
-		warthog::util::experiment* exp = scenmgr.get_experiment(i);
+		}
+		else if(filter_id >= 0) { continue; }
 
 		warthog::pack_id startid
 		    = expander->get_pack(exp->startx(), exp->starty());
@@ -182,6 +249,11 @@ run_experiments(
 		sol.reset();
 
 		algo.get_path(&pi, &par, &sol);
+		// check for no solution
+		if(sol.sum_of_edge_costs_ >= warthog::COST_MAX)
+		{
+			sol.sum_of_edge_costs_ = -1;
+		}
 
 #ifdef WARTHOG_POSTHOC
 		if constexpr(std::same_as<
@@ -196,46 +268,57 @@ run_experiments(
 		}
 #endif
 
-		out << i << "\t" << alg_name << "\t" << sol.met_.nodes_expanded_
-		    << "\t" << sol.met_.nodes_generated_ << "\t"
-		    << sol.met_.nodes_reopen_ << "\t" << sol.met_.nodes_surplus_
-		    << "\t" << sol.met_.heap_ops_ << "\t"
-		    << sol.met_.time_elapsed_nano_.count() << "\t"
+		out << i << "\t" << scen.run.get_snapshot_at() << "\t" << alg_name
+		    << "\t" << sol.met_.nodes_expanded_ << "\t"
+		    << sol.met_.nodes_generated_ << "\t" << sol.met_.nodes_reopen_
+		    << "\t" << sol.met_.nodes_surplus_ << "\t" << sol.met_.heap_ops_
+		    << "\t" << sol.met_.time_elapsed_nano_.count() << "\t"
 		    << (!sol.path_.empty() ? sol.path_.size() - 1 : 0) << "\t"
-		    << sol.sum_of_edge_costs_ << "\t" << exp->distance() << "\t"
-		    << scenmgr.last_file_loaded() << std::endl;
+		    << sol.sum_of_edge_costs_ << "\t";
+		if(exp->distance())
+			out << *exp->distance();
+		else
+			out << '-';
+		out << "\t" << scen.mgr->last_file_loaded() << std::endl;
 
 		if(checkopt)
 		{
 			if(!check_optimality(sol, exp))
 			{
 				WARTHOG_GCRIT("search error: failed suboptimal 4");
-				return 4;
+				return (int)std::errc::result_out_of_range;
 			}
 		}
 	}
 
 	WARTHOG_GINFO_FMT(
-	    "search complete; total memory: {}", algo.mem() + scenmgr.mem());
+	    "search complete; total memory: {}", algo.mem() + scen.mgr->mem());
 	return 0;
 }
 
 template<typename ExpansionPolicy>
 int
 run_jps(
-    warthog::util::scenario_manager& scenmgr, std::string mapname,
+    warthog::scenario::scenario_manager& scenmgr, std::string mapname,
     std::string alg_name)
 {
-	warthog::domain::gridmap map(mapname.c_str());
-	ExpansionPolicy expander(&map);
-	warthog::heuristic::octile_heuristic heuristic(map.width(), map.height());
+	gridmap_scenario scen(scenmgr);
+	if(!scen.load_map(std::filesystem::path(mapname)))
+	{
+		WARTHOG_GCRIT("failed to load map");
+		return (int)std::errc::io_error;
+	}
+	ExpansionPolicy expander(nullptr);
+	expander.set_map(scen.rgrid); // gridmap_scenario manages both grids
+	warthog::heuristic::octile_heuristic heuristic(
+	    scen.grid.width(), scen.grid.height());
 	warthog::util::pqueue_min open;
 
 	warthog::search::unidirectional_search jps(
 	    &heuristic, &expander, &open, listener_type(WARTHOG_POSTHOC_DO(&map)));
 
-	int ret = run_experiments(
-	    jps, alg_name, scenmgr, verbose, checkopt, std::cout);
+	int ret
+	    = run_experiments(jps, alg_name, scen, verbose, checkopt, std::cout);
 	return ret;
 }
 
@@ -252,12 +335,14 @@ main(int argc, char** argv)
 	       // {"gen", required_argument, 0, 3},
 	       {"help", no_argument, &print_help, 1},
 	       {"checkopt", no_argument, &checkopt, 1},
+	       {"cost", required_argument, 0, 0},
 	       {"verbose", no_argument, &verbose, 1},
 	       {"filter", required_argument, &filter_id, 1},
+	       {"dump-map", required_argument, &dump_map_id, 1},
+	       {"dump-map-file", required_argument, 0, 0},
 #ifdef WARTHOG_POSTHOC
 	       {"trace", required_argument, 0, 0},
 #endif
-	       {"costs", required_argument, 0, 1},
 	       {0, 0, 0, 0}};
 
 	warthog::util::cfg cfg;
@@ -272,25 +357,22 @@ main(int argc, char** argv)
 	std::string sfile = cfg.get_param_value("scen");
 	std::string alg   = cfg.get_param_value("alg");
 	// std::string gen = cfg.get_param_value("gen");
-	std::string mapfile  = cfg.get_param_value("map");
-	std::string costfile = cfg.get_param_value("costs");
+	std::string mapfile     = cfg.get_param_value("map");
+	std::string costtype    = cfg.get_param_value("cost");
+	dump_map_file           = cfg.get_param_value("dump-map-file");
 
 	if(filter_id == 1)
 	{
-		filter_id = std::stoi(cfg.get_param_value("filter"));
+		if(warthog::util::parse_token(cfg.get_param_value("filter"), filter_id)
+		   != std::errc{})
+		{
+			WARTHOG_GERROR_FMT("invalid --filter argument {}", filter_id);
+			return (int)std::errc::invalid_argument;
+		}
 	}
 #ifdef WARTHOG_POSTHOC
 	trace_file = cfg.get_param_value("trace");
 #endif
-
-	// if(gen != "")
-	// {
-	// 	warthog::util::scenario_manager sm;
-	// 	warthog::domain::gridmap gm(gen.c_str());
-	// 	sm.generate_experiments(&gm, 1000) ;
-	// 	sm.write_scenario(std::cout);
-	//     exit(0);
-	// }
 
 	// running experiments
 	if(alg == "" || sfile == "")
@@ -299,29 +381,49 @@ main(int argc, char** argv)
 		return 0;
 	}
 
+	if(dump_map_id == 1)
+	{
+		if(warthog::util::parse_token(
+		       cfg.get_param_value("dump-map"), dump_map_id)
+		   != std::errc{})
+		{
+			WARTHOG_GCRIT_FMT("invalid --dump-map argument {}", dump_map_id);
+			return (int)std::errc::invalid_argument;
+		}
+	}
+	if(dump_map_file.empty()) { dump_map_file = "/dev/stderr"; }
+
 	// load up the instances
-	warthog::util::scenario_manager scenmgr;
-	scenmgr.load_scenario(sfile.c_str());
+	warthog::scenario::scenario_manager scenmgr;
+	scenmgr.set_cost_type(costtype);
+	try
+	{
+		scenmgr.load_scenario(sfile.c_str());
+	}
+	catch(const std::runtime_error& e)
+	{
+		return (int)std::errc::io_error;
+	}
 
 	if(scenmgr.num_experiments() == 0)
 	{
-		std::cerr << "err; scenario file does not contain any instances\n";
-		return 1;
+		WARTHOG_GCRIT("scenario file does not contain any instances");
+		return (int)std::errc::invalid_argument;
 	}
 
 	// the map filename can be given or (default) taken from the scenario file
 	if(mapfile == "")
 	{
 		// first, try to load the map from the scenario file
-		mapfile = warthog::util::find_map_filename(scenmgr, sfile);
+		mapfile = warthog::scenario::find_map_filename(scenmgr, sfile);
 		if(mapfile.empty())
 		{
 			std::cerr << "could not locate a corresponding map file\n";
 			help(std::cout);
 			return 0;
 		}
+		WARTHOG_GINFO_FMT("deduced mapfile: ", mapfile);
 	}
-	std::cerr << "mapfile=" << mapfile << std::endl;
 
 	using namespace jps::search;
 	if(alg == "jps")
@@ -348,11 +450,7 @@ main(int argc, char** argv)
 		return run_jps<jps_prune_expansion_policy<jump_point>>(
 		    scenmgr, mapfile, alg);
 	}
-	else
-	{
-		std::cerr << "err; invalid search algorithm: " << alg << "\n";
-		return 1;
-	}
 
-	return 0;
+	WARTHOG_GCRIT_FMT("invalid search algorithm: ", alg);
+	return (int)std::errc::invalid_argument;
 }
