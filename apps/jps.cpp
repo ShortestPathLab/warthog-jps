@@ -145,6 +145,7 @@ check_optimality(
 // convenience wrapper around initialisation code
 struct gridmap_scenario
 {
+	bool dynamic = false;
 	const warthog::scenario::scenario_manager* mgr;
 	warthog::scenario::scenario_runner run;
 	warthog::domain::gridmap grid;
@@ -158,6 +159,7 @@ struct gridmap_scenario
 	bool
 	load_map(const std::filesystem::path map)
 	{
+		dynamic = true;
 		if(!patches.load(map)) { return false; }
 		if(!run.gridmap_init(grid, patches)) { return false; }
 		rgrid.create_rmap(grid);
@@ -167,6 +169,8 @@ struct gridmap_scenario
 	bool
 	apply_patches()
 	{
+		if(!dynamic) return true;
+
 		for (auto& P : run.get_patches())
 		{
 			uint32_t x, y;
@@ -315,7 +319,7 @@ run_jps(
 	warthog::util::pqueue_min open;
 
 	warthog::search::unidirectional_search jps(
-	    &heuristic, &expander, &open, listener_type(WARTHOG_POSTHOC_DO(&map)));
+	    &heuristic, &expander, &open, listener_type(WARTHOG_POSTHOC_DO(&scen.grid)));
 
 	int ret
 	    = run_experiments(jps, alg_name, scen, verbose, checkopt, std::cout);
