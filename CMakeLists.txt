@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 include(cmake/warthog.cmake)
-warthog_module_declare(warthog-core 3d300e9c52f1794f0c0ac47237495a7c13b248ae)
+warthog_module_declare(warthog-core v0.6.0)
 warthog_module(warthog-core)
 
 add_library(warthog_libjps)
