@@ -177,7 +177,7 @@ struct gridmap_scenario
 		if(!run.gridmap_init(grid, patches)) { return false; }
 		return true;
 	}
-	
+
 	/// @brief will update to runner based on user-provided parameters
 	/// @param snapshot_id set map to match snapshot
 	/// @param filter_id if snapshot_id==-1, set map to match at instance id
@@ -226,7 +226,8 @@ struct gridmap_scenario
 			}
 		}
 
-		// update gridmap to match patch, as rgrid is not created, do through run
+		// update gridmap to match patch, as rgrid is not created, do through
+		// run
 		if(int c = run.gridmap_apply_patches(grid, patches); c < 0)
 		{
 			c      = -c - 1;
@@ -236,7 +237,7 @@ struct gridmap_scenario
 			    p.topleft_y);
 			return false;
 		}
-		
+
 		rgrid.create_rmap(grid);
 
 		return true;
@@ -258,7 +259,7 @@ struct gridmap_scenario
 			    p.topleft_y);
 			return false;
 		}
-		
+
 		return true;
 	}
 
@@ -270,14 +271,20 @@ struct gridmap_scenario
 		if(!grid_managed) return true;
 
 		// update grid through rgrid interface
-		for (auto& P : run.get_patches())
+		for(auto& P : run.get_patches())
 		{
 			uint32_t x, y;
 			grid.to_padded_xy_from_unpadded(P.topleft_x, P.topleft_y, x, y);
-			if (!rgrid.apply_patch_map(patches.get_patch(P.patch_id), warthog::grid::point(x, y)))
-			{ return false; }
-			if (!rgrid.apply_patch_rmap(patches.get_patch(P.patch_id), warthog::grid::point(x, y)))
-			{ return false; }
+			if(!rgrid.apply_patch_map(
+			       patches.get_patch(P.patch_id), warthog::grid::point(x, y)))
+			{
+				return false;
+			}
+			if(!rgrid.apply_patch_rmap(
+			       patches.get_patch(P.patch_id), warthog::grid::point(x, y)))
+			{
+				return false;
+			}
 		}
 
 		return true;
@@ -333,19 +340,19 @@ run_experiments(
 			if(!dump_map.empty()) { scen.grid.save(dump_map, false); }
 			// trace
 #ifdef WARTHOG_POSTHOC
-		if constexpr(std::same_as<
-		                 listener_type,
+			if constexpr(std::same_as<
+			                 listener_type,
 			                 std::remove_cvref_t<
 			                     decltype(algo.get_listeners())>>)
-		{
-			if(!trace_file.empty())
 			{
-				listener_grid& l
-				    = std::get<listener_grid>(algo.get_listeners());
-				trace_stream.emplace(trace_file);
-				l.open(*trace_stream);
+				if(!trace_file.empty())
+				{
+					listener_grid& l
+					    = std::get<listener_grid>(algo.get_listeners());
+					trace_stream.emplace(trace_file);
+					l.open(*trace_stream);
+				}
 			}
-		}
 #endif
 		}
 
@@ -423,12 +430,15 @@ run_jps(
 		WARTHOG_GCRIT("failed to setup scenario");
 		return (int)std::errc::io_error;
 	}
-	if constexpr (!Online) {
+	if constexpr(!Online)
+	{
 		// check that scenario is offline
 		if(!scen.static_scenario)
 		{
 			WARTHOG_GCRIT_FMT(
-				"algorithm {} requires scenario file/filter/snapshot to be static (restrict to single snapshot)", alg_name);
+			    "algorithm {} requires scenario file/filter/snapshot to be "
+			    "static (restrict to single snapshot)",
+			    alg_name);
 			return (int)std::errc::invalid_argument;
 		}
 	}
