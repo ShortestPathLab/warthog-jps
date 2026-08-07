@@ -184,10 +184,11 @@ jps_expansion_policy<JpsJump>::expand(
 			    if(jump_result.first > 0) // jump point
 			    {
 				    // successful jump
-				    pad_id node{pad_id(static_cast<int32_t>(
-				        current_id.id
-				        + warthog::grid::dir_id_adj(di, map_width_)
-				            * res.inter))};
+				    pad_id node{pad_id(
+				        static_cast<int32_t>(
+				            current_id.id
+				            + warthog::grid::dir_id_adj(di, map_width_)
+				                * res.inter))};
 				    assert(rmap_.map().get(
 				        node)); // successor must be traversable
 				    warthog::search::search_node* jp_succ

@@ -6,11 +6,11 @@ project(WarthogJPS
 
 set_property(GLOBAL PROPERTY WARTHOG_warthog-jps ON)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 include(cmake/warthog.cmake)
-warthog_module_declare(warthog-core v0.5.0)
+warthog_module_declare(warthog-core v0.6.0)
 warthog_module(warthog-core)
 
 add_library(warthog_libjps)

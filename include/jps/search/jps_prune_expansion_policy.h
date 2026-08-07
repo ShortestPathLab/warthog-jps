@@ -257,8 +257,9 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 						                                * res_i.hori);
 						    const auto cost_j
 						        = cost + warthog::DBL_ONE * res_i.hori;
-						    assert(rmap_.map().get(pad_id{
-						        node_j})); // successor must be traversable
+						    assert(rmap_.map().get(
+						        pad_id{
+						            node_j})); // successor must be traversable
 						    warthog::search::search_node* jp_succ
 						        = this->generate(pad_id{node_j});
 						    add_neighbour(jp_succ, cost_j);
@@ -271,8 +272,9 @@ jps_prune_expansion_policy<JpsJump, InterLimit, InterSize>::expand(
 						                                * res_i.vert);
 						    const auto cost_j
 						        = cost + warthog::DBL_ONE * res_i.vert;
-						    assert(rmap_.map().get(pad_id{
-						        node_j})); // successor must be traversable
+						    assert(rmap_.map().get(
+						        pad_id{
+						            node_j})); // successor must be traversable
 						    warthog::search::search_node* jp_succ
 						        = this->generate(pad_id{node_j});
 						    add_neighbour(jp_succ, cost_j);
