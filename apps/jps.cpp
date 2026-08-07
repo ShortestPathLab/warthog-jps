@@ -202,7 +202,19 @@ struct gridmap_scenario
 				// apply snapshot
 				run.snapshot_next(true);
 				run.snapshot_patches(false);
-				if(!apply_patches()) { return false; }
+				if(grid_managed)
+				{
+					// apply patches to inital grid
+					if(int c = run.gridmap_apply_patches(grid, patches); c < 0)
+					{
+						c      = -c - 1;
+						auto p = run.get_patches()[c];
+						WARTHOG_GWARN_FMT(
+						    "failed to apply patch {} at ({},{})", p.patch_id,
+						    p.topleft_x, p.topleft_y);
+						return false;
+					}
+				}
 			}
 		}
 
@@ -243,30 +255,10 @@ struct gridmap_scenario
 		return true;
 	}
 
-	/// @brief apply patches from runner to owned grid (if managed)
+	/// @brief apply patches from runner to owned grids (if managed)
 	/// @return true on success, false otherwise
 	bool
 	apply_patches()
-	{
-		if(!grid_managed) return true;
-
-		if(int c = run.gridmap_apply_patches(grid, patches); c < 0)
-		{
-			c      = -c - 1;
-			auto p = run.get_patches()[c];
-			WARTHOG_GWARN_FMT(
-			    "failed to apply patch {} at ({},{})", p.patch_id, p.topleft_x,
-			    p.topleft_y);
-			return false;
-		}
-
-		return true;
-	}
-
-	/// @brief will update the grid for dynamic scenarios
-	/// @return true on success, false otherwise
-	bool
-	dynamic_grid_update()
 	{
 		if(!grid_managed) return true;
 
@@ -325,7 +317,7 @@ run_experiments(
 
 		if(patch_count != 0)
 		{
-			if(!scen.dynamic_grid_update())
+			if(!scen.apply_patches())
 			{
 				// failed to apply patches, exit
 				WARTHOG_GCRIT("dynamic patch error: failed to apply patches");
