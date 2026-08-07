@@ -521,6 +521,7 @@ public:
 		}
 		else { clear(); }
 	}
+
 	void
 	clear()
 	{
@@ -528,6 +529,7 @@ public:
 		maps                                            = {};
 		static_cast<rgridmap_point_conversions&>(*this) = {};
 	}
+
 	void
 	create_rmap(domain::gridmap& map)
 	{
@@ -569,6 +571,58 @@ public:
 			}
 		}
 #endif // NDEBUG
+	}
+
+	bool
+	apply_patch_map(domain::gridmap::bittable patch, point padded_loc)
+	{
+		if((uint64_t)padded_loc.x + patch.width() >= (uint64_t)map().width()
+		   || (uint64_t)padded_loc.y + patch.height()
+		       >= (uint64_t)map().height())
+			return false;
+
+		// apply patch
+		patch.copy(
+		    map(), point_to_id(padded_loc), pad_id::zero(), patch.width(),
+		    patch.height());
+
+		return true;
+	}
+
+	bool
+	apply_patch_rmap(domain::gridmap::bittable patch, point padded_loc)
+	{
+		if((uint64_t)padded_loc.x + patch.width() >= (uint64_t)map().width()
+		   || (uint64_t)padded_loc.y + patch.height()
+		       >= (uint64_t)map().height())
+			return false;
+
+		// apply patch
+		// copy row-by-row on rmap, thus start at bottom-right corner of patch
+		rgrid_id dest_id = rpoint_to_rid(point_to_rpoint(
+		    point(padded_loc.x, padded_loc.y + patch.height() - 1)));
+		grid_id src_id
+		    = static_cast<grid_id>(patch.xy_to_id(0, patch.height() - 1));
+		const uint32_t dest_y_adj = rmap().width();
+		auto& rgridp              = rmap();
+
+		// go left-to-right, bottom-to-top on patch
+		for(uint32_t x = 0; x < patch.width(); x++)
+		{
+			auto row_dest_id = dest_id;
+			dest_id.id      += dest_y_adj;
+			auto row_src_id  = src_id;
+			src_id.id       += 1;
+			for(uint32_t y = 0; y < patch.height(); y++)
+			{
+				bool label     = patch.get(static_cast<pad_id>(row_src_id));
+				row_src_id.id -= patch.width();
+				rgridp.set_label(static_cast<grid_id>(row_dest_id), label);
+				row_dest_id.id += 1;
+			}
+		}
+
+		return true;
 	}
 
 	domain::gridmap&

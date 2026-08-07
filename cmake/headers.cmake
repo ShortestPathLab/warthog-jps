@@ -6,6 +6,8 @@ include/jps/forward.h
 
 include/jps/domain/rotate_gridmap.h
 
+include/jps/io/octile_grid_trace.h
+
 include/jps/jump/block_online.h
 include/jps/jump/jump.h
 include/jps/jump/jump_point_offline.h
