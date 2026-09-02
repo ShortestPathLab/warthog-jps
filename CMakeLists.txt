@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 project(WarthogJPS
-	VERSION 0.6.0
+	VERSION 0.6.1
 	LANGUAGES CXX C)
 
 set_property(GLOBAL PROPERTY WARTHOG_warthog-jps ON)
@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 include(cmake/warthog.cmake)
-warthog_module_declare(warthog-core v0.6.0)
+warthog_module_declare(warthog-core v0.6.1)
 warthog_module(warthog-core)
 
 add_library(warthog_libjps)
