@@ -29,6 +29,7 @@
 #include <jps/jump/jump_point_online.h>
 #include <jps/search/jps_expansion_policy.h>
 #include <jps/search/jps_prune_expansion_policy.h>
+#include <jps/search/jps_cache_prune_expansion_policy.h>
 
 #include "cfg.h"
 #include <getopt.h>
